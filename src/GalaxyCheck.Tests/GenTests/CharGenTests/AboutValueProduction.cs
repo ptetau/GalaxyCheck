@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using GalaxyCheck;
 using NebulaCheck;
 using System.Linq;
@@ -91,9 +91,7 @@ namespace Tests.V2.GenTests.CharGenTests
                 sample.Should().OnlyContain(c => c <= 37 || c == 127);
             });
 
-        private static List<char> SampleTraversal(GalaxyCheck.IGen<char> gen, int seed, int size) => gen.Advanced
-            .SampleOneExampleSpace(seed: seed, size: size)
-            .Traverse()
+        private static List<char> SampleTraversal(GalaxyCheck.IGen<char> gen, int seed, int size) => gen.SampleOneTraversal(seed: seed, size: size)
             .Take(100)
             .ToList();
     }

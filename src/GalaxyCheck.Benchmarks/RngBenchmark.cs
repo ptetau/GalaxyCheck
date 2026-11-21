@@ -1,5 +1,5 @@
-﻿using BenchmarkDotNet.Attributes;
-using GalaxyCheck.Gens.Parameters.Internal;
+using BenchmarkDotNet.Attributes;
+using GalaxyCheck.Gens.Parameters;
 
 namespace GalaxyCheck.Benchmarks
 {
@@ -24,8 +24,8 @@ namespace GalaxyCheck.Benchmarks
         {
             for (var seed = _seed; seed < (_seed + OperationsPerInvoke); seed++)
             {
-                var rng = Rng.Create(seed);
-                rng.Value(minValue, maxValue);
+                var source = GenSource.Create(seed, 0);
+                source.NextBounded(unchecked((ulong)maxValue - (ulong)minValue));
             }
         }
     }

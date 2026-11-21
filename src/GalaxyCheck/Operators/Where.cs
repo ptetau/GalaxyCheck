@@ -1,77 +1,63 @@
-﻿using GalaxyCheck.Gens.Internal;
-using GalaxyCheck.Gens.Internal.Iterations;
-using GalaxyCheck.ExampleSpaces;
-using GalaxyCheck.Internal;
+using GalaxyCheck.Gens.Internal;
+using GalaxyCheck.Gens.Parameters;
 using System;
-using System.Linq;
-using GalaxyCheck.Gens.Iterations.Generic;
 
 namespace GalaxyCheck
 {
     public static partial class Extensions
     {
         /// <summary>
-        /// Filters a generator's values based on a predicate. Does not alter the structure of the stream. Instead,
-        /// it replaces the filtered value with a token, which enables discard counting whilst running the generator.
+        /// Filters a generator's values based on a predicate. A value that does not pass the predicate is discarded,
+        /// and the generator tries again.
         /// </summary>
+        /// <typeparam name="T">The type of the generator's value.</typeparam>
         /// <param name="gen">The generator to apply the predicate to.</param>
         /// <param name="pred">A predicate function that tests each value.</param>
         /// <returns>A new generator with the filter applied.</returns>
-        public static IGen<T> Where<T>(this IGen<T> gen, Func<T, bool> pred)
+        public static IGen<T> Where<T>(this IGen<T> gen, Func<T, bool> pred) => new WhereGen<T>(gen, pred);
+    }
+}
+
+namespace GalaxyCheck.Gens.Internal
+{
+    internal sealed record WhereGen<T>(IGen<T> Source, Func<T, bool> Predicate) : BaseGen<T>
+    {
+        private const int MaxConsecutiveDiscards = 100;
+        private const int DiscardsBeforeResize = 5;
+
+        public override T Generate(GenSource source)
         {
-            GenInstanceTransformation<T, T> applyPredicateToInstance = (instance) =>
+            var gen = Source.Advanced;
+            var size = source.Size;
+
+            try
             {
-                var filteredExampleSpace = instance.ExampleSpace.Filter(pred);
-                if (filteredExampleSpace == null)
+                for (var attempt = 0; attempt < MaxConsecutiveDiscards; attempt++)
                 {
-                    return GenIterationFactory.Discard<T>(
-                        instance.ReplayParameters,
-                        instance.NextParameters,
-                        instance.ExampleSpace);
-                }
+                    var start = source.BeginSpan();
+                    var value = gen.Generate(source);
+                    source.EndSpan(start);
 
-                return GenIterationFactory.Instance(
-                    instance.ReplayParameters,
-                    instance.NextParameters,
-                    filteredExampleSpace);
-            };
-
-            GenStreamTransformation<T, T> resizeAndTerminateAfterConsecutiveDiscards = (stream) =>
-            {
-                const int MaxConsecutiveDiscards = 5;
-
-                return stream
-                    .WithConsecutiveDiscardCount(_ => true, iteration => iteration.IsDiscard())
-                    .Select((x) =>
+                    if (Predicate(value))
                     {
-                        var (iteration, consecutiveDiscardCount) = x;
+                        return value;
+                    }
 
-                        if (consecutiveDiscardCount >= MaxConsecutiveDiscards)
-                        {
-                            var resizedIteration = GenIterationFactory.Discard<T>(
-                                iteration.ReplayParameters,
-                                iteration.Data.Discard!.NextParameters with
-                                {
-                                    Size = iteration.Data.Discard!.NextParameters.Size.BigIncrement()
-                                },
-                                iteration.Data.Discard!.ExampleSpace);
+                    source.Discards++;
 
-                            return (iteration: resizedIteration, consecutiveDiscardCount);
-                        }
-                        else
-                        {
-                            return (iteration, consecutiveDiscardCount);
-                        }
-                    })
-                    .TakeWhileInclusive((x) => x.consecutiveDiscardCount < MaxConsecutiveDiscards)
-                    .Select(x => x.iteration);
-            };
+                    if ((attempt + 1) % DiscardsBeforeResize == 0 && !source.IsReplaying)
+                    {
+                        // A bigger size may hold more values that pass the predicate.
+                        source.Size = Math.Min(100, source.Size + 5);
+                    }
+                }
+            }
+            finally
+            {
+                source.Size = size;
+            }
 
-            // TODO: This should take bigger and bigger jumps if consecutive discards continue to accumulate, even between sizes
-            return gen
-                .TransformInstances(applyPredicateToInstance)
-                .TransformStream(resizeAndTerminateAfterConsecutiveDiscards)
-                .Repeat();
+            throw new Exceptions.GenExhaustionException();
         }
     }
 }

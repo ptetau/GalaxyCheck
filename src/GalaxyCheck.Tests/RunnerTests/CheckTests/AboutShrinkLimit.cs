@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+using FluentAssertions;
+using System.Collections.Generic;
 using GalaxyCheck;
 using GalaxyCheck.Runners.Check;
 using NebulaCheck;
@@ -12,10 +13,9 @@ namespace Tests.V2.RunnerTests.CheckTests
 {
     public class AboutShrinkLimit
     {
-        private static readonly GalaxyCheck.IGen<int> InfinitelyShrinkableGen =
-            GalaxyCheck.Gen.Constant(1).Unfold(
-                (x) => new[] { x + 1 },
-                (x) => x);
+        // Each of the 1000 elements can shrink, so the generator has more shrinks than each limit.
+        private static readonly GalaxyCheck.IGen<IReadOnlyList<int>> InfinitelyShrinkableGen =
+            GalaxyCheck.Gen.Int32().GreaterThanEqual(1).WithBias(GalaxyCheck.Gen.Bias.None).ListOf().WithCount(1000);
 
         [Property]
         public NebulaCheck.IGen<Test> ItShrinksToTheGivenLimit() =>

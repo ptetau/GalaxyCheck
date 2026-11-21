@@ -1,4 +1,4 @@
-﻿using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Attributes;
 using GalaxyCheck.Gens.Parameters;
 using System.Linq;
 
@@ -23,11 +23,7 @@ namespace GalaxyCheck.Benchmarks
         {
             var gen = Gen.Int32().Select(x => x);
 
-            var enumerable = gen.Advanced
-                .Run(GenParameters.Parse(seed: _seed, size: 100))
-                .Take(OperationsPerInvoke);
-
-            foreach (var _ in enumerable) { }
+            gen.Sample(iterations: OperationsPerInvoke, seed: _seed, size: 100);
         }
 
         [Benchmark(OperationsPerInvoke = OperationsPerInvoke)]
@@ -35,11 +31,7 @@ namespace GalaxyCheck.Benchmarks
         {
             var gen = Gen.Int32();
 
-            var enumerable = gen.Advanced
-                .Run(GenParameters.Parse(seed: _seed, size: 100))
-                .Take(OperationsPerInvoke);
-
-            foreach (var _ in enumerable) { }
+            gen.Sample(iterations: OperationsPerInvoke, seed: _seed, size: 100);
         }
     }
 }

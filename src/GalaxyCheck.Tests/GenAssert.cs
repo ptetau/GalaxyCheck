@@ -1,9 +1,7 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using GalaxyCheck;
-using GalaxyCheck.ExampleSpaces;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
@@ -13,32 +11,15 @@ namespace Tests.V2
     {
         public static void Equal<T>(IGen<T> expected, IGen<T> actual, int seed, int? iterations = null)
         {
-            var expectedSample = expected.Select(x => JsonConvert.SerializeObject(x)).Advanced.SampleExampleSpaces(seed: seed, iterations: iterations);
-            var actualSample = actual.Select(x => JsonConvert.SerializeObject(x)).Advanced.SampleExampleSpaces(seed: seed, iterations: iterations);
+            var expectedSample = expected.Select(x => JsonConvert.SerializeObject(x)).SampleNTraversals(iterations ?? 100, seed, 50);
+            var actualSample = actual.Select(x => JsonConvert.SerializeObject(x)).SampleNTraversals(iterations ?? 100, seed, 50);
 
             Assert.All(
                 Enumerable.Zip(expectedSample, actualSample),
                 (x) =>
                 {
-                    Assert.Equal(x.First.Sample(), x.Second.Sample());
+                    Assert.Equal(x.First.Take(10), x.Second.Take(10));
                 });
-        }
-
-        public static List<IExample<T>> Sample<T>(
-            this IExampleSpace<T> exampleSpace,
-            int maxExamples = 10)
-        {
-            static IEnumerable<IExample<T>> SampleRec(IExampleSpace<T> exampleSpace)
-            {
-                yield return exampleSpace.Current;
-
-                foreach (var subExampleSpace in exampleSpace.Subspace.SelectMany(es => SampleRec(es)))
-                {
-                    yield return subExampleSpace;
-                }
-            }
-
-            return SampleRec(exampleSpace).Take(maxExamples).ToList();
         }
 
         public static void Errors<T>(IGen<T> gen, int? seed = null, string? expectedMessage = null)

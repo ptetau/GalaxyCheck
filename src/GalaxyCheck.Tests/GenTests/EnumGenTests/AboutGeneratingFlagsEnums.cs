@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using GalaxyCheck;
 using NebulaCheck;
 using Snapshooter;
@@ -46,9 +46,7 @@ namespace Tests.V2.GenTests.EnumGenTests
             foreach (var seed in seeds)
             {
                 var sample = gen
-                    .Advanced.SampleOneExampleSpace(seed: seed, size: 75)
-                    .Take(500)
-                    .Render(x => x.ToString());
+                    .RenderOneTraversal(seed: seed, size: 75, x => x.ToString());
 
                 var nameExtension = string.Join("_", new[]
                 {

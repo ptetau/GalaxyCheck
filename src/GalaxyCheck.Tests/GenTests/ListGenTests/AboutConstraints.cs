@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using GalaxyCheck;
 using NebulaCheck;
 using System.Linq;
@@ -20,9 +20,9 @@ namespace Tests.V2.GenTests.ListGenTests
             {
                 var gen = elementGen.ListOf().WithCountGreaterThanEqual(minCount);
 
-                var exampleSpace = gen.Advanced.SampleOneExampleSpace(seed: seed, size: size);
+                var exampleSpace = gen.SampleOneTraversal(seed: seed, size: size);
 
-                exampleSpace.Traverse().Take(100).Should().OnlyContain(value => value.Count >= minCount);
+                exampleSpace.Take(100).Should().OnlyContain(value => value.Count >= minCount);
             });
 
         [Property]
@@ -35,9 +35,9 @@ namespace Tests.V2.GenTests.ListGenTests
             {
                 var gen = elementGen.ListOf().WithCountLessThanEqual(maxCount);
 
-                var exampleSpace = gen.Advanced.SampleOneExampleSpace(seed: seed, size: size);
+                var exampleSpace = gen.SampleOneTraversal(seed: seed, size: size);
 
-                exampleSpace.Traverse().Take(100).Should().OnlyContain(value => value.Count <= maxCount);
+                exampleSpace.Take(100).Should().OnlyContain(value => value.Count <= maxCount);
             });
 
         [Property]
@@ -50,9 +50,9 @@ namespace Tests.V2.GenTests.ListGenTests
             {
                 var gen = elementGen.ListOf().WithCount(count);
 
-                var exampleSpace = gen.Advanced.SampleOneExampleSpace(seed: seed, size: size);
+                var exampleSpace = gen.SampleOneTraversal(seed: seed, size: size);
 
-                exampleSpace.Traverse().Take(100).Should().OnlyContain(value => value.Count == count);
+                exampleSpace.Take(100).Should().OnlyContain(value => value.Count == count);
             });
     }
 }

@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using GalaxyCheck;
 using NebulaCheck;
 using System.Linq;
@@ -19,9 +19,9 @@ namespace Tests.V2.GenTests.Int64GenTests
             {
                 var gen = GalaxyCheck.Gen.Int64().GreaterThanEqual(min);
 
-                var exampleSpace = gen.Advanced.SampleOneExampleSpace(seed: seed, size: size);
+                var exampleSpace = gen.SampleOneTraversal(seed: seed, size: size);
 
-                exampleSpace.Traverse().Take(100).Should().OnlyContain(value => value >= min);
+                exampleSpace.Take(100).Should().OnlyContain(value => value >= min);
             });
 
         [Property]
@@ -33,9 +33,9 @@ namespace Tests.V2.GenTests.Int64GenTests
             {
                 var gen = GalaxyCheck.Gen.Int64().LessThanEqual(max);
 
-                var exampleSpace = gen.Advanced.SampleOneExampleSpace(seed: seed, size: size);
+                var exampleSpace = gen.SampleOneTraversal(seed: seed, size: size);
 
-                exampleSpace.Traverse().Take(100).Should().OnlyContain(value => value <= max);
+                exampleSpace.Take(100).Should().OnlyContain(value => value <= max);
             });
     }
 }

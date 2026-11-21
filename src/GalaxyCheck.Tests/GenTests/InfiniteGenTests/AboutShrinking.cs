@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using GalaxyCheck;
 using NebulaCheck;
 using System.Linq;
@@ -18,9 +18,9 @@ namespace Tests.V2.GenTests.InfiniteGenTests
             {
                 var gen = elementGen.InfiniteOf();
 
-                var sample = gen.Advanced.SampleOneExampleSpace(seed: seed, size: size);
+                var sample = gen.SampleOneTraversal(seed: seed, size: size);
 
-                sample.Traverse().Should().ContainSingle();
+                sample.Should().ContainSingle();
             });
 
         [Property]
@@ -36,9 +36,9 @@ namespace Tests.V2.GenTests.InfiniteGenTests
                     return enumerable;
                 });
 
-                var sample = gen.Advanced.SampleOneExampleSpace(seed: seed, size: size);
+                var sample = gen.SampleOneTraversal(seed: seed, size: size);
 
-                sample.Traverse().Should().HaveCount(2);
+                sample.Should().HaveCount(2);
             });
 
 
@@ -49,7 +49,7 @@ namespace Tests.V2.GenTests.InfiniteGenTests
             from size in DomainGen.Size()
             select Property.ForThese(() =>
             {
-                var elementMin = elementGen.Minimum(seed: SeedUtility.Fork(seed), size: size);
+                var elementMin = elementGen.Minimum(seed: seed, size: size);
 
                 var infiniteGen = elementGen.InfiniteOf().Select(enumerable =>
                 {

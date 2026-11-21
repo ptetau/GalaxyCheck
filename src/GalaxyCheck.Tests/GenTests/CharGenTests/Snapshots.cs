@@ -1,4 +1,4 @@
-﻿using GalaxyCheck;
+using GalaxyCheck;
 using Snapshooter;
 using Snapshooter.Xunit;
 using System.Linq;
@@ -35,9 +35,7 @@ namespace Tests.V2.GenTests.CharGenTests
             {
                 var sample = Gen.Char()
                     .Select(c => char.IsControl(c) ? "<control>" : c.ToString())
-                    .Advanced.SampleOneExampleSpace(seed: seed, size: 75)
-                    .Take(500)
-                    .Render(x => x);
+                    .RenderOneTraversal(seed: seed, size: 75, x => x);
 
                 var nameExtension = string.Join("_", new[]
                 {

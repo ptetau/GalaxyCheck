@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using GalaxyCheck.Runners.Check;
 
 namespace GalaxyCheck.Tests;
@@ -83,11 +83,7 @@ public static class TestProxy
             args = configure(args);
         }
 
-        return gen.Advanced
-            .SampleOneExampleSpace(seed: args.Seed, size: args.Size ?? 100)
-            .Traverse()
-            .Take(args.MaxSampleSize)
-            .ToList();
+        return gen.SampleOneTraversal(seed: args.Seed, size: args.Size ?? 100, maxCount: args.MaxSampleSize);
     }
 
     public static IReadOnlyCollection<T> Sample<T>(this IGen<T> gen, Func<SampleGenArgs, SampleGenArgs>? configure = null)

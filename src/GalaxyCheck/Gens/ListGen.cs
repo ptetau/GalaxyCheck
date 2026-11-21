@@ -1,4 +1,4 @@
-﻿namespace GalaxyCheck
+namespace GalaxyCheck
 {
     using GalaxyCheck.Gens;
     using GalaxyCheck.Gens.Internal;
@@ -64,15 +64,10 @@
 namespace GalaxyCheck.Gens
 {
     using GalaxyCheck.Gens.Internal;
-    using GalaxyCheck.Gens.Internal.Iterations;
-    using GalaxyCheck.Gens.Iterations.Generic;
     using GalaxyCheck.Gens.Parameters;
-    using GalaxyCheck.ExampleSpaces;
-    using GalaxyCheck.Internal;
     using System;
+    using System.Buffers;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
-    using System.Linq;
 
     public interface IListGen<T> : IGen<IReadOnlyList<T>>
     {
@@ -98,25 +93,14 @@ namespace GalaxyCheck.Gens
         IListGen<T> WithCountLessThanEqual(int maxCount);
 
         /// <summary>
-        /// Modifies how the generator biases counts of produced lists with respect to the size parameter.
+        /// Modifies how the generator biases the count of produced lists with respect to the size parameter.
         /// </summary>
-        /// <returns>A new generator with the biasing effect applied.</returns>
+        /// <param name="bias">The new bias.</param>
+        /// <returns>A new generator with the new bias applied.</returns>
         IListGen<T> WithCountBias(Gen.Bias bias);
 
         /// <summary>
-        /// <para>
-        /// By default, trying to generate a list with a count greater than 1000 is disabled. This is a built-in
-        /// safety mechanism to prevent confusing test failures or hangs. Huge lists can potentially blow out the
-        /// performance footprint of a test to unattainable levels, because the generation performance for lists is
-        /// O(n).
-        /// </para>
-        /// <para>
-        /// It's quite easy to accidentally create a list generator for huge lists. For example, the following code
-        /// might otherwise attempt to generate a list with count int.MaxValue:
-        /// <code>
-        /// Gen.Int32().GreaterThanEqual(0).SelectMany(count => Gen.Int32().ListOf().WithCount(count));
-        /// </code>
-        /// </para>
+        /// Disables the count limit. The count limit stops a list from having more than 1000 elements.
         /// </summary>
         /// <returns>A new generator with the limit disabled.</returns>
         IListGen<T> DisableCountLimitUnsafe();
@@ -126,7 +110,7 @@ namespace GalaxyCheck.Gens
         IGen<T> ElementGen,
         RangeIntention Count,
         Gen.Bias? Bias,
-        bool? EnableCountLimit) : GenProvider<IReadOnlyList<T>>, IListGen<T>
+        bool? EnableCountLimit) : BaseGen<IReadOnlyList<T>>, IListGen<T>
     {
         public IListGen<T> WithCount(int count) =>
             this with { Count = RangeIntention.Exact(count) };
@@ -141,173 +125,119 @@ namespace GalaxyCheck.Gens
 
         public IListGen<T> DisableCountLimitUnsafe() => this with { EnableCountLimit = false };
 
-        protected override IGen<IReadOnlyList<T>> Get => TryGetCountRange(Count).Match(
-            fromLeft: range => GenList( ElementGen, range, Bias ?? Gen.Bias.WithSize, EnableCountLimit ?? true),
-            fromRight: gen => gen);
-
-        private static IGen<IReadOnlyList<T>> GenList(
-            IGen<T> elementGen,
-            (int minCount, int maxCount) range,
-            Gen.Bias bias,
-            bool enableCountLimit)
+        public override IReadOnlyList<T> Generate(GenSource source)
         {
-            var (minCount, maxCount) = range;
-
-            if (enableCountLimit && (minCount > 1000 || maxCount > 1000))
-            {
-                return CountLimitError();
-            }
-
-            var shrink = ShrinkTowardsCount(minCount);
-            var measureCount = MeasureFunc.DistanceFromOrigin(minCount, minCount, maxCount);
-            return
-                from count in GenCount(minCount, maxCount, bias)
-                from list in GenListOfCount(elementGen, count, shrink, measureCount)
-                select list;
+            var (minCount, maxCount) = CountRange.Resolve(Count, EnableCountLimit ?? true);
+            return Collections.GenerateList(source, ElementGen.Advanced, minCount, maxCount, Bias ?? Gen.Bias.WithSize);
         }
+    }
 
-        private static IGen<int> GenCount(int minCount, int maxCount, Gen.Bias bias) =>
-            Gen.Int32().GreaterThanEqual(minCount).LessThanEqual(maxCount).WithBias(bias).NoShrink();
+    internal static class CountRange
+    {
+        public const int CountLimit = 1000;
 
-        private static IGen<IReadOnlyList<T>> GenListOfCount(
-            IGen<T> elementGen,
-            int count,
-            ShrinkFunc<IReadOnlyCollection<IExampleSpace<T>>> shrink,
-            MeasureFunc<int> measureCount)
+        public static (int minCount, int maxCount) Resolve(RangeIntention count, bool enableCountLimit)
         {
-            if (count == 0)
-            {
-                // TODO: Assumes measureCount returns 0 (it probably does...)
-                return Gen.Constant(new List<T>());
-            }
-            else
-            {
-                return GenNonEmptyListOfCount(elementGen, count, shrink, measureCount);
-            }
-        }
-
-        private static IGen<IReadOnlyList<T>> GenNonEmptyListOfCount(
-            IGen<T> elementGen,
-            int count,
-            ShrinkFunc<IReadOnlyCollection<IExampleSpace<T>>> shrink,
-            MeasureFunc<int> measureCount)
-        {
-            IEnumerable<IGenIteration<IReadOnlyList<T>>> Run(GenParameters parameters)
-            {
-                var instances = new List<IGenInstance<T>>(count);
-
-                var elementIterationEnumerator = elementGen.Advanced.Run(parameters).GetEnumerator();
-
-                while (instances.Count < count)
+            var (minCount, maxCount) = count.Match(
+                onUnspecified: () => (0, 20),
+                onExact: exact =>
                 {
-                    if (!elementIterationEnumerator.MoveNext())
+                    if (exact < 0) throw new GenErrorSignal("'count' cannot be negative");
+                    return (exact, exact);
+                },
+                onBounded: (min, max) =>
+                {
+                    var resolvedMin = min ?? 0;
+                    var resolvedMax = max ?? (resolvedMin > int.MaxValue - 20 ? int.MaxValue : resolvedMin + 20);
+
+                    if (resolvedMin < 0) throw new GenErrorSignal("'minCount' cannot be negative");
+                    if (resolvedMax < 0) throw new GenErrorSignal("'maxCount' cannot be negative");
+                    if (resolvedMin > resolvedMax) throw new GenErrorSignal("'minCount' cannot be greater than 'maxCount'");
+
+                    return (resolvedMin, resolvedMax);
+                });
+
+            if (enableCountLimit && (minCount > CountLimit || maxCount > CountLimit))
+            {
+                throw new GenErrorSignal($"Count limit exceeded. This is a built-in safety mechanism to prevent hanging tests. If generating a list with over 1000 elements was intended, relax this constraint by calling {nameof(IListGen<object>)}.{nameof(IListGen<object>.DisableCountLimitUnsafe)}().");
+            }
+
+            return (minCount, maxCount);
+        }
+    }
+
+    internal static class Collections
+    {
+        /// <summary>
+        /// Generates the elements of a collection. Before each element above the minimum count, a choice of 1 means
+        /// "one more element" and a choice of 0 means "stop". Each element and its choice is a span, so the shrinker
+        /// can delete it.
+        /// </summary>
+        public static List<T> GenerateList<T>(GenSource source, IGenAdvanced<T> elementGen, int minCount, int maxCount, Gen.Bias bias)
+        {
+            if (!source.IsReplaying)
+            {
+                var count = IntCore.RandomInt32(source, minCount, maxCount, bias);
+                var list = new List<T>(count);
+                for (var i = 0; i < count; i++)
+                {
+                    var start = source.BeginSpan();
+                    if (i >= minCount)
                     {
-                        throw new Exception("Fatal: Element generator exhausted");
+                        source.Record(1);
                     }
 
-                    var either = elementIterationEnumerator.Current.ToEither<T, IReadOnlyList<T>>();
-
-                    if (either.IsLeft(out IGenInstance<T> instance))
-                    {
-                        instances.Add(instance);
-                    }
-                    else if (either.IsRight(out IGenIteration<IReadOnlyList<T>> right))
-                    {
-                        yield return right;
-                    }
-                    else
-                    {
-                        throw new Exception("Fatal: Unhandled branch");
-                    }
+                    list.Add(elementGen.Generate(source));
+                    source.EndSpan(start);
                 }
 
-                var nextParameters = instances[count - 1].NextParameters;
+                if (count < maxCount)
+                {
+                    source.Record(0);
+                }
 
-                var exampleSpace = ExampleSpaceFactory
-                    .Merge(
-                        instances.Select(instance => instance.ExampleSpace).ToList(),
-                        shrink,
-                        exampleSpaces => exampleSpaces.Sum(exs => exs.Current.Distance) + measureCount(exampleSpaces.Count),
-                        enableSmallestExampleSpacesOptimization: true,
-                        enableUniqueIds: true)
-                    .Map(ex => ex.ToList());
-
-                yield return GenIterationFactory.Instance(parameters, nextParameters, exampleSpace);
+                return list;
             }
 
-            return new FunctionalGen<IReadOnlyList<T>>(Run).Repeat();
-        }
-
-        private static ShrinkFunc<IReadOnlyCollection<IExampleSpace<T>>> ShrinkTowardsCount(int count)
-        {
-            // If the value type is a collection, that is, this generator is building a "collection of collections",
-            // it is "less complex" to order the inner collections by descending count. It also lets us find the
-            // minimal shrink a lot more efficiently in some examples,
-            // e.g. https://github.com/jlink/shrinking-challenge/blob/main/challenges/large_union_list.md
-
-            return ShrinkFunc.TowardsCountOptimized<IExampleSpace<T>, decimal>(count, exampleSpace =>
-            {
-                return -exampleSpace.Current.Distance;
-            });
-        }
-
-        private static Either<(int minCount, int maxCount), IGen<IReadOnlyList<T>>> TryGetCountRange(RangeIntention count)
-        {
-            Either<(int minCount, int maxCount), IGen<IReadOnlyList<T>>> CountError(string message) =>
-                new Right<(int minCount, int maxCount), IGen<IReadOnlyList<T>>>(Error(message));
-
-            Either<(int minCount, int maxCount), IGen<IReadOnlyList<T>>> FromUnspecified() => (0, 20);
-
-            Either<(int minCount, int maxCount), IGen<IReadOnlyList<T>>> FromExact(int count) =>
-                count < 0 ? CountError("'count' cannot be negative") : (count, count);
-
-            Either<(int minCount, int maxCount), IGen<IReadOnlyList<T>>> FromBounded(int? minCount, int? maxCount)
-            {
-                var resolvedMinCount = minCount ?? 0;
-                var resolvedMaxCount = maxCount ?? InferMaxCount(resolvedMinCount);
-
-                if (resolvedMinCount < 0)
-                {
-                    return CountError("'minCount' cannot be negative");
-                }
-
-                if (resolvedMaxCount < 0)
-                {
-                    return CountError("'maxCount' cannot be negative");
-                }
-
-                if (resolvedMinCount > resolvedMaxCount)
-                {
-                    return CountError("'minCount' cannot be greater than 'maxCount'");
-                }
-
-                return (resolvedMinCount, resolvedMaxCount);
-            }
-
-            return count.Match(
-                onUnspecified: () => FromUnspecified(),
-                onExact: count => FromExact(count),
-                onBounded: (minCount, maxCount) => FromBounded(minCount, maxCount));
-        }
-
-        private static int InferMaxCount(int minCount)
-        {
+            var pool = ArrayPool<T>.Shared;
+            var buffer = pool.Rent(Math.Min(Math.Max(minCount, 16), 1024));
+            var length = 0;
             try
             {
-                checked
+                while (length < maxCount)
                 {
-                    return minCount + 20;
+                    var start = source.BeginSpan();
+                    if (length >= minCount && source.Read(1) == 0)
+                    {
+                        break;
+                    }
+
+                    var element = elementGen.Generate(source);
+                    source.EndSpan(start);
+
+                    if (length == buffer.Length)
+                    {
+                        var bigger = pool.Rent(buffer.Length * 2);
+                        Array.Copy(buffer, bigger, length);
+                        pool.Return(buffer, clearArray: true);
+                        buffer = bigger;
+                    }
+
+                    buffer[length++] = element;
                 }
+
+                var result = new List<T>(length);
+                for (var i = 0; i < length; i++)
+                {
+                    result.Add(buffer[i]);
+                }
+
+                return result;
             }
-            catch (OverflowException)
+            finally
             {
-                return int.MaxValue;
+                pool.Return(buffer, clearArray: true);
             }
         }
-
-        private static IGen<IReadOnlyList<T>> Error(string message) => Gen.Advanced.Error<IReadOnlyList<T>>(message);
-
-        private static IGen<IReadOnlyList<T>> CountLimitError() =>
-            Error($"Count limit exceeded. This is a built-in safety mechanism to prevent hanging tests. If generating a list with over 1000 elements was intended, relax this constraint by calling {nameof(IListGen<T>)}.{nameof(IListGen<T>.DisableCountLimitUnsafe)}().");
     }
 }

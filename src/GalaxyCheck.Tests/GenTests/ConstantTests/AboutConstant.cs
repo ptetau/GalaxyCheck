@@ -1,6 +1,5 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using GalaxyCheck;
-using GalaxyCheck.ExampleSpaces;
 using NebulaCheck;
 using System.Linq;
 using Property = NebulaCheck.Property;
@@ -19,15 +18,11 @@ namespace Tests.V2.GenTests.ConstantTests
             {
                 var gen = GalaxyCheck.Gen.Constant(value);
 
-                var traversal = gen.Advanced
-                    .SampleOneExampleSpace(seed: seed, size: size)
-                    .TraverseExamples()
-                    .Take(100)
-                    .ToList();
+                var traversal = gen.SampleOneTraversal(seed: seed, size: size);
 
                 traversal
                     .Should().ContainSingle()
-                    .Subject.Should().BeEquivalentTo(new Example<object>(ExampleId.Empty, value, 0));
+                    .Subject.Should().Be(value);
             });
 
         [Property]

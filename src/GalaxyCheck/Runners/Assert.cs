@@ -1,4 +1,4 @@
-﻿using GalaxyCheck.Runners;
+using GalaxyCheck.Runners;
 using GalaxyCheck.Runners.Check;
 using System;
 using System.Collections.Generic;
@@ -65,11 +65,8 @@ namespace GalaxyCheck
         {
             var value = (object)counterexample.Value!;
             return new Counterexample<object?>(
-                counterexample.Id,
                 value,
-                counterexample.Distance,
                 counterexample.ReplayParameters,
-                counterexample.ReplayPath,
                 counterexample.Replay,
                 counterexample.Exception,
                 counterexample.PresentedInput);

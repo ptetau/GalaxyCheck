@@ -28,9 +28,16 @@ namespace GalaxyCheck.Benchmarks
                 return 0;
             }
 
-            if (Array.IndexOf(args, "--gate") >= 0)
+            var gateIndex = Array.IndexOf(args, "--gate");
+            if (gateIndex >= 0)
             {
-                throw new NotImplementedException("not implemented");
+                if (gateIndex + 1 >= args.Length)
+                {
+                    Console.Error.WriteLine("usage: --gate <path>");
+                    return 2;
+                }
+
+                return PerformanceGate.Run(args[gateIndex + 1], Console.Out);
             }
 
             BenchmarkRunner.Run<RngBenchmark>();

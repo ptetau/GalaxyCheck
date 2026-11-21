@@ -1,163 +1,52 @@
-﻿using GalaxyCheck.Gens.Internal;
-using GalaxyCheck.Gens.Internal.Iterations;
-using GalaxyCheck.Gens.Iterations.Generic;
+using GalaxyCheck.Gens.Internal;
 using GalaxyCheck.Gens.Parameters;
-using GalaxyCheck.ExampleSpaces;
-using GalaxyCheck.Internal;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace GalaxyCheck
 {
     public static partial class Extensions
     {
         /// <summary>
-        /// Projects each value of a generator to a new generator by the given selector. Subspaces of the source
-        /// generator and the projected generator are combined through a cross-product.
+        /// Projects each value of a generator to a new generator by the given selector. The choices of the source
+        /// generator come before the choices of the projected generator, so that both shrink together.
         /// </summary>
-        /// <typeparam name="T">The type of the generator's value.</typeparam>
+        /// <typeparam name="T">The type of the source generator's value.</typeparam>
         /// <typeparam name="TResult">The type of the projected generator's value.</typeparam>
-        /// <param name="gen">The generator to apply the projection to.</param>
-        /// <param name="selector">A projection function to apply to each value.</param>
+        /// <param name="gen">The source generator.</param>
+        /// <param name="selector">A function that returns a generator for each value of the source.</param>
         /// <returns>A new generator with the projection applied.</returns>
-        public static IGen<TResult> SelectMany<T, TResult>(this IGen<T> gen, Func<T, IGen<TResult>> selector)
-        {
-            static IEnumerable<IExampleSpace<TResult>> BindSubspace(
-                IExampleSpace<T> leftExampleSpace,
-                Func<T, IGen<TResult>> selector,
-                GenParameters parameters)
-            {
-                var stream = BindExampleSpace(leftExampleSpace, selector, parameters);
+        public static IGen<TResult> SelectMany<T, TResult>(this IGen<T> gen, Func<T, IGen<TResult>> selector) =>
+            new SelectManyGen<T, TResult>(gen, selector);
 
-                foreach (var iteration in stream)
-                {
-                    if (iteration.ToEither<TResult, TResult>().IsLeft(out IGenInstance<TResult> instance))
-                    {
-                        yield return instance.ExampleSpace;
-                    }
-                }
-            }
-
-            static IExampleSpace<TResult> JoinExampleSpaces(
-                IExampleSpace<T> leftExampleSpace,
-                IExampleSpace<TResult> rightExampleSpace,
-                Func<T, IGen<TResult>> selector,
-                GenParameters parameters)
-            {
-                var jointExampleSpace = rightExampleSpace.MapExamples(example => new Example<TResult>(
-                    ExampleId.Combine(leftExampleSpace.Current.Id, example.Id),
-                    example.Value,
-                    leftExampleSpace.Current.Distance + example.Distance));
-
-                var boundLeftSubspace = leftExampleSpace.Subspace.SelectMany(leftExampleSubspace =>
-                    BindSubspace(leftExampleSubspace, selector, parameters));
-
-                return ExampleSpaceFactory.Create(
-                    jointExampleSpace.Current,
-                    Enumerable.Concat(boundLeftSubspace, rightExampleSpace.Subspace));
-            }
-
-            static IEnumerable<IGenIteration<TResult>> BindExampleSpace(
-                IExampleSpace<T> exampleSpace,
-                Func<T, IGen<TResult>> selector,
-                GenParameters parameters)
-            {
-                return selector(exampleSpace.Current.Value).Advanced
-                    .Run(parameters)
-                    .TakeWhileInclusive(iteration => !iteration.IsInstance())
-                    .Select(iteration =>
-                    {
-                        return iteration.Match(
-                            onInstance: instance =>
-                            {
-                                var jointExampleSpace = JoinExampleSpaces(
-                                    exampleSpace,
-                                    instance.ExampleSpace,
-                                    selector,
-                                    parameters);
-
-                                return GenIterationFactory.Instance(
-                                    iteration.ReplayParameters,
-                                    instance.NextParameters,
-                                    jointExampleSpace);
-                            },
-                            onError: error => error,
-                            onDiscard: discard => discard);
-                    });
-            };
-
-            static IEnumerable<IGenIteration<TResult>> Run(
-                IGen<T> gen,
-                Func<T, IGen<TResult>> selector,
-                GenParameters parameters)
-            {
-                var stream = gen.Advanced.Run(parameters);
-
-                foreach (var iteration in stream)
-                {
-                    var either = iteration.ToEither<T, TResult>();
-
-                    if (either.IsLeft(out IGenInstance<T> instance))
-                    {
-                        var innerStream = BindExampleSpace(
-                            instance.ExampleSpace,
-                            selector,
-                            instance.ReplayParameters with { Rng = instance.NextParameters.Rng });
-
-                        foreach (var innerIteration in innerStream)
-                        {
-                            yield return innerIteration.Match(
-                                onInstance: innerInstance => GenIterationFactory.Instance(
-                                    iteration.ReplayParameters,
-                                    innerInstance.NextParameters,
-                                    innerInstance.ExampleSpace),
-                                onError: innerError => GenIterationFactory.Error<TResult>(
-                                    iteration.ReplayParameters,
-                                    innerError.Message),
-                                onDiscard: innerDiscard => GenIterationFactory.Discard<TResult>(
-                                    iteration.ReplayParameters,
-                                    innerDiscard.NextParameters,
-                                    innerDiscard.ExampleSpace));
-                        }
-
-                        break;
-                    }
-                    else if (either.IsRight(out IGenIteration<TResult> nonInstance))
-                    {
-                        yield return nonInstance;
-                    }
-                    else
-                    {
-                        throw new Exception("Fatal: Unhandled branch");
-                    }
-                }
-            }
-
-            return new FunctionalGen<TResult>((parameters) => Run(gen, selector, parameters)).Repeat();
-        }
-
-        /// <summary>
-        /// Projects each value of a generator to a new generator by the given selector. Subspaces of the source
-        /// generator and the projected generator are combined through a cross-product.
-        /// </summary>
-        /// <typeparam name="T">The type of the generator's value.</typeparam>
-        /// <typeparam name="TResult">The type of the projected generator's value.</typeparam>
-        /// <param name="gen">The generator to apply the projection to.</param>
-        /// <param name="genSelector">A projection function to apply to each value.</param>
-        /// <param name="valueSelector">A second projection function to apply.</param>
-        /// <returns>A new generator with the projection applied.</returns>
         public static IGen<TResult> SelectMany<T, TResultGen, TResult>(
             this IGen<T> gen,
             Func<T, IGen<TResultGen>> genSelector,
-            Func<T, TResultGen, TResult> valueSelector) => gen
-                .SelectMany(x => genSelector(x).Select(y =>
-                {
-                    // Intentionally wrap the left and right values with a symbol, so that we are able to observe the
-                    // two values when we need to check the history. You could directly invoke the valueSelector here,
-                    // but that would mean that x only appears in scope, and is not written to history.
-                    return new { left = x, right = y };
-                }))
-                .Select(x => valueSelector(x.left, x.right));
+            Func<T, TResultGen, TResult> valueSelector) =>
+                new SelectManyGen<T, TResultGen, TResult>(gen, genSelector, valueSelector);
+    }
+}
+
+namespace GalaxyCheck.Gens.Internal
+{
+    internal sealed record SelectManyGen<T, TResult>(IGen<T> Source, Func<T, IGen<TResult>> Selector) : BaseGen<TResult>
+    {
+        public override TResult Generate(GenSource source)
+        {
+            var value = Source.Advanced.Generate(source);
+            return Selector(value).Advanced.Generate(source);
+        }
+    }
+
+    internal sealed record SelectManyGen<T, TResultGen, TResult>(
+        IGen<T> Source,
+        Func<T, IGen<TResultGen>> GenSelector,
+        Func<T, TResultGen, TResult> ValueSelector) : BaseGen<TResult>
+    {
+        public override TResult Generate(GenSource source)
+        {
+            var value = Source.Advanced.Generate(source);
+            var other = GenSelector(value).Advanced.Generate(source);
+            return ValueSelector(value, other);
+        }
     }
 }

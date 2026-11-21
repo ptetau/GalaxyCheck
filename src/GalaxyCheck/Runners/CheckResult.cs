@@ -1,6 +1,5 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using GalaxyCheck.ExampleSpaces;
 using GalaxyCheck.Gens.Parameters;
 
 namespace GalaxyCheck.Runners.Check
@@ -35,25 +34,22 @@ namespace GalaxyCheck.Runners.Check
             return true;
         }
 
-        public int RandomnessConsumption => NextParameters.Rng.Order - InitialParameters.Rng.Order;
+        /// <summary>The number of choices that the generators made.</summary>
+        public int RandomnessConsumption { get; init; }
     }
 
     public record CheckIteration<T>(
         IReadOnlyList<object?> PresentedInput,
-        IExampleSpace<T> ExampleSpace,
+        T Value,
         GenParameters Parameters,
-        IEnumerable<int> Path,
         Exception? Exception)
     {
         public bool IsCounterexample => Exception != null;
     }
 
     public record Counterexample<T>(
-        ExampleId Id,
         T Value,
-        decimal Distance,
         GenParameters ReplayParameters,
-        IEnumerable<int> ReplayPath,
         string Replay,
         Exception? Exception,
         IReadOnlyList<object?> PresentedInput);

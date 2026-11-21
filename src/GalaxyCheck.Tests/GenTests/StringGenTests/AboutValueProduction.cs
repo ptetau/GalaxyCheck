@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using GalaxyCheck;
 using NebulaCheck;
 using System.Linq;
@@ -118,9 +118,7 @@ namespace Tests.V2.GenTests.StringGenTests
                 sample0.Should().BeEquivalentTo(sample1);
             });
 
-        private static List<string> SampleTraversal(GalaxyCheck.IGen<string> gen, int seed, int size) => gen.Advanced
-            .SampleOneExampleSpace(seed: seed, size: size)
-            .Traverse()
+        private static List<string> SampleTraversal(GalaxyCheck.IGen<string> gen, int seed, int size) => gen.SampleOneTraversal(seed: seed, size: size)
             .Take(100)
             .ToList();
     }

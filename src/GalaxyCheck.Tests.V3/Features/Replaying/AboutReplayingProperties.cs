@@ -1,4 +1,4 @@
-﻿using GalaxyCheck.Runners.Replaying;
+using GalaxyCheck.Runners.Replaying;
 
 namespace GalaxyCheck.Tests.Features.Replaying;
 
@@ -47,7 +47,7 @@ public class AboutReplaying
         static void Test(Replay replay, Property property)
         {
             // Act
-            Action test = () => property.Check(args => args with { Replay = ReplayEncoding.Encode(replay) });
+            Action test = () => property.Check(args => args with { Replay = ReplayEncoding.Encode(replay.Seed, replay.Size, replay.Choices, replay.Choices.Length) });
 
             // Assert
             test.Should()
@@ -64,7 +64,7 @@ public class AboutReplaying
         static void Test(Replay replay, Property property)
         {
             // Act
-            Action test = () => property.Check(args => args with { Replay = ReplayEncoding.Encode(replay) });
+            Action test = () => property.Check(args => args with { Replay = ReplayEncoding.Encode(replay.Seed, replay.Size, replay.Choices, replay.Choices.Length) });
 
             // Assert
             test.Should()

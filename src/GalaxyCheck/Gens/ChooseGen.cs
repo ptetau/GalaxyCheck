@@ -1,4 +1,4 @@
-﻿namespace GalaxyCheck
+namespace GalaxyCheck
 {
     using GalaxyCheck.Gens;
     using System.Linq;
@@ -50,23 +50,13 @@
 
 namespace GalaxyCheck.Gens
 {
-    using GalaxyCheck.ExampleSpaces;
     using GalaxyCheck.Gens.Internal;
-    using System;
-    using System.Collections.Generic;
+    using GalaxyCheck.Gens.Parameters;
     using System.Collections.Immutable;
     using System.Linq;
 
     public interface IChooseGen<T> : IGen<T>
     {
-        /// <summary>
-        /// Adds a source generator as a new alternative for this <see cref="IChooseGen{T}"/>, with a probablity
-        /// defined by the given weight.
-        /// </summary>
-        /// <param name="gen">The source generator to add as an alternative.</param>
-        /// <param name="weight">The weight that the source generator should be selected. If the weights of all source
-        /// generators are the same, then they are equiprobable.</param>
-        /// <returns>A new alternative generator with the alternative added.</returns>
         IChooseGen<T> WithChoice(IGen<T> gen, int weight);
     }
 
@@ -100,27 +90,50 @@ namespace GalaxyCheck.Gens
                 return Gen.Advanced.Error<T>("'choices' must contain at least one generator with a weight greater than zero");
             }
 
-            var weightedIndices = new WeightedList<int>(choices.Select((c, i) => new WeightedElement<int>(c.Weight, i)));
+            if (choices.Count == 1)
+            {
+                return choices[0].Gen;
+            }
 
-            return GenIndexWeighted(weightedIndices)
-                .Select(LookupUnweightedIndex(weightedIndices))
-                .Unfold(unweightedIndex => UnfoldUnweightedIndex(choices.Count, unweightedIndex))
-                .SelectMany(unweightedIndex => choices[unweightedIndex].Gen);
+            return new WeightedChoiceGen<T>(
+                choices.Select(c => c.Gen.Advanced).ToArray(),
+                choices.Select(c => c.Weight).ToArray());
         }
+    }
 
-        private static IGen<int> GenIndexWeighted(IReadOnlyList<int> weightedIndices)
+    /// <summary>
+    /// Picks one generator by weight. The choice is the index of the generator, so a value shrinks towards the
+    /// value of the first generator.
+    /// </summary>
+    internal sealed record WeightedChoiceGen<T>(IGenAdvanced<T>[] Gens, int[] Weights) : BaseGen<T>
+    {
+        private readonly long _totalWeight = Weights.Sum(w => (long)w);
+
+        public override T Generate(GenSource source)
         {
-            return Gen
-                .Int32()
-                .Between(0, weightedIndices.Count - 1)
-                .WithBias(Gen.Bias.None)
-                .NoShrink();
+            int index;
+            if (source.IsReplaying)
+            {
+                index = (int)source.Read((ulong)(Gens.Length - 1));
+                while (Weights[index] == 0)
+                {
+                    index = (index + 1) % Gens.Length;
+                }
+            }
+            else
+            {
+                var pick = (long)source.NextBounded((ulong)(_totalWeight - 1));
+                index = 0;
+                while (pick >= Weights[index])
+                {
+                    pick -= Weights[index];
+                    index++;
+                }
+
+                source.Record((ulong)index);
+            }
+
+            return Gens[index].Generate(source);
         }
-
-        private static Func<int, int> LookupUnweightedIndex(IReadOnlyList<int> weightedIndices) =>
-            (weightedIndex) => weightedIndices[weightedIndex];
-
-        private static IExampleSpace<int> UnfoldUnweightedIndex(int unweightedCount, int unweightedIndex) =>
-            ExampleSpaceFactory.Int32(unweightedIndex, 0, 0, unweightedCount - 1);
     }
 }
