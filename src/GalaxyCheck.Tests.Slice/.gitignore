@@ -1,0 +1,5 @@
+# Files that the tests write when they run
+samples/**/*.run/
+samples/**/.galaxycheck/
+samples/**/__snapshots__/__mismatch__/
+*.trx

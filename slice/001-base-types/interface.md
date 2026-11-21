@@ -176,7 +176,7 @@ The stubs fail with `System.NotImplementedException`. The message holds "not imp
 
 - Uses: `Label`, `Cover`, `CheckResult<T>.Labels`, `CheckResult<T>.Report`, `Assert`; `Check` with `exhaustive`, `CheckResult<T>.Exhaustive`, `CheckResult<T>.Report`; `HealthCheck`, `HealthCheckException`, `Check` with `suppressHealthChecks`; `CSharpExpression.TryFormat`, the message of `Assert`; `Check` and `Assert` with `timeout`, `Property.ForAllAsync` with a token, `[Property(TimeoutMilliseconds = ...)]` of GalaxyCheck.Xunit
 - Stubs: `src/GalaxyCheck/Properties/Labels.cs`, `src/GalaxyCheck/Runners/CheckOptions.cs`, `src/GalaxyCheck/Runners/CSharpExpression.cs`, `src/GalaxyCheck.Xunit/PropertyAttribute.cs`
-- Changed: R39, R55, R56
+- Changed: R39, R40, R55, R56
 
 ## S7
 

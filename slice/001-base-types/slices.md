@@ -13,7 +13,7 @@
   - Given the report, when a test reads a case, then the case holds the ratio of current to baseline for throughput and for allocation, and the baseline names commit f127a67. (R47)
 - Layers: build, packaging, ci, benchmarks
 - Tier: standard
-- Status: planned
+- Status: red
 - Test rounds: 0
 - Review rounds: 0
 
@@ -37,7 +37,7 @@
   - Given each C# code block of README.md, when a test compiles and runs it against the current library, then it compiles with no change and runs. (R51)
 - Layers: generator core, runner, collection generators, automatic generator, shrinking, benchmarks, tests, docs
 - Tier: hard
-- Status: planned
+- Status: red
 - Test rounds: 0
 - Review rounds: 0
 
@@ -74,7 +74,7 @@
   - Given `Gen.Complex()` with the option that removes the special values, when it samples 10000 values, then the real part and the imaginary part of each value are finite. (R13)
 - Layers: generator api, generator core
 - Tier: hard
-- Status: planned
+- Status: red
 - Test rounds: 0
 - Review rounds: 0
 
@@ -113,7 +113,7 @@
   - Given a C# union of `Cat`, `Dog`, and `Bird` on net11.0, when `Gen.Create<T>()` samples 100 values, then each of the three cases appears. (R33)
 - Layers: generator api, generator core, collection generators, automatic generator, xunit v2 package, build, runner
 - Tier: standard
-- Status: planned
+- Status: red
 - Test rounds: 0
 - Review rounds: 0
 
@@ -137,7 +137,7 @@
   - Given a class `Node` with a property of type `List<Node>`, when `Gen.Create<Node>()` samples 100 values, then the run ends and no value is deeper than the limit. (R54)
 - Layers: generator api, string generators, automatic generator, data
 - Tier: hard
-- Status: planned
+- Status: red
 - Test rounds: 0
 - Review rounds: 0
 
@@ -167,7 +167,7 @@
   - Given that property with a time limit of 100 milliseconds and a test function that waits on the token, when the limit passes, then the token is cancelled. (R41)
 - Layers: property api, runner, report, xunit v2 package
 - Tier: standard
-- Status: planned
+- Status: red
 - Test rounds: 0
 - Review rounds: 0
 
@@ -185,7 +185,7 @@
   - Given that failure, when a test reads the report, then the report lists the 4 commands in order with the inputs of each, and names the fourth command as the command that failed. (R45)
 - Layers: stateful api, generator core, runner, shrinking, report
 - Tier: hard
-- Status: planned
+- Status: red
 - Test rounds: 0
 - Review rounds: 0
 
@@ -220,7 +220,7 @@
   - Given a global configuration with default iterations of 7, when a `[Property]` with no iterations option runs, then the test function runs 7 times. (R29)
 - Layers: xunit v3 package, shared framework core, packaging, tunit package
 - Tier: hard
-- Status: planned
+- Status: red
 - Test rounds: 0
 - Review rounds: 0
 
@@ -262,7 +262,7 @@
   - Given a property of an int with `[Example("a")]`, when the project runs, then the result is one failed test whose message names the parameter. (R52)
 - Layers: nunit package, shared framework core, packaging, mstest package, each framework package, store
 - Tier: standard
-- Status: planned
+- Status: red
 - Test rounds: 0
 - Review rounds: 0
 
@@ -278,7 +278,7 @@
   - Given a public generator method with no entry, when the test runs, then it fails and its message names the method. (R60)
 - Layers: source generator, automatic generator, packaging, docs, tests
 - Tier: hard
-- Status: planned
+- Status: red
 - Test rounds: 0
 - Review rounds: 0
 
@@ -298,6 +298,6 @@
   - Given `GALAXYCHECK_SEED=7` and a property with no seed option, when it runs, then its values are those of seed 7, and a property with the seed option 3 gives the values of seed 3. (R66)
 - Layers: report, runner, each framework package, docs, packaging
 - Tier: standard
-- Status: planned
+- Status: red
 - Test rounds: 0
 - Review rounds: 0
