@@ -2,14 +2,14 @@ namespace GalaxyCheck.Tests.Features.Generators.Reflection.ObjectGraph;
 
 public class AboutErrorReproduction
 {
-    [Stable.Property]
+    [Property]
     [InlineData(typeof(ExampleObjects.UnconstructableClass), "")]
     [InlineData(typeof(ClassWithNestedUnconstructableClass), " at path '$.Property'")]
     [InlineData(typeof(ClassWithNestedNullableUnconstructableClass), " at path '$.Property'")]
     [InlineData(typeof(List<ExampleObjects.UnconstructableClass>), " at path '$.[*]'")]
-    public Stable.Property WhenTypeIsUnresolvable(Type type, string expectedPathDescription)
+    public Property WhenTypeIsUnresolvable(Type type, string expectedPathDescription)
     {
-        return Stable.Property.ForAll(DomainGen.Seed(), seed =>
+        return Property.ForAll(DomainGen.Seed(), seed =>
         {
             // Arrange
             var gen = Gen.Create(type);

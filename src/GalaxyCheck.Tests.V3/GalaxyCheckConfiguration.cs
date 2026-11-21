@@ -1,4 +1,4 @@
-﻿using GalaxyCheck.Stable.Configuration;
+﻿using GalaxyCheck.Configuration;
 
 namespace GalaxyCheck.Tests;
 

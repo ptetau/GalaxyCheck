@@ -4,10 +4,10 @@ namespace GalaxyCheck.Tests.Features.Replaying;
 
 public class AboutReplayEncoding
 {
-    [Stable.Property]
-    public Stable.Property EncodeDecodeRoundtrip()
+    [Property]
+    public Property EncodeDecodeRoundtrip()
     {
-        return Stable.Property.ForAll(DomainGen.Seed(), DomainGen.Size(), FeatureGen.ShrinkPath(), Test);
+        return Property.ForAll(DomainGen.Seed(), DomainGen.Size(), FeatureGen.ShrinkPath(), Test);
 
         static void Test(int seed, int size, IReadOnlyList<int> choices)
         {
