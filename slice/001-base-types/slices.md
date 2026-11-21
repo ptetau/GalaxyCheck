@@ -13,9 +13,9 @@
   - Given the report, when a test reads a case, then the case holds the ratio of current to baseline for throughput and for allocation, and the baseline names commit f127a67. (R47)
 - Layers: build, packaging, ci, benchmarks
 - Tier: standard
-- Status: building
+- Status: done
 - Test rounds: 2
-- Review rounds: 1
+- Review rounds: 2
 
 ## S2: A core that is 100 times faster
 
