@@ -41,10 +41,10 @@
 - Test rounds: 0
 - Review rounds: 0
 
-## S3: Integer generators
+## S3: Number generators
 
-- Story: As a user, I generate each integer type, up to BigInteger, with the options of `Gen.Int32()`, so that I do not cast by hand.
-- Requirements: R1 (integers), R2 (integer options), R3 (integer shrinking), R4 (BigInteger)
+- Story: As a user, I generate each integer, floating-point, decimal, complex, and Rune value, with special values by default, so that my property meets the values that break code.
+- Requirements: R1 (integers), R2 (integer options), R3 (integer shrinking), R4 (BigInteger), R5 (binary floats), R6 (float options), R7 (float special values), R8 (special value opt-out), R9 (float shrinking), R10 (decimal), R12 (Rune), R13 (Complex)
 - Acceptance:
   - Given `Gen.SByte()`, `Gen.UInt16()`, `Gen.UInt32()`, `Gen.UInt64()`, `Gen.IntPtr()`, and `Gen.UIntPtr()`, when each samples 100 values for each seed from 0 to 99, then the minimum and the maximum of its type both appear. (R1)
   - Given `Gen.UInt32().Between(10, 20)`, when it samples 1000 values, then each value is from 10 to 20, and 10 and 20 both appear. (R2)
@@ -55,17 +55,6 @@
   - Given `Gen.Int128().Between(-5, 5)`, when it samples 1000 values, then each value is from -5 to 5. (R2)
   - Given `Gen.BigInteger()`, when it samples 100 values for each seed from 0 to 99, then a value below `Int64.MinValue` and a value above `Int64.MaxValue` both appear. (R4)
   - Given `Gen.BigInteger()` and the property "the value is below 10 to the power 30", when the property fails, then the counterexample is 10 to the power 30. (R3, R4)
-- Layers: generator api, generator core
-- Tier: hard
-- Status: planned
-- Test rounds: 0
-- Review rounds: 0
-
-## S4: Real numbers, Complex, and Rune
-
-- Story: As a user, I generate floating-point, decimal, complex, and Rune values, with special values by default, so that my property meets the values that break code.
-- Requirements: R5 (binary floats), R6 (float options), R7 (float special values), R8 (special value opt-out), R9 (float shrinking), R10 (decimal), R12 (Rune), R13 (Complex)
-- Acceptance:
   - Given `Gen.Half()`, `Gen.Single()`, and `Gen.Double()` with the special values removed, when each samples 1000 values, then a value with a fraction part, a negative value, and a positive value all appear. (R5)
   - Given `Gen.Double()` with the special values removed, when it samples 100 values for each seed from 0 to 99, then a value above 1e300 and a value below -1e300 both appear. (R5)
   - Given `Gen.Double().Between(1.5, 2.5)`, when it samples 1000 values, then each value is from 1.5 to 2.5. (R6)
@@ -89,10 +78,10 @@
 - Test rounds: 0
 - Review rounds: 0
 
-## S5: Time types, dictionaries, and tuples
+## S4: Time types, containers, and automatic generation
 
-- Story: As a user, I generate time values, dictionaries, pairs, and tuples, so that I do not build them by hand.
-- Requirements: R11 (time types), R14 (dictionaries), R15 (pairs and tuples)
+- Story: As a user, I generate time values, dictionaries, and tuples, and `Gen.Create<T>()` works for any base type on both targets, so that a `[Property]` parameter just works.
+- Requirements: R11 (time types), R14 (dictionaries), R15 (pairs and tuples), R16 (automatic generation), R17 (replaced generators), R18 (.NET 11 types), R20 (same values on both targets), R21 (replay), R31 (more collections), R32 (interfaces and base classes), R33 (unions)
 - Acceptance:
   - Given `Gen.TimeSpan()`, `Gen.DateOnly()`, and `Gen.TimeOnly()`, when each samples 100 values for each seed from 0 to 99, then the `MinValue` and the `MaxValue` of its type both appear. (R11)
   - Given `Gen.DateOnly()` with the bounds 2020-01-01 and 2020-12-31, when it samples 1000 values, then each value is in the year 2020. (R11)
@@ -104,17 +93,6 @@
   - Given a `KeyValuePair` generator from `Gen.Int32()` and `Gen.Boolean()`, when it samples 100 values, then each value is a `KeyValuePair<int, bool>`. (R15)
   - Given a `ValueTuple` generator for each count from 1 to 7 and a `Tuple` generator for each count from 1 to 7, when each samples 10 values, then each value has that count of elements. (R15)
   - Given a `ValueTuple` generator of two `Gen.Int32()` and the property "the first is below 10 or the second is below 20", when the property fails, then the counterexample is (10, 20). (R15)
-- Layers: generator api, generator core, collection generators
-- Tier: standard
-- Status: planned
-- Test rounds: 0
-- Review rounds: 0
-
-## S6: Automatic generation of every base type
-
-- Story: As a user, I ask `Gen.Create<T>()` for any base type, collection, interface, or union, on both targets, so that a `[Property]` parameter just works.
-- Requirements: R16 (automatic generation), R17 (replaced generators), R18 (.NET 11 types), R20 (same values on both targets), R21 (replay), R31 (more collections), R32 (interfaces and base classes), R33 (unions)
-- Acceptance:
   - Given each type of R1, R4, R5, R10, R11, R12, and R13, when `Gen.Create<T>()` and the explicit generator with no option sample 100 values with seed 0, then the two lists are equal. (R16)
   - Given `Dictionary<int, string>`, `IDictionary<int, string>`, `IReadOnlyDictionary<int, string>`, `ImmutableDictionary<int, string>`, `KeyValuePair<int, string>`, `(int, string)`, and `Tuple<int, string>`, when `Gen.Create<T>()` samples 100 values, then each value has that type and no generator error occurs. (R16)
   - Given `Gen.Create<double>()`, when it samples 1000 values, then a value with a fraction part appears. (R17)
@@ -133,13 +111,13 @@
   - Given an abstract class with no concrete type in its assembly, when `Gen.Create<T>()` runs, then the result is a generator error whose message names the abstract class. (R32)
   - Given `IShape` and a list of candidate types that holds only `Circle`, when the generator samples 100 values, then each value is a `Circle`. (R32)
   - Given a C# union of `Cat`, `Dog`, and `Bird` on net11.0, when `Gen.Create<T>()` samples 100 values, then each of the three cases appears. (R33)
-- Layers: automatic generator, xunit v2 package, generator api, build, generator core, runner
+- Layers: generator api, generator core, collection generators, automatic generator, xunit v2 package, build, runner
 - Tier: standard
 - Status: planned
 - Test rounds: 0
 - Review rounds: 0
 
-## S7: Text, realistic data, and recursive generators
+## S5: Text, realistic data, and recursive generators
 
 - Story: As a user, I generate strings from a pattern, real Uri and email values, realistic names, and tree-shaped data, so that my inputs look like real data.
 - Requirements: R34 (pattern strings), R35 (Uri, Version, email), R53 (recursive generators), R54 (recursive automatic generation), R59 (realistic data)
@@ -163,7 +141,7 @@
 - Test rounds: 0
 - Review rounds: 0
 
-## S8: Property features
+## S6: Property features
 
 - Story: As a user, I get labels, exhaustive runs, health checks, copyable counterexamples, and time limits, so that a property tells me more and wastes less.
 - Requirements: R36 (labels), R37 (cover), R39 (copyable counterexamples), R40 (timeout), R41 (cancellation), R55 (exhaustive small domains), R56 (health checks)
@@ -193,7 +171,7 @@
 - Test rounds: 0
 - Review rounds: 0
 
-## S9: Stateful testing
+## S7: Stateful testing
 
 - Story: As a user, I run random sequences of commands against a model and get the shortest failing sequence, so that I test a system with state.
 - Requirements: R42 (commands), R43 (stateful property), R44 (stateful shrinking), R45 (stateful report)
@@ -211,9 +189,9 @@
 - Test rounds: 0
 - Review rounds: 0
 
-## S10: The xunit v3 package
+## S8: The xunit v3 and TUnit packages
 
-- Story: As a user of xunit v3, I use each attribute of the xunit v2 package, so that I can move my tests.
+- Story: As a user of xunit v3 or TUnit, I use each attribute of the xunit v2 package, so that I run properties in my framework.
 - Requirements: R22 (framework packages), R23 (property result), R24 (property forms), R25 (replay and member generators), R26 (sample), R27 (generator snapshot), R28 (data rows), R29 (global configuration), R30 (xunit v2 unchanged)
 - Acceptance:
   - Given a pack of GalaxyCheck.Xunit.V3, when a test lists its `lib/` folders, then it finds `net10.0` and `net11.0`. (R22)
@@ -229,17 +207,6 @@
   - Given a `[GenSnapshot]` test with a stored snapshot, when the generator changes its values, then the test fails, and with no change it passes. (R27)
   - Given a `[Property]` with `[InlineData(1)]` and `[InlineData(2)]` and one more int parameter, when the project runs, then the result holds 2 tests, the first parameter is 1 or 2, and the second is generated. (R28)
   - Given a global configuration with default iterations of 7, when a `[Property]` with no iterations option runs, then the test function runs 7 times. (R29)
-- Layers: xunit v3 package, shared framework core, packaging
-- Tier: hard
-- Status: planned
-- Test rounds: 0
-- Review rounds: 0
-
-## S11: The TUnit package
-
-- Story: As a user of TUnit, I use each attribute of the xunit v2 package, so that I run properties in TUnit.
-- Requirements: R22 (framework packages), R23 (property result), R24 (property forms), R25 (replay and member generators), R26 (sample), R27 (generator snapshot), R28 (data rows), R29 (global configuration)
-- Acceptance:
   - Given a pack of GalaxyCheck.TUnit, when a test lists its `lib/` folders, then it finds `net10.0` and `net11.0`. (R22)
   - Given a TUnit project with a `[Property]` test that holds, when the project runs, then the result holds one passed test for it. (R23)
   - Given a TUnit `[Property]` test "the int is below 10", when the project runs, then the result holds one failed test, and its message holds the counterexample 10 and a replay string, in the text that GalaxyCheck.Xunit gives. (R23)
@@ -251,16 +218,16 @@
   - Given a `[GenSnapshot]` test with a stored snapshot, when the generator changes its values, then the test fails, and with no change it passes. (R27)
   - Given a `[Property]` with `[Arguments(1)]` and `[Arguments(2)]` and one more int parameter, when the project runs, then the result holds 2 tests, the first parameter is 1 or 2, and the second is generated. (R28)
   - Given a global configuration with default iterations of 7, when a `[Property]` with no iterations option runs, then the test function runs 7 times. (R29)
-- Layers: tunit package, shared framework core, packaging
+- Layers: xunit v3 package, shared framework core, packaging, tunit package
 - Tier: hard
 - Status: planned
 - Test rounds: 0
 - Review rounds: 0
 
-## S12: The NUnit and MSTest packages
+## S9: NUnit, MSTest, failure memory, and explicit examples
 
-- Story: As a user of NUnit or MSTest, I use each attribute of the xunit v2 package, so that I run properties in my framework.
-- Requirements: R22 (framework packages), R23 (property result), R24 (property forms), R25 (replay and member generators), R26 (sample), R27 (generator snapshot), R28 (data rows), R29 (global configuration)
+- Story: As a user of any of the five frameworks, I get my last failure tried first and can pin fixed inputs, so that a known failure runs on each run.
+- Requirements: R22 (framework packages), R23 (property result), R24 (property forms), R25 (replay and member generators), R26 (sample), R27 (generator snapshot), R28 (data rows), R29 (global configuration), R38 (failure memory), R52 (explicit examples)
 - Acceptance:
   - Given a pack of GalaxyCheck.NUnit, when a test lists its `lib/` folders, then it finds `net10.0` and `net11.0`. (R22)
   - Given an NUnit project with a `[Property]` test that holds, when the project runs, then the result holds one passed test for it. (R23)
@@ -284,17 +251,6 @@
   - Given a `[GenSnapshot]` test with a stored snapshot, when the generator changes its values, then the test fails, and with no change it passes. (R27)
   - Given a `[Property]` with `[DataRow(1)]` and `[DataRow(2)]` and one more int parameter, when the project runs, then the result holds 2 tests, the first parameter is 1 or 2, and the second is generated. (R28)
   - Given a global configuration with default iterations of 7, when a `[Property]` with no iterations option runs, then the test function runs 7 times. (R29)
-- Layers: nunit package, shared framework core, packaging, mstest package
-- Tier: standard
-- Status: planned
-- Test rounds: 0
-- Review rounds: 0
-
-## S13: Failure memory and explicit examples
-
-- Story: As a user, I get my last failure tried first and can pin fixed inputs, so that a known failure runs on each run.
-- Requirements: R38 (failure memory), R52 (explicit examples)
-- Acceptance:
   - Given a failing `[Property]` test in each of the five frameworks, when the project runs, then a file in the documented folder of the test project holds the replay string under the full name of the test. (R38)
   - Given that file, when the project runs again, then the first test case of that test is the saved counterexample. (R38)
   - Given that file and a test function that now holds, when the project runs, then the test passes and the file no longer holds the entry. (R38)
@@ -304,13 +260,13 @@
   - Given the property "the first int is not 3" with `[Example(3, 4)]`, when the project runs, then the test fails, the message holds the inputs 3 and 4, and the counterexample is not shrunk. (R52)
   - Given a property of two ints with `[Example(1)]`, when the project runs, then the result is one failed test whose message names the second parameter. (R52)
   - Given a property of an int with `[Example("a")]`, when the project runs, then the result is one failed test whose message names the parameter. (R52)
-- Layers: shared framework core, each framework package, store
+- Layers: nunit package, shared framework core, packaging, mstest package, each framework package, store
 - Tier: standard
 - Status: planned
 - Test rounds: 0
 - Review rounds: 0
 
-## S14: The source generator and the reference pages
+## S10: The source generator and the reference pages
 
 - Story: As a user, I run properties in a NativeAOT test project and find each generator in the docs, so that the library works and is learnable everywhere.
 - Requirements: R57 (source generator), R58 (source generator parity), R60 (reference pages)
@@ -322,6 +278,26 @@
   - Given a public generator method with no entry, when the test runs, then it fails and its message names the method. (R60)
 - Layers: source generator, automatic generator, packaging, docs, tests
 - Tier: hard
+- Status: planned
+- Test rounds: 0
+- Review rounds: 0
+
+## S11: Agent experience
+
+- Story: As an LLM agent that writes and runs property tests, I get failures as JSON, errors that state the fix, one compact reference file, and a quiet mode with a fixed seed, so that I fix a test in one step with few tokens.
+- Requirements: R63 (machine-readable failures), R64 (errors that state the fix), R65 (agent reference file), R66 (quiet mode with a fixed seed)
+- Acceptance:
+  - Given the property "the int is below 10" and `Assert`, when it fails, then the message holds one JSON object between the lines `<galaxycheck-failure>` and `</galaxycheck-failure>`, with `counterexample` `["10"]`, `csharp` `["10"]`, a `replay` string that reproduces the failure, and the keys `seed`, `size`, `iterations`, and `shrinks`. (R63)
+  - Given the same property as a `[Property]` test in each of the five frameworks, when the project runs, then the JSON object of the failure message also holds `test` with the full name of the test, and `rerun` with one command line, and that command runs only that test. (R63)
+  - Given `Gen.UInt16().GreaterThanEqual(5).LessThanEqual(4)`, a list generator with a negative count, `Gen.StringMatching("(?<=a)b")`, and `Gen.Create<T>()` for an abstract class with no concrete type, when each runs, then the last line of the error message starts with `Fix: `. (R64)
+  - Given `[Replay("0")]`, a `[MemberGen]` that names no member, and `[Example(1)]` on a property of two ints, in an xunit v2 project, when the project runs, then the last line of the message of each failed test starts with `Fix: `. (R64)
+  - Given `docs/llms.txt`, when a test reads it, then it has at most 40,000 characters, and it holds the name of each public generator method of `Gen` and `Gen.Realistic`, each option method of a generator interface, and each attribute, each on a line with a code example. (R65)
+  - Given a pack of each of the six library packages, when a test lists the package, then it holds `llms.txt` at its root and an XML documentation file next to each assembly, and the XML file of GalaxyCheck holds a summary for each public type and member. (R65)
+  - Given `GALAXYCHECK_AGENT=1` and a property with no seed option, when it runs two times, then the two runs give the same values, and the values are those of seed 0. (R66)
+  - Given `GALAXYCHECK_AGENT=1` and an xunit v2 project with one passed and one failed `[Property]` test, when the project runs, then the passed test has no output, and the message of the failed test has at most 40 lines and holds the block of R63. (R66)
+  - Given `GALAXYCHECK_SEED=7` and a property with no seed option, when it runs, then its values are those of seed 7, and a property with the seed option 3 gives the values of seed 3. (R66)
+- Layers: report, runner, each framework package, docs, packaging
+- Tier: standard
 - Status: planned
 - Test rounds: 0
 - Review rounds: 0

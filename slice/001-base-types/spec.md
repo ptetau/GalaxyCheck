@@ -25,6 +25,7 @@ numbers. The user can run properties in xunit v2, xunit v3, TUnit, NUnit, and MS
 - D12 (performance limits): The performance work can change the values that a seed or a replay string of an older version gives, and can change the advanced and internal API. The documented `Gen` and `Property` API stays.
 - D13 (testing features): The spec also adds explicit examples, recursive generators, exhaustive runs of small domains, and health checks.
 - D14 (platform): The spec also adds a GalaxyCheck.MSTest package with full parity, a source generator for NativeAOT and trimming, realistic data generators, generator reference pages, and a repair of the CI workflow and the package sources.
+- D15 (agent experience): LLM agents write most of the tests. The library gives them machine-readable failures, errors that state the fix, one compact reference file, and a quiet mode with a fixed seed.
 
 ## Requirements
 
@@ -90,6 +91,10 @@ numbers. The user can run properties in xunit v2, xunit v3, TUnit, NUnit, and MS
 - R60 (reference pages): `docs/` holds a reference entry with one code example for each public generator method. A test fails when a public generator method has no entry.
 - R61 (CI): The CI workflow uses only action versions that GitHub supports, and builds and tests each target of R19 on Linux, Windows, and macOS.
 - R62 (package sources): The solution restores from nuget.org and from a folder in the repository only. No restore reads the MyGet feed.
+- R63 (machine-readable failures): The failure message of a property, from the assert methods and in each of the five frameworks, holds one JSON object between the lines `<galaxycheck-failure>` and `</galaxycheck-failure>`. The object holds the counterexample values as text, the C# expression of each value, the replay string, the seed, the size, the iterations, and the shrinks. In a framework it also holds the full name of the test and one command line that runs only that test.
+- R64 (errors that state the fix): The message of each generator error, and of each error of a `[Replay]`, `[MemberGen]`, or `[Example]` attribute, ends with a line that starts with `Fix:` and gives a corrected call or the option to change.
+- R65 (agent reference file): The file `docs/llms.txt` lists each public generator method, each option of a generator, each property option, and each attribute, with a one-line example for each, in at most 40,000 characters. Each package holds the file. Each public type and member of each package has an XML documentation summary, and each package holds the XML documentation file.
+- R66 (quiet mode with a fixed seed): With the environment variable `GALAXYCHECK_AGENT=1`, a property with no seed option uses seed 0, a passed property writes no output, and the failure message holds at most 40 lines and still holds the block of R63. The environment variable `GALAXYCHECK_SEED` sets the seed of each property with no seed option.
 
 ## Out of scope
 

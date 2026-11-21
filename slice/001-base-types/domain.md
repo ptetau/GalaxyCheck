@@ -24,6 +24,8 @@ This design document holds no code.
 - BenchmarkCase (value object): one measured case, with the throughput and the allocation of the baseline and of the current library, and the two ratios.
 - PerformanceGate (value object): the rule that compares each BenchmarkCase with the targets.
 - Package (value object): one NuGet package of the solution, with its target assemblies.
+- AgentMode (value object): the settings that the environment gives for an agent run: quiet output and a fixed seed.
+- FailureRecord (value object): the JSON form of a failed PropertyRun.
 - ReferenceEntry (value object): the docs entry of one public generator method, with one example.
 
 ## Relationships
@@ -164,3 +166,7 @@ This design document holds no code.
 - R60: ReferenceEntry
 - R61: boundary: GitHub Actions, Package
 - R62: Package, boundary: nuget.org
+- R63: FailureRecord, Report, FrameworkAdapter, PropertyRun.T15
+- R64: Generator, FrameworkAdapter, PropertyRun.X1, PropertyRun.X2, PropertyRun.X3
+- R65: ReferenceEntry, Package
+- R66: AgentMode, Report, PropertyRun.T11

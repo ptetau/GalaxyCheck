@@ -24,6 +24,9 @@ namespace GalaxyCheck
 
     public partial class Property
     {
+        /// <summary>Discards the test case when the condition is false.</summary>
+        public static void Precondition(bool condition) => throw new System.NotImplementedException("not implemented");
+
         public static AsyncProperty<T0> ForAllAsync<T0>(IGen<T0> gen0, Func<T0, CancellationToken, Task<bool>> func) => throw new System.NotImplementedException("not implemented");
 
         public static AsyncProperty<T0> ForAllAsync<T0>(IGen<T0> gen0, Func<T0, CancellationToken, Task> action) => throw new System.NotImplementedException("not implemented");

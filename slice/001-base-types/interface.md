@@ -20,7 +20,7 @@ The stubs fail with `System.NotImplementedException`. The message holds "not imp
 - `Property.ForAll(gen, x => bool)` and `Property.ForAll(gen, x => { })`: return `Property<T>`. `Property.ForAllAsync(gen, async x => ...)`: returns `AsyncProperty<T>`.
 - `property.Check(iterations, seed, size, shrinkLimit, replay)`: returns `CheckResult<T>` with `Falsified` (bool), `Counterexample` (null, or `.Value` and `.Replay`), and `Iterations`. `property.Assert(...)` throws `GalaxyCheck.Runners.PropertyFailedException` on a failure. `CheckAsync` and `AssertAsync` are the async forms.
 - `Gen.Create<T>()`, `Gen.Factory().RegisterType<T>(gen).Create<T>()`.
-- A generator error: the run throws `GalaxyCheck.Exceptions.GenErrorException`. Exposes: PropertyRun.X3.
+- A generator error: the run throws `GalaxyCheck.Exceptions.GenErrorException`. `Exceptions` is a class, so write the full name and no `using` for it. Exposes: PropertyRun.X3.
 - `gen.Where(pred)`, `gen.Select(f)`, `Gen.Int32()`, `Gen.Boolean()`, `Gen.Enum<T>()`, `Gen.Element(values)`.
 
 ### Integer generators (R1 to R4)
@@ -112,9 +112,17 @@ The stubs fail with `System.NotImplementedException`. The message holds "not imp
 - `docs/generators.md`: one `### Gen.<Name>` heading for each public generator method of `Gen` and of `Gen.Realistic`, followed by one fenced `csharp` code block.
 - `README.md`: each fenced `csharp` block is a complete example for a file with `using GalaxyCheck;`.
 
-### Tests folder
+### Agent experience (R63 to R66)
+
+- The message of `PropertyFailedException`, and the failure message of a `[Property]` test in each framework, holds a line `<galaxycheck-failure>`, then one JSON object, then a line `</galaxycheck-failure>`.
+- The JSON object: `{ "counterexample": ["10"], "csharp": ["10"], "replay": "...", "seed": 0, "size": 0, "iterations": 31, "shrinks": 5 }`. In a framework it also has `"test"` (the full name of the test) and `"rerun"` (one command line that runs only that test). A value with no C# expression has `null` in `csharp`.
+- The message of each `GenErrorException`, and of each error of `[Replay]`, `[MemberGen]`, and `[Example]`, ends with a line that starts with `Fix: `.
+- `docs/llms.txt`: plain text, at most 40,000 characters. Each generator method of `Gen` and `Gen.Realistic`, each option method of a generator interface, each new argument of `Check`, and each attribute appears with its name and a one-line example. Each package holds `llms.txt` at its root and an XML documentation file next to each assembly in `lib/<target>/`.
+- Environment variables: `GALAXYCHECK_AGENT=1` gives seed 0 to a property with no seed, no output for a passed property, and a failure message of at most 40 lines. `GALAXYCHECK_SEED=<n>` gives the seed n to each property with no seed option. A seed option of the property wins over both.
+- Exposes: AgentMode, FailureRecord, ReferenceEntry.
 
 - The tests folder is the xunit 2.9.3 project `src/GalaxyCheck.Tests.Slice`. It runs on net11.0, and it references `GalaxyCheck` and `GalaxyCheck.Xunit`. FluentAssertions 7.2.2 and `Microsoft.CodeAnalysis.CSharp.Scripting` are available. Do not change the project file or `TestSupport.cs`.
+- A precondition: a test function calls `Property.Precondition(bool condition)`. A false condition discards the test case.
 - The tests of slice Sn go in files named `Sn_<Topic>Tests.cs`, in the namespace `GalaxyCheck.Tests.Slice`. Each test is a `[Fact]` method named `test_001_Sn_Rn_<what>`.
 - A sample project that a test runs goes in `samples/Sn/<Name>/`. It refers to a library with a relative `ProjectReference`, for example `..\..\..\..\GalaxyCheck.TUnit\GalaxyCheck.TUnit.csproj`. A sample test project targets `net10.0`.
 - `Repo.Root`, `Repo.Src`, `Repo.Samples`: paths.
@@ -148,72 +156,54 @@ The stubs fail with `System.NotImplementedException`. The message holds "not imp
 
 ## S3
 
-- Uses: `Gen.SByte`, `Gen.UInt16`, `Gen.UInt32`, `Gen.UInt64`, `Gen.IntPtr`, `Gen.UIntPtr`, `IIntGen<T>`, `Sample`, `Minimum`; `Gen.Int128`, `Gen.UInt128`, `Gen.BigInteger`, `IIntGen<T>`
-- Stubs: `src/GalaxyCheck/Gens/IntegerGens.cs`
+- Uses: `Gen.SByte`, `Gen.UInt16`, `Gen.UInt32`, `Gen.UInt64`, `Gen.IntPtr`, `Gen.UIntPtr`, `IIntGen<T>`, `Sample`, `Minimum`; `Gen.Int128`, `Gen.UInt128`, `Gen.BigInteger`, `IIntGen<T>`; `Gen.Half`, `Gen.Single`, `Gen.Double`, `IRealGen<T>`; `Gen.Half`, `Gen.Single`, `Gen.Double`, `WithoutSpecialValues`; `Gen.Decimal`, `IRealGen<decimal>`; `Gen.Rune`, `Gen.Complex`, `IComplexGen`
+- Stubs: `src/GalaxyCheck/Gens/IntegerGens.cs`, `src/GalaxyCheck/Gens/RealGens.cs`, `src/GalaxyCheck/Gens/RuneGen.cs`
 - Changed: none
 
 ## S4
 
-- Uses: `Gen.Half`, `Gen.Single`, `Gen.Double`, `IRealGen<T>`; `Gen.Half`, `Gen.Single`, `Gen.Double`, `WithoutSpecialValues`; `Gen.Decimal`, `IRealGen<decimal>`; `Gen.Rune`, `Gen.Complex`, `IComplexGen`
-- Stubs: `src/GalaxyCheck/Gens/RealGens.cs`, `src/GalaxyCheck/Gens/RuneGen.cs`
-- Changed: none
-
-## S5
-
-- Uses: `Gen.TimeSpan`, `Gen.DateTimeOffset`, `Gen.DateOnly`, `Gen.TimeOnly`, `IRangeGen<T>`; `Gen.Dictionary`, `IDictionaryGen<TKey, TValue>`; `Gen.KeyValuePair`, `Gen.ValueTuple`, `Gen.Tuple`
-- Stubs: `src/GalaxyCheck/Gens/TimeGens.cs`, `src/GalaxyCheck/Gens/DictionaryGen.cs`, `src/GalaxyCheck/Gens/TupleGens.cs`
-- Changed: none
-
-## S6
-
-- Uses: `Gen.Create<T>`, the explicit generators, `[Property]` of GalaxyCheck.Xunit; `Gen.Decimal32`, `Gen.Decimal64`, `Gen.Decimal128`, `Gen.BFloat16`, `Gen.ComplexOf<T>`, `Gen.Create<T>`, both target assemblies; each generator of the spec, `Sample` on both targets, `Check` with `replay`; `Gen.Create<T>` for the collection types; `Gen.Create<T>`, `RegisterImplementations<T>`
-- Stubs: `src/GalaxyCheck/Gens/Net11Gens.cs`, `src/GalaxyCheck/Gens/FactoryGen.cs`
+- Uses: `Gen.TimeSpan`, `Gen.DateTimeOffset`, `Gen.DateOnly`, `Gen.TimeOnly`, `IRangeGen<T>`; `Gen.Dictionary`, `IDictionaryGen<TKey, TValue>`; `Gen.KeyValuePair`, `Gen.ValueTuple`, `Gen.Tuple`; `Gen.Create<T>`, the explicit generators, `[Property]` of GalaxyCheck.Xunit; `Gen.Decimal32`, `Gen.Decimal64`, `Gen.Decimal128`, `Gen.BFloat16`, `Gen.ComplexOf<T>`, `Gen.Create<T>`, both target assemblies; each generator of the spec, `Sample` on both targets, `Check` with `replay`; `Gen.Create<T>` for the collection types; `Gen.Create<T>`, `RegisterImplementations<T>`
+- Stubs: `src/GalaxyCheck/Gens/TimeGens.cs`, `src/GalaxyCheck/Gens/DictionaryGen.cs`, `src/GalaxyCheck/Gens/TupleGens.cs`, `src/GalaxyCheck/Gens/Net11Gens.cs`, `src/GalaxyCheck/Gens/FactoryGen.cs`
 - Changed: R16, R17, R18, R20, R21, R31, R32, R33
 
-## S7
+## S5
 
 - Uses: `Gen.StringMatching`; `Gen.Uri`, `Gen.Version`, `Gen.Email`, `Gen.Create<T>`; `Gen.Realistic`; `Gen.Recursive<T>`, `Gen.Create<T>`
 - Stubs: `src/GalaxyCheck/Gens/PatternGen.cs`, `src/GalaxyCheck/Gens/TextGens.cs`, `src/GalaxyCheck/Gens/RealisticGens.cs`, `src/GalaxyCheck/Gens/RecursiveGen.cs`
 - Changed: R54
 
-## S8
+## S6
 
 - Uses: `Label`, `Cover`, `CheckResult<T>.Labels`, `CheckResult<T>.Report`, `Assert`; `Check` with `exhaustive`, `CheckResult<T>.Exhaustive`, `CheckResult<T>.Report`; `HealthCheck`, `HealthCheckException`, `Check` with `suppressHealthChecks`; `CSharpExpression.TryFormat`, the message of `Assert`; `Check` and `Assert` with `timeout`, `Property.ForAllAsync` with a token, `[Property(TimeoutMilliseconds = ...)]` of GalaxyCheck.Xunit
 - Stubs: `src/GalaxyCheck/Properties/Labels.cs`, `src/GalaxyCheck/Runners/CheckOptions.cs`, `src/GalaxyCheck/Runners/CSharpExpression.cs`, `src/GalaxyCheck.Xunit/PropertyAttribute.cs`
 - Changed: R39, R55, R56
 
-## S9
+## S7
 
 - Uses: `Command<TSystem, TModel>`, `StatefulGen.Commands`, `StatefulProperty.Create`; `StatefulProperty.Create`, `Check`, the message of `Assert`
 - Stubs: `src/GalaxyCheck/Stateful/Stateful.cs`
 - Changed: none
 
-## S10
+## S8
 
-- Uses: `src/GalaxyCheck.Xunit.V3`, `[Property]`, `dotnet test` with a trx file, `dotnet pack`, the test project of GalaxyCheck.Xunit; `src/GalaxyCheck.Xunit.V3`, each attribute, `IConfigureGlobal`
-- Stubs: `src/GalaxyCheck.Xunit.V3/Attributes.cs`
+- Uses: `src/GalaxyCheck.Xunit.V3`, `[Property]`, `dotnet test` with a trx file, `dotnet pack`, the test project of GalaxyCheck.Xunit; `src/GalaxyCheck.Xunit.V3`, each attribute, `IConfigureGlobal`; `src/GalaxyCheck.TUnit`, `[Property]`, `dotnet run` with a trx report, `dotnet pack`; `src/GalaxyCheck.TUnit`, each attribute, `IConfigureGlobal`
+- Stubs: `src/GalaxyCheck.Xunit.V3/Attributes.cs`, `src/GalaxyCheck.TUnit/Attributes.cs`
 - Changed: R22, R23, R24, R25, R26, R27, R28, R29, R30
 
-## S11
+## S9
 
-- Uses: `src/GalaxyCheck.TUnit`, `[Property]`, `dotnet run` with a trx report, `dotnet pack`; `src/GalaxyCheck.TUnit`, each attribute, `IConfigureGlobal`
-- Stubs: `src/GalaxyCheck.TUnit/Attributes.cs`
-- Changed: R22, R23, R24, R25, R26, R27, R28, R29
+- Uses: `src/GalaxyCheck.NUnit`, `[Property]`, `dotnet test` with a trx file, `dotnet pack`; `src/GalaxyCheck.NUnit`, each attribute, `IConfigureGlobal`; `src/GalaxyCheck.MSTest`, `[Property]`, `dotnet test` with a trx file, `dotnet pack`; `src/GalaxyCheck.MSTest`, each attribute, `IConfigureGlobal`; `.galaxycheck/failures.json`, `[Property]` and `[Replay]` in each framework, `IGlobalConfiguration.FailureMemory`; `[Example]` in each framework
+- Stubs: `src/GalaxyCheck.NUnit/Attributes.cs`, `src/GalaxyCheck.MSTest/Attributes.cs`, `src/GalaxyCheck.Xunit/Configuration/IGlobalConfiguration.cs`, `src/GalaxyCheck.Xunit.V3/Attributes.cs`, `src/GalaxyCheck.TUnit/Attributes.cs`, `src/GalaxyCheck.Xunit/ExampleAttribute.cs`
+- Changed: R22, R23, R24, R25, R26, R27, R28, R29, R38, R52
 
-## S12
-
-- Uses: `src/GalaxyCheck.NUnit`, `[Property]`, `dotnet test` with a trx file, `dotnet pack`; `src/GalaxyCheck.NUnit`, each attribute, `IConfigureGlobal`; `src/GalaxyCheck.MSTest`, `[Property]`, `dotnet test` with a trx file, `dotnet pack`; `src/GalaxyCheck.MSTest`, each attribute, `IConfigureGlobal`
-- Stubs: `src/GalaxyCheck.NUnit/Attributes.cs`, `src/GalaxyCheck.MSTest/Attributes.cs`
-- Changed: R22, R23, R24, R25, R26, R27, R28, R29
-
-## S13
-
-- Uses: `.galaxycheck/failures.json`, `[Property]` and `[Replay]` in each framework, `IGlobalConfiguration.FailureMemory`; `[Example]` in each framework
-- Stubs: `src/GalaxyCheck.Xunit/Configuration/IGlobalConfiguration.cs`, `src/GalaxyCheck.Xunit.V3/Attributes.cs`, `src/GalaxyCheck.TUnit/Attributes.cs`, `src/GalaxyCheck.NUnit/Attributes.cs`, `src/GalaxyCheck.MSTest/Attributes.cs`, `src/GalaxyCheck.Xunit/ExampleAttribute.cs`
-- Changed: R38, R52
-
-## S14
+## S10
 
 - Uses: `src/GalaxyCheck.SourceGeneration`, `Gen.Create<T>`, `dotnet publish` with NativeAOT, the diagnostic `GCSG001`; `docs/generators.md`, the public methods of `Gen` on net11.0
 - Stubs: `src/GalaxyCheck.SourceGeneration/GenCreateGenerator.cs`
 - Changed: R57, R58, R60
+
+## S11
+
+- Uses: the message of `Assert`, each framework package, `GenErrorException`, `docs/llms.txt`, `dotnet pack`, the environment variables `GALAXYCHECK_AGENT` and `GALAXYCHECK_SEED`
+- Stubs: none
+- Changed: R63, R64, R65, R66
