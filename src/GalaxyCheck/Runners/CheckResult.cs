@@ -17,6 +17,24 @@ namespace GalaxyCheck.Runners.Check
     {
         public bool Falsified => Counterexample != null;
 
+        /// <summary>The share of test cases with each label, as a percentage.</summary>
+        [System.Runtime.Serialization.IgnoreDataMember]
+        public System.Collections.Generic.IReadOnlyDictionary<string, double> Labels => throw new System.NotImplementedException("not implemented");
+
+        /// <summary>True when the run tried each value of the input space one time.</summary>
+        [System.Runtime.Serialization.IgnoreDataMember]
+        public bool Exhaustive => throw new System.NotImplementedException("not implemented");
+
+        /// <summary>The text of the run.</summary>
+        [System.Runtime.Serialization.IgnoreDataMember]
+        public string Report => throw new System.NotImplementedException("not implemented");
+
+        protected virtual bool PrintMembers(System.Text.StringBuilder builder)
+        {
+            builder.Append("Iterations = ").Append(Iterations).Append(", Falsified = ").Append(Falsified);
+            return true;
+        }
+
         public int RandomnessConsumption => NextParameters.Rng.Order - InitialParameters.Rng.Order;
     }
 

@@ -8,6 +8,13 @@ namespace GalaxyCheck.Configuration
         IGlobalPropertyConfiguration Properties { get; }
 
         IGlobalGenSnapshotConfiguration GenSnapshots { get; }
+
+        IGlobalFailureMemoryConfiguration FailureMemory { get; }
+    }
+
+    public interface IGlobalFailureMemoryConfiguration
+    {
+        bool Enabled { get; set; }
     }
 
     public interface IGlobalPropertyConfiguration

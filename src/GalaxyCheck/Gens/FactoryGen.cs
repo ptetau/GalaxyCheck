@@ -62,6 +62,9 @@ namespace GalaxyCheck.Gens
         /// <returns>A new factory with the registration applied.</returns>
         IGenFactory RegisterType(Type type, IGen gen);
 
+        /// <summary>Sets the concrete types that the factory generates for an interface or an abstract class.</summary>
+        IGenFactory RegisterImplementations<T>(params Type[] candidateTypes) => throw new System.NotImplementedException("not implemented");
+
         /// <summary>
         /// Registers a custom generator to the given type. The generator is applied to all <see cref="IReflectedGen{T}"/>
         /// that are created by this factory.
@@ -151,6 +154,8 @@ namespace GalaxyCheck.Gens
         }
 
         IGenFactory IGenFactory.RegisterType(Type type, IGen gen) => RegisterType(type, (_) => gen);
+
+        IGenFactory IGenFactory.RegisterImplementations<T>(params Type[] candidateTypes) => throw new System.NotImplementedException("not implemented");
 
         IGenFactory IGenFactory.RegisterType<T>(IGen<T> gen) => RegisterType(typeof(T), (_) => gen);
 

@@ -6,6 +6,11 @@ namespace GalaxyCheck.Benchmarks
     {
         static void Main(string[] args)
         {
+            if (System.Array.IndexOf(args, "--report") >= 0 || System.Array.IndexOf(args, "--gate") >= 0)
+            {
+                throw new System.NotImplementedException("not implemented");
+            }
+
             BenchmarkRunner.Run<RngBenchmark>();
             BenchmarkRunner.Run<ReflectedGenBenchmark>();
             BenchmarkRunner.Run<ListGenBenchmark>();

@@ -20,8 +20,12 @@ namespace GalaxyCheck
             int? size = null,
             int? shrinkLimit = null,
             string? replay = null,
-            bool deepCheck = true)
+            bool deepCheck = true,
+            TimeSpan? timeout = null,
+            bool exhaustive = true,
+            HealthCheck[]? suppressHealthChecks = null)
         {
+            GalaxyCheck.Runners.CheckOptionsStub.ThrowIfUsed(timeout, exhaustive, suppressHealthChecks);
             var stateMachineDriver = new SyncCheckStateMachineDriver<T>();
             var stateMachine = CreateStateMachine<T, Property.Test<T>, IEnumerable<ExplorationStage<Property.Test<T>>>>(
                 stateMachineDriver, property, iterations, seed, size, shrinkLimit, replay, deepCheck);
@@ -80,8 +84,12 @@ namespace GalaxyCheck
             int? size = null,
             int? shrinkLimit = null,
             string? replay = null,
-            bool deepCheck = true)
+            bool deepCheck = true,
+            TimeSpan? timeout = null,
+            bool exhaustive = true,
+            HealthCheck[]? suppressHealthChecks = null)
         {
+            GalaxyCheck.Runners.CheckOptionsStub.ThrowIfUsed(timeout, exhaustive, suppressHealthChecks);
             var stateMachineDriver = new AsyncCheckStateMachineDriver<T>();
             var stateMachine = CreateStateMachine<T, Property.AsyncTest<T>, IAsyncEnumerable<ExplorationStage<Property.AsyncTest<T>>>>(
                 stateMachineDriver, property, iterations, seed, size, shrinkLimit, replay, deepCheck);

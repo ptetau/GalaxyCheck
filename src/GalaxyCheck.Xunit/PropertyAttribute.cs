@@ -9,6 +9,20 @@ namespace GalaxyCheck
     [XunitTestCaseDiscoverer("GalaxyCheck.Internal.Infrastructure.Xunit.PropertyDiscoverer", "GalaxyCheck.Xunit")]
     public class PropertyAttribute : FactAttribute
     {
+        /// <summary>The time limit of one test case, in milliseconds.</summary>
+        public int TimeoutMilliseconds
+        {
+            get => throw new System.NotImplementedException("not implemented");
+            set => throw new System.NotImplementedException("not implemented");
+        }
+
+        /// <summary>False switches off the exhaustive run of a small input space.</summary>
+        public bool Exhaustive
+        {
+            get => throw new System.NotImplementedException("not implemented");
+            set => throw new System.NotImplementedException("not implemented");
+        }
+
         public int Iterations
         {
             get

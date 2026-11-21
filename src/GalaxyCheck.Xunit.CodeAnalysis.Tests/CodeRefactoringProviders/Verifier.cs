@@ -27,7 +27,7 @@ namespace GalaxyCheck.Xunit.CodeAnalysis.Tests.CodeRefactoringProviders
                 {
                     verifier.Equal(codeAction.Title, expectedRefactoringTitle);
                 },
-                ReferenceAssemblies = ReferenceAssemblies.Net.Net80
+                ReferenceAssemblies = new ReferenceAssemblies("net10.0", new PackageIdentity("Microsoft.NETCore.App.Ref", "10.0.0"), System.IO.Path.Combine("ref", "net10.0"))
             };
 
             test.ExpectedDiagnostics.Add(new DiagnosticResult("Refactoring", DiagnosticSeverity.Hidden)
@@ -57,7 +57,7 @@ namespace GalaxyCheck.Xunit.CodeAnalysis.Tests.CodeRefactoringProviders
                 {
                     verifier.Fail("Expected code not to be refactored");
                 },
-                ReferenceAssemblies = ReferenceAssemblies.Net.Net80
+                ReferenceAssemblies = new ReferenceAssemblies("net10.0", new PackageIdentity("Microsoft.NETCore.App.Ref", "10.0.0"), System.IO.Path.Combine("ref", "net10.0"))
             };
 
             test.ExpectedDiagnostics.Add(new DiagnosticResult("Refactoring", DiagnosticSeverity.Hidden)

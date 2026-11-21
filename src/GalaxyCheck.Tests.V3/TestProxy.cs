@@ -19,7 +19,7 @@ public static class TestProxy
             var result = typeof(Extensions)
                 .GetMethod(nameof(Check))!
                 .MakeGenericMethod(typeof(T))
-                .Invoke(null, new object?[] { property, args.Size, args.Seed, null, null, args.Replay, true })!;
+                .Invoke(null, new object?[] { property, args.Size, args.Seed, null, null, args.Replay, true, null, true, null })!;
             return (CheckResult<T>)result;
         }
         catch (TargetInvocationException ex)
@@ -42,7 +42,7 @@ public static class TestProxy
             typeof(Extensions)
                 .GetMethod(nameof(Assert))!
                 .MakeGenericMethod(typeof(T))
-                .Invoke(null, new object?[] { property, args.Size, args.Seed, null, null, args.Replay, true, args.FormatReproduction, null });
+                .Invoke(null, new object?[] { property, args.Size, args.Seed, null, null, args.Replay, true, args.FormatReproduction, null, null, true, null });
         }
         catch (TargetInvocationException ex)
         {

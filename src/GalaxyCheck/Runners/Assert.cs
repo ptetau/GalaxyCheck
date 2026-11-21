@@ -18,9 +18,12 @@ namespace GalaxyCheck
             string? replay = null,
             bool deepCheck = true,
             Func<string, string>? formatReproduction = null,
-            Func<string, string>? formatMessage = null)
+            Func<string, string>? formatMessage = null,
+            TimeSpan? timeout = null,
+            bool exhaustive = true,
+            HealthCheck[]? suppressHealthChecks = null)
         {
-            var checkResult = property.Check(iterations: iterations, seed: seed, size: size, shrinkLimit: shrinkLimit, replay: replay, deepCheck: deepCheck);
+            var checkResult = property.Check(iterations: iterations, seed: seed, size: size, shrinkLimit: shrinkLimit, replay: replay, deepCheck: deepCheck, timeout: timeout, exhaustive: exhaustive, suppressHealthChecks: suppressHealthChecks);
             ThrowIfFalsified(checkResult, formatReproduction, formatMessage);
         }
 
@@ -33,9 +36,12 @@ namespace GalaxyCheck
             string? replay = null,
             bool deepCheck = true,
             Func<string, string>? formatReproduction = null,
-            Func<string, string>? formatMessage = null)
+            Func<string, string>? formatMessage = null,
+            TimeSpan? timeout = null,
+            bool exhaustive = true,
+            HealthCheck[]? suppressHealthChecks = null)
         {
-            var checkResult = await property.CheckAsync(iterations: iterations, seed: seed, size: size, shrinkLimit: shrinkLimit, replay: replay, deepCheck: deepCheck);
+            var checkResult = await property.CheckAsync(iterations: iterations, seed: seed, size: size, shrinkLimit: shrinkLimit, replay: replay, deepCheck: deepCheck, timeout: timeout, exhaustive: exhaustive, suppressHealthChecks: suppressHealthChecks);
             ThrowIfFalsified(checkResult, formatReproduction, formatMessage);
         }
 
