@@ -314,7 +314,7 @@
   - Given `src/GalaxyCheck.Tests` and `src/GalaxyCheck.Tests.V3`, when `dotnet test` runs each on net10.0, then no test fails, `GalaxyCheck.Tests` has at least 400 passed tests, and `GalaxyCheck.Tests.V3` has at least 16 passed tests. (R67)
 - Layers: tests, build, packaging
 - Tier: standard
-- Status: red
+- Status: building
 - Test rounds: 0
 - Review rounds: 0
 
