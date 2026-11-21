@@ -135,6 +135,63 @@ public class S2_PerformanceTests
     private static string Describe(IEnumerable<Diagnostic> diagnostics) =>
         string.Join("\n", diagnostics.Select(d => d.ToString()));
 
+    // The number of annotated methods that a block holds: 1 or more when it has such an attribute, else 0.
+    private static int type0(string block) =>
+        Regex.IsMatch(block, @"\[(Property|Sample|Replay)[\](]") ? 1 : 0;
+
+    // Closes a generic extension method over the type argument of the property, where there is one.
+    private static MethodInfo? Close(MethodInfo method, object property)
+    {
+        if (!method.IsGenericMethodDefinition)
+        {
+            return method;
+        }
+
+        var first = method.GetParameters()[method.IsStatic ? 0 : 0].ParameterType;
+        var types = new[] { property.GetType() }.Concat(property.GetType().GetInterfaces())
+            .Where(t => t.IsGenericType && first.IsGenericType && t.GetGenericTypeDefinition() == first.GetGenericTypeDefinition())
+            .ToList();
+        try { return types.Count > 0 && method.GetGenericArguments().Length == 1 ? method.MakeGenericMethod(types[0].GetGenericArguments()) : null; }
+        catch (ArgumentException) { return null; }
+    }
+
+    // Runs the returned property with the check method of the library. A generator error or a replay error throws.
+    private static void CheckProperty(object property, string? replay)
+    {
+        var candidates = property.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            .Select(m => (Method: m, First: (object?)property))
+            .Concat(typeof(Gen).Assembly.GetTypes().Where(t => t.IsSealed && t.IsAbstract)
+                .SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.Static))
+                .Where(m => m.IsDefined(typeof(System.Runtime.CompilerServices.ExtensionAttribute), false)
+                    && m.GetParameters().Length > 0
+                    && m.GetParameters()[0].ParameterType.IsAssignableFrom(property.GetType()))
+                .Select(m => (Method: m, First: (object?)property)))
+            .Where(c => c.Method.Name == "Check")
+            .Select(c => (Method: Close(c.Method, property), c.First))
+            .Where(c => c.Method != null)
+            .Select(c => (Method: c.Method!, c.First))
+            .ToList();
+        candidates.Should().NotBeEmpty("the library must have a Check method for the property");
+        var (method, _) = candidates.First();
+        var parameters = method.GetParameters();
+        var offset = method.IsStatic ? 1 : 0;
+        var args = new object?[parameters.Length];
+        if (offset == 1)
+        {
+            args[0] = property;
+        }
+
+        for (var k = offset; k < parameters.Length; k++)
+        {
+            var p = parameters[k];
+            args[k] = p.Name == "replay" && replay != null ? replay
+                : p.HasDefaultValue ? p.DefaultValue
+                : p.ParameterType.IsValueType ? Activator.CreateInstance(p.ParameterType) : null;
+        }
+
+        method.Invoke(method.IsStatic ? null : property, args);
+    }
+
     [Fact]
     public void test_001_S2_R51_each_readme_csharp_block_compiles_unchanged_and_runs()
     {
@@ -160,35 +217,48 @@ public class S2_PerformanceTests
                 $"ReadmeBlock{i}",
                 [CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Latest))],
                 references,
-                new CSharpCompilationOptions(OutputKind.ConsoleApplication, nullableContextOptions: NullableContextOptions.Enable));
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));
             using var stream = new MemoryStream();
             var emit = compilation.Emit(stream);
-            // A block with no entry point is a library: that is no error here.
-            var errors = emit.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error && d.Id != "CS5001").ToList();
+            var errors = emit.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToList();
             if (errors.Count > 0)
             {
                 failures.Add($"Block {i + 1} does not compile:\n{Describe(errors)}\n{blocks[i]}");
                 continue;
             }
 
-            if (!emit.Success)
-            {
-                continue;
-            }
-
             try
             {
                 var assembly = Assembly.Load(stream.ToArray());
-                var entry = assembly.EntryPoint;
-                if (entry != null)
+                var ran = 0;
+                foreach (var type in assembly.GetTypes())
                 {
-                    var args = entry.GetParameters().Length == 0 ? null : new object[] { Array.Empty<string>() };
-                    var result = entry.Invoke(null, args);
-                    if (result is Task task)
+                    object? instance = null;
+                    foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly))
                     {
-                        task.GetAwaiter().GetResult();
+                        var attributes = method.GetCustomAttributesData().Select(a => a.AttributeType.Name).ToList();
+                        if (!attributes.Any(n => n is "PropertyAttribute" or "SampleAttribute" or "ReplayAttribute")
+                            || method.GetParameters().Length != 0)
+                        {
+                            continue;
+                        }
+
+                        var replay = method.GetCustomAttributesData()
+                            .Where(a => a.AttributeType.Name == "ReplayAttribute")
+                            .Select(a => a.ConstructorArguments[0].Value as string).FirstOrDefault();
+                        if (!method.IsStatic)
+                        {
+                            instance ??= Activator.CreateInstance(type);
+                        }
+
+                        var property = method.Invoke(method.IsStatic ? null : instance, null);
+                        property.Should().NotBeNull($"{type.Name}.{method.Name} must return a property");
+                        CheckProperty(property!, replay);
+                        ran++;
                     }
                 }
+
+                ran.Should().BeGreaterThanOrEqualTo(type0(blocks[i]), "each block with a [Property], [Sample], or [Replay] method must run it");
             }
             catch (Exception e)
             {

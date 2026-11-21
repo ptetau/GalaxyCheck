@@ -27,6 +27,7 @@ numbers. The user can run properties in xunit v2, xunit v3, TUnit, NUnit, and MS
 - D14 (platform): The spec also adds a GalaxyCheck.MSTest package with full parity, a source generator for NativeAOT and trimming, realistic data generators, generator reference pages, and a repair of the CI workflow and the package sources.
 - D15 (agent experience): LLM agents write most of the tests. The library gives them machine-readable failures, errors that state the fix, one compact reference file, and a quiet mode with a fixed seed.
 - D16 (old tests): The old test projects are ported. A test of an internal part that no longer exists is deleted. A snapshot of generated values is made again, after a check that the new values are sensible. A test of public behaviour still passes.
+- D17 (README examples): The code examples of README.md did not compile against the library before this spec. Slice S2 rewrote each example as a complete file against the documented API. R51 holds for the rewritten examples.
 
 ## Requirements
 
