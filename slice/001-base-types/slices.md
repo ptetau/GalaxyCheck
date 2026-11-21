@@ -315,6 +315,6 @@
 - Layers: tests, build, packaging
 - Tier: standard
 - Status: building
-- Test rounds: 0
+- Test rounds: 1
 - Review rounds: 0
 
