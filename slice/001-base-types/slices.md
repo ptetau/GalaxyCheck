@@ -15,7 +15,7 @@
 - Tier: standard
 - Status: building
 - Test rounds: 1
-- Review rounds: 0
+- Review rounds: 1
 
 ## S2: A core that is 100 times faster
 

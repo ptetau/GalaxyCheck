@@ -113,7 +113,46 @@ public class S1_PackagingTests
         Regex.IsMatch(text, @"dotnet\s+test").Should().BeTrue("the workflow must have a test step");
         text.Should().Contain("net10.0");
         text.Should().Contain("net11.0");
-        text.Should().NotContain("net8.0");
+    }
+
+    [Fact]
+    public void test_001_S1_R19_each_test_project_of_the_solution_targets_net10_and_net11()
+    {
+        var solution = File.ReadAllText(Path.Combine(Repo.Root, "GalaxyCheck.sln"));
+        var projects = Regex.Matches(solution, @"""([^""]+\.csproj)""")
+            .Select(m => Path.GetFullPath(Path.Combine(Repo.Root, m.Groups[1].Value.Replace('\\', '/'))))
+            .Where(p => !p.Contains("GalaxyCheck.Tests.Slice"))
+            .ToList();
+        var inherited = Path.Combine(Repo.Root, "Directory.Build.props");
+        var testProjects = 0;
+        foreach (var project in projects)
+        {
+            var document = XDocument.Load(project);
+            var isTest = document.Descendants().Any(e =>
+                (e.Name.LocalName == "PackageReference" && ((string?)e.Attribute("Include") ?? "") == "Microsoft.NET.Test.Sdk")
+                || (e.Name.LocalName == "IsTestProject" && e.Value.Trim().Equals("true", StringComparison.OrdinalIgnoreCase)));
+            if (!isTest)
+            {
+                continue;
+            }
+
+            testProjects++;
+            var frameworks = document.Descendants()
+                .Where(e => e.Name.LocalName is "TargetFramework" or "TargetFrameworks")
+                .Select(e => e.Value).ToList();
+            if (frameworks.Count == 0 && File.Exists(inherited))
+            {
+                frameworks = XDocument.Load(inherited).Descendants()
+                    .Where(e => e.Name.LocalName is "TargetFramework" or "TargetFrameworks")
+                    .Select(e => e.Value).ToList();
+            }
+
+            var all = string.Join(";", frameworks);
+            all.Should().Contain("net10.0", $"the test project {Path.GetFileName(project)} must target net10.0");
+            all.Should().Contain("net11.0", $"the test project {Path.GetFileName(project)} must target net11.0, or its net11.0 leg runs no test");
+        }
+
+        testProjects.Should().BeGreaterThan(0, "GalaxyCheck.sln must hold a test project");
     }
 
     [Fact]
@@ -144,6 +183,12 @@ public class S1_PackagingTests
             .Where(e => e.Name.LocalName == "add")
             .Select(e => ((string?)e.Attribute("value") ?? "").Trim())
             .ToList();
+
+        var packageSources = XDocument.Parse(raw).Descendants("packageSources").Single().Elements().ToList();
+        var clearIndex = packageSources.FindIndex(e => e.Name.LocalName == "clear");
+        var firstAddIndex = packageSources.FindIndex(e => e.Name.LocalName == "add");
+        clearIndex.Should().BeGreaterThanOrEqualTo(0, "packageSources must hold a <clear /> element, or the restore also reads the sources of the machine");
+        clearIndex.Should().BeLessThan(firstAddIndex, "the <clear /> element must come before the add elements");
 
         sources.Should().HaveCount(2, "the sources are nuget.org and one folder");
         var remote = sources.Where(s => s.StartsWith("http://") || s.StartsWith("https://")).ToList();

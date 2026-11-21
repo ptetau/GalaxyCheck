@@ -5,7 +5,7 @@
 - result format: junit
 - tests folder: `src/GalaxyCheck.Tests.Slice`
 - source folders: `src/GalaxyCheck, src/GalaxyCheck.Xunit, src/GalaxyCheck.Xunit.V3, src/GalaxyCheck.TUnit, src/GalaxyCheck.NUnit, src/GalaxyCheck.Benchmarks, src/GalaxyCheck.MSTest, src/GalaxyCheck.SourceGeneration, docs`
-- source files: `.github/workflows/dotnet.yml, GalaxyCheck.sln, nuget.config, README.md, packages-local/**`
+- source files: `.github/workflows/dotnet.yml, GalaxyCheck.sln, nuget.config, README.md, packages-local/**, src/GalaxyCheck.Tests/GalaxyCheck.Tests.csproj, src/GalaxyCheck.Tests.V3/GalaxyCheck.Tests.V3.csproj, src/GalaxyCheck.Xunit.Tests/GalaxyCheck.Xunit.Tests.csproj, src/GalaxyCheck.Xunit.CodeAnalysis.Tests/GalaxyCheck.Xunit.CodeAnalysis.Tests.csproj, samples/GalaxyCheck.Samples.EverythingIsSerializable/GalaxyCheck.Samples.EverythingIsSerializable.csproj`
 - security scan: none
 
 A `junit` command writes its report to `{junit}`.
