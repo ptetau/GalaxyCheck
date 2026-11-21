@@ -1,0 +1,10 @@
+namespace Runner
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            GalaxyCheck.Benchmarks.Cases.MeasureAllTo(System.Console.Out, double.Parse(args[0], System.Globalization.CultureInfo.InvariantCulture));
+        }
+    }
+}

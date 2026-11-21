@@ -1,0 +1,7 @@
+<Project>
+  <!-- A test writer compiles the tests of one slice into its own folders, with the properties SliceOnly and SliceWork. -->
+  <PropertyGroup Condition="'$(SliceWork)' != '' and '$(MSBuildProjectName)' == 'GalaxyCheck.Tests.Slice'">
+    <BaseIntermediateOutputPath>$(SliceWork)obj/</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(SliceWork)bin/</BaseOutputPath>
+  </PropertyGroup>
+</Project>
