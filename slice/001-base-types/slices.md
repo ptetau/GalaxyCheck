@@ -75,7 +75,7 @@
 - Layers: generator api, generator core
 - Tier: hard
 - Status: building
-- Test rounds: 0
+- Test rounds: 1
 - Review rounds: 0
 
 ## S4: Time types, containers, and automatic generation
