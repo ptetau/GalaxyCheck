@@ -37,8 +37,8 @@
   - Given each C# code block of README.md, when a test compiles and runs it against the current library, then it compiles with no change and runs. (R51)
 - Layers: generator core, runner, collection generators, automatic generator, shrinking, benchmarks, tests, docs
 - Tier: hard
-- Status: red
-- Test rounds: 0
+- Status: building
+- Test rounds: 1
 - Review rounds: 0
 
 ## S3: Number generators
