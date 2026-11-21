@@ -3,3 +3,4 @@ samples/**/*.run/
 samples/**/.galaxycheck/
 samples/**/__snapshots__/__mismatch__/
 *.trx
+samples/**/_run-*/

@@ -74,7 +74,7 @@
   - Given `Gen.Complex()` with the option that removes the special values, when it samples 10000 values, then the real part and the imaginary part of each value are finite. (R13)
 - Layers: generator api, generator core
 - Tier: hard
-- Status: red
+- Status: building
 - Test rounds: 0
 - Review rounds: 0
 
