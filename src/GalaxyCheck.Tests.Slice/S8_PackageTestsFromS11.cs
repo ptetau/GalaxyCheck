@@ -104,7 +104,7 @@ public class S11_PackageTests
     }
 
     [Fact]
-    public void test_001_S8_R22_pack_holds_net10_and_net11_and_no_other_target()
+    public void test_001_S8_R22_tunit_pack_holds_net10_and_net11_and_no_other_target()
     {
         var (run, package) = TUnitPack.Value;
         package.Should().NotBeNull(because: run.Output);
@@ -120,7 +120,7 @@ public class S11_PackageTests
     }
 
     [Fact]
-    public void test_001_S8_R22_public_attributes_exist_with_the_options_of_xunit()
+    public void test_001_S8_R22_tunit_public_attributes_exist_with_the_options_of_xunit()
     {
         var tunit = TUnitTypes();
         var xunit = XunitTypes();

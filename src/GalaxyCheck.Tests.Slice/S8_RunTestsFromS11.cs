@@ -167,14 +167,14 @@ public class S11_TUnitRunTests
     private static string Normalize(string text) => text.Replace("\r\n", "\n");
 
     [Fact]
-    public void test_001_S8_R23_holding_property_is_one_passed_test()
+    public void test_001_S8_R23_tunit_holding_property_is_one_passed_test()
     {
         var result = Single(Forms.Value, "HoldingBool");
         result.Outcome.Should().BeEquivalentTo("Passed", because: result.Message + Forms.Value.Run.Output);
     }
 
     [Fact]
-    public void test_001_S8_R23_falsified_property_is_one_failed_test_with_counterexample_and_replay()
+    public void test_001_S8_R23_tunit_falsified_property_is_one_failed_test_with_counterexample_and_replay()
     {
         var reference = Reference();
         var result = Single(Forms.Value, "IntBelow10");
@@ -197,7 +197,7 @@ public class S11_TUnitRunTests
     }
 
     [Fact]
-    public void test_001_S8_R24_each_holding_form_passes()
+    public void test_001_S8_R24_tunit_each_holding_form_passes()
     {
         var run = Forms.Value;
         run.Results.Should().NotBeEmpty(because: run.Run.Output);
@@ -215,7 +215,7 @@ public class S11_TUnitRunTests
     }
 
     [Fact]
-    public void test_001_S8_R24_each_falsified_form_fails()
+    public void test_001_S8_R24_tunit_each_falsified_form_fails()
     {
         var run = Forms.Value;
         run.Results.Should().NotBeEmpty(because: run.Run.Output);
@@ -233,7 +233,7 @@ public class S11_TUnitRunTests
     }
 
     [Fact]
-    public void test_001_S8_R25_replay_runs_the_function_one_time_and_fails_with_the_same_counterexample()
+    public void test_001_S8_R25_tunit_replay_runs_the_function_one_time_and_fails_with_the_same_counterexample()
     {
         var (run, replay, counterexample) = Replayed.Value;
         var result = Single(run, "ReplayedBelow10");
@@ -243,7 +243,7 @@ public class S11_TUnitRunTests
     }
 
     [Fact]
-    public void test_001_S8_R25_member_gen_gives_five_in_each_test_case()
+    public void test_001_S8_R25_tunit_member_gen_gives_five_in_each_test_case()
     {
         var run = Forms.Value;
         var result = Single(run, "MemberGenFive");
@@ -254,7 +254,7 @@ public class S11_TUnitRunTests
     }
 
     [Fact]
-    public void test_001_S8_R26_sample_test_fails_and_lists_the_sampled_values()
+    public void test_001_S8_R26_tunit_sample_test_fails_and_lists_the_sampled_values()
     {
         var run = Forms.Value;
         var result = Single(run, "SampleConstant");
@@ -263,7 +263,7 @@ public class S11_TUnitRunTests
     }
 
     [Fact]
-    public void test_001_S8_R27_snapshot_with_no_change_passes()
+    public void test_001_S8_R27_tunit_snapshot_with_no_change_passes()
     {
         var (unchanged, _) = Snapshots.Value;
         var result = Single(unchanged, "Values");
@@ -271,7 +271,7 @@ public class S11_TUnitRunTests
     }
 
     [Fact]
-    public void test_001_S8_R27_snapshot_fails_when_the_generator_changes_its_values()
+    public void test_001_S8_R27_tunit_snapshot_fails_when_the_generator_changes_its_values()
     {
         var (_, changed) = Snapshots.Value;
         var result = Single(changed, "Values");
@@ -279,7 +279,7 @@ public class S11_TUnitRunTests
     }
 
     [Fact]
-    public void test_001_S8_R28_two_arguments_rows_run_two_tests_with_a_generated_second_parameter()
+    public void test_001_S8_R28_tunit_two_arguments_rows_run_two_tests_with_a_generated_second_parameter()
     {
         var run = Forms.Value;
         run.Results.Should().NotBeEmpty(because: run.Run.Output);
@@ -294,7 +294,7 @@ public class S11_TUnitRunTests
     }
 
     [Fact]
-    public void test_001_S8_R29_default_iterations_of_the_global_configuration_run_the_function_seven_times()
+    public void test_001_S8_R29_tunit_default_iterations_of_the_global_configuration_run_the_function_seven_times()
     {
         var run = Config.Value;
         var result = Single(run, "CountedRun");
