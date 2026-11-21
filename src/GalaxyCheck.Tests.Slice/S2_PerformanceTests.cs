@@ -158,38 +158,18 @@ public class S2_PerformanceTests
     // Runs the returned property with the check method of the library. A generator error or a replay error throws.
     private static void CheckProperty(object property, string? replay)
     {
-        var candidates = property.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance)
-            .Select(m => (Method: m, First: (object?)property))
-            .Concat(typeof(Gen).Assembly.GetTypes().Where(t => t.IsSealed && t.IsAbstract)
-                .SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.Static))
-                .Where(m => m.IsDefined(typeof(System.Runtime.CompilerServices.ExtensionAttribute), false)
-                    && m.GetParameters().Length > 0
-                    && m.GetParameters()[0].ParameterType.IsAssignableFrom(property.GetType()))
-                .Select(m => (Method: m, First: (object?)property)))
-            .Where(c => c.Method.Name == "Check")
-            .Select(c => (Method: Close(c.Method, property), c.First))
-            .Where(c => c.Method != null)
-            .Select(c => (Method: c.Method!, c.First))
-            .ToList();
-        candidates.Should().NotBeEmpty("the library must have a Check method for the property");
-        var (method, _) = candidates.First();
-        var parameters = method.GetParameters();
-        var offset = method.IsStatic ? 1 : 0;
-        var args = new object?[parameters.Length];
-        if (offset == 1)
+        // The check methods are generic extension methods, so the runtime binder closes them over the property type.
+        dynamic dynamicProperty = property;
+        var isAsync = property.GetType().GetInterfaces()
+            .Any(i => i.IsGenericType && i.GetGenericArguments()[0].Name.StartsWith("AsyncTest"));
+        if (isAsync)
         {
-            args[0] = property;
+            ((System.Threading.Tasks.Task)GalaxyCheck.Extensions.CheckAsync(dynamicProperty, replay: replay)).GetAwaiter().GetResult();
         }
-
-        for (var k = offset; k < parameters.Length; k++)
+        else
         {
-            var p = parameters[k];
-            args[k] = p.Name == "replay" && replay != null ? replay
-                : p.HasDefaultValue ? p.DefaultValue
-                : p.ParameterType.IsValueType ? Activator.CreateInstance(p.ParameterType) : null;
+            GalaxyCheck.Extensions.Check(dynamicProperty, replay: replay);
         }
-
-        method.Invoke(method.IsStatic ? null : property, args);
     }
 
     [Fact]
