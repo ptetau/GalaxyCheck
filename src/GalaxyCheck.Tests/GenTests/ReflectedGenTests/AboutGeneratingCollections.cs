@@ -1,21 +1,18 @@
 using FluentAssertions;
 using GalaxyCheck;
-using NebulaCheck;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using Property = NebulaCheck.Property;
-using Test = NebulaCheck.Test;
 
 namespace Tests.V2.GenTests.ReflectedGenTests
 {
     public class AboutGeneratingCollections
     {
         [Property]
-        public NebulaCheck.IGen<Test> ItCanGenerateLists() =>
+        public Property ItCanGenerateLists() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<List<int>> SampleTraversal(GalaxyCheck.IGen<List<int>> gen) =>
                     AboutGeneratingCollections.SampleTraversal(gen, seed, size);
@@ -27,13 +24,13 @@ namespace Tests.V2.GenTests.ReflectedGenTests
                 var sample1 = SampleTraversal(gen1);
 
                 sample0.Should().BeEquivalentTo(sample1);
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> ItCanGenerateIReadOnlyLists() =>
+        public Property ItCanGenerateIReadOnlyLists() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<IReadOnlyList<int>> SampleTraversal(GalaxyCheck.IGen<IReadOnlyList<int>> gen) =>
                     AboutGeneratingCollections.SampleTraversal(gen, seed, size);
@@ -45,13 +42,13 @@ namespace Tests.V2.GenTests.ReflectedGenTests
                 var sample1 = SampleTraversal(gen1);
 
                 sample0.Should().BeEquivalentTo(sample1);
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> ItCanGenerateImmutableLists() =>
+        public Property ItCanGenerateImmutableLists() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<ImmutableList<int>> SampleTraversal(GalaxyCheck.IGen<ImmutableList<int>> gen) =>
                     AboutGeneratingCollections.SampleTraversal(gen, seed, size);
@@ -63,13 +60,13 @@ namespace Tests.V2.GenTests.ReflectedGenTests
                 var sample1 = SampleTraversal(gen1);
 
                 sample0.Should().BeEquivalentTo(sample1);
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> ItCanGenerateILists() =>
+        public Property ItCanGenerateILists() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<IList<int>> SampleTraversal(GalaxyCheck.IGen<IList<int>> gen) =>
                     AboutGeneratingCollections.SampleTraversal(gen, seed, size);
@@ -81,13 +78,13 @@ namespace Tests.V2.GenTests.ReflectedGenTests
                 var sample1 = SampleTraversal(gen1);
 
                 sample0.Should().BeEquivalentTo(sample1);
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> ItCanGenerateIReadOnlyCollections() =>
+        public Property ItCanGenerateIReadOnlyCollections() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<IReadOnlyCollection<int>> SampleTraversal(GalaxyCheck.IGen<IReadOnlyCollection<int>> gen) =>
                     AboutGeneratingCollections.SampleTraversal(gen, seed, size);
@@ -99,13 +96,13 @@ namespace Tests.V2.GenTests.ReflectedGenTests
                 var sample1 = SampleTraversal(gen1);
 
                 sample0.Should().BeEquivalentTo(sample1);
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> ItCanGenerateIEnumerables() =>
+        public Property ItCanGenerateIEnumerables() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<IEnumerable<int>> SampleTraversal(GalaxyCheck.IGen<IEnumerable<int>> gen) =>
                     AboutGeneratingCollections.SampleTraversal(gen, seed, size);
@@ -117,7 +114,7 @@ namespace Tests.V2.GenTests.ReflectedGenTests
                 var sample1 = SampleTraversal(gen1);
 
                 sample0.Should().BeEquivalentTo(sample1);
-            });
+            }));
 
         private class ClassWithOneProperty
         {
@@ -125,10 +122,10 @@ namespace Tests.V2.GenTests.ReflectedGenTests
         }
 
         [Property]
-        public NebulaCheck.IGen<Test> ItCanGenerateListsOfAnObjectWithDefaultConstructor() =>
+        public Property ItCanGenerateListsOfAnObjectWithDefaultConstructor() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<List<ClassWithOneProperty>> SampleTraversal(GalaxyCheck.IGen<List<ClassWithOneProperty>> gen) =>
                     AboutGeneratingCollections.SampleTraversal(gen, seed, size);
@@ -140,15 +137,15 @@ namespace Tests.V2.GenTests.ReflectedGenTests
                 var sample1 = SampleTraversal(gen1);
 
                 sample0.Should().BeEquivalentTo(sample1);
-            });
+            }));
 
         private record RecordWithOneProperty(int Property);
 
         [Property]
-        public NebulaCheck.IGen<Test> ItCanGenerateListsOfAnObjectWithNonDefaultConstructor() =>
+        public Property ItCanGenerateListsOfAnObjectWithNonDefaultConstructor() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<List<RecordWithOneProperty>> SampleTraversal(GalaxyCheck.IGen<List<RecordWithOneProperty>> gen) =>
                     AboutGeneratingCollections.SampleTraversal(gen, seed, size);
@@ -160,7 +157,7 @@ namespace Tests.V2.GenTests.ReflectedGenTests
                 var sample1 = SampleTraversal(gen1);
 
                 sample0.Should().BeEquivalentTo(sample1);
-            });
+            }));
 
         private static List<T> SampleTraversal<T>(GalaxyCheck.IGen<T> gen, int seed, int size) => gen.SampleOneTraversal(seed: seed, size: size)
             .Take(100)

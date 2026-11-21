@@ -1,7 +1,6 @@
 ﻿using FluentAssertions;
 using GalaxyCheck;
-using NebulaCheck;
-using NebulaCheck.Gens.Injection.Int32;
+using GalaxyCheck.Gens.Injection.Int32;
 using System.Linq;
 using System.Reflection;
 using static Tests.V2.DomainGenAttributes;

@@ -1,5 +1,4 @@
 ﻿using GalaxyCheck;
-using NebulaCheck;
 using Snapshooter;
 using Snapshooter.Xunit;
 using System.Collections.Immutable;

@@ -1,10 +1,6 @@
 ﻿using FluentAssertions;
 using GalaxyCheck;
-using NebulaCheck;
 using System.Linq;
-using Gen = NebulaCheck.Gen;
-using Property = NebulaCheck.Property;
-using Test = NebulaCheck.Test;
 
 namespace Tests.V2.GenTests.CharGenTests
 {
@@ -15,68 +11,68 @@ namespace Tests.V2.GenTests.CharGenTests
     public class AboutShrinking
     {
         [Property]
-        public NebulaCheck.IGen<Test> IfCharTypeHasAlphabetical_ItShrinksToLowercaseA() =>
+        public Property IfCharTypeHasAlphabetical_ItShrinksToLowercaseA() => new Property(
             from charType in TestGen.CharType()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen.Char(GalaxyCheck.Gen.CharType.Alphabetical | charType);
 
                 var minimum = gen.Minimum(seed: seed, size: size);
 
                 minimum.Should().Be('a');
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> OtherwiseIfCharTypeHasWhitespace_ItShrinksToSpace() =>
+        public Property OtherwiseIfCharTypeHasWhitespace_ItShrinksToSpace() => new Property(
             from charType in TestGen.CharType(GalaxyCheck.Gen.CharType.Alphabetical)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen.Char(GalaxyCheck.Gen.CharType.Whitespace | charType);
 
                 var minimum = gen.Minimum(seed: seed, size: size);
 
                 minimum.Should().Be(' ');
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> OtherwiseIfCharTypeHasNumeric_ItShrinksTo0() =>
+        public Property OtherwiseIfCharTypeHasNumeric_ItShrinksTo0() => new Property(
             from charType in TestGen.CharType(
                 GalaxyCheck.Gen.CharType.Whitespace,
                 GalaxyCheck.Gen.CharType.Alphabetical)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen.Char(GalaxyCheck.Gen.CharType.Numeric | charType);
 
                 var minimum = gen.Minimum(seed: seed, size: size);
 
                 minimum.Should().Be('0');
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> OtherwiseIfCharTypeHasSymbol_ItShrinksToExclamationMark() =>
+        public Property OtherwiseIfCharTypeHasSymbol_ItShrinksToExclamationMark() => new Property(
             from charType in TestGen.CharType(
                 GalaxyCheck.Gen.CharType.Whitespace,
                 GalaxyCheck.Gen.CharType.Alphabetical,
                 GalaxyCheck.Gen.CharType.Numeric)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen.Char(GalaxyCheck.Gen.CharType.Symbol | charType);
 
                 var minimum = gen.Minimum(seed: seed, size: size);
 
                 minimum.Should().Be('!');
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> OtherwiseIfCharTypeHasExtended_ItShrinksToMajusculeCCedilla() =>
+        public Property OtherwiseIfCharTypeHasExtended_ItShrinksToMajusculeCCedilla() => new Property(
             from charType in TestGen.CharType(
                 GalaxyCheck.Gen.CharType.Whitespace,
                 GalaxyCheck.Gen.CharType.Alphabetical,
@@ -84,31 +80,31 @@ namespace Tests.V2.GenTests.CharGenTests
                 GalaxyCheck.Gen.CharType.Symbol)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen.Char(GalaxyCheck.Gen.CharType.Extended | charType);
 
                 var minimum = gen.Minimum(seed: seed, size: size);
 
                 minimum.Should().Be('\u0080');
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> Otherwise_ItShrinksToNullCharacter() =>
+        public Property Otherwise_ItShrinksToNullCharacter() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen.Char(GalaxyCheck.Gen.CharType.Control);
 
                 var minimum = gen.Minimum(seed: seed, size: size);
 
                 minimum.Should().Be('\u0000');
-            });
+            }));
 
         private static class TestGen
         {
-            public static NebulaCheck.IGen<GalaxyCheck.Gen.CharType> CharType(params GalaxyCheck.Gen.CharType[] excludedCharType)
+            public static IGen<GalaxyCheck.Gen.CharType> CharType(params GalaxyCheck.Gen.CharType[] excludedCharType)
             {
                 var allCharTypes = new[]
                 {

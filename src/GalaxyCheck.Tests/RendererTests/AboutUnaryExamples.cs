@@ -1,6 +1,6 @@
-﻿using FluentAssertions;
+﻿using GalaxyCheck;
+using FluentAssertions;
 using GalaxyCheck.Runners;
-using NebulaCheck;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -12,24 +12,24 @@ namespace Tests.V2.RendererTests
     public class AboutUnaryExamples
     {
         [Property]
-        public IGen<Test> ItRendersOneLine() =>
+        public Property ItRendersOneLine() => new Property(
             from value in Gen.Choose(DomainGen.Any(), DomainGen.AnyList())
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var rendering = ExampleRenderer.Render(new object[] { value });
 
                 rendering.Should().ContainSingle();
-            });
+            }));
 
         [Property]
-        public IGen<Test> ItRendersDateUsingTheCurrentCulture() =>
+        public Property ItRendersDateUsingTheCurrentCulture() => new Property(
             from value in Gen.DateTime()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var rendering = ExampleRenderer.Render(new object[] { value }).Single();
 
                 rendering.Should().Be(value.ToString(CultureInfo.CurrentCulture));
-            });
+            }));
 
         [Fact]
         public void ItCanHandleCircularReferences()

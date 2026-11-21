@@ -1,23 +1,19 @@
 ﻿using FluentAssertions;
 using GalaxyCheck;
-using NebulaCheck;
 using System;
 using System.Linq;
-using Test = NebulaCheck.Test;
-using Gen = NebulaCheck.Gen;
-using Property = NebulaCheck.Property;
 
 namespace Tests.V2.GenTests.Int16GenTests
 {
     public class AboutValidation
     {
         [Property]
-        public NebulaCheck.IGen<Test> ItErrorsWhenMinimumIsGreaterThanMaximum() =>
+        public Property ItErrorsWhenMinimumIsGreaterThanMaximum() => new Property(
             from min in Gen.Int16().GreaterThan(short.MinValue)
             from max in Gen.Int16().LessThan(min)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen.Int16().GreaterThanEqual(min).LessThanEqual(max);
 
@@ -26,15 +22,15 @@ namespace Tests.V2.GenTests.Int16GenTests
                 action.Should()
                     .Throw<GalaxyCheck.Exceptions.GenErrorException>()
                     .WithGenErrorMessage("'min' cannot be greater than 'max'");
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> ItErrorsWhenMinimumIsGreaterThanOrigin() =>
+        public Property ItErrorsWhenMinimumIsGreaterThanOrigin() => new Property(
             from min in Gen.Int16().GreaterThan(short.MinValue)
             from origin in Gen.Int16().LessThan(min)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen.Int16().GreaterThanEqual(min).ShrinkTowards(origin);
 
@@ -43,15 +39,15 @@ namespace Tests.V2.GenTests.Int16GenTests
                 action.Should()
                     .Throw<GalaxyCheck.Exceptions.GenErrorException>()
                     .WithGenErrorMessage("'origin' must be between 'min' and 'max'");
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> ItErrorsWhenMaximumIsLessThanOrigin() =>
+        public Property ItErrorsWhenMaximumIsLessThanOrigin() => new Property(
             from max in Gen.Int16().LessThan(short.MaxValue)
             from origin in Gen.Int16().GreaterThan(max)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen.Int16().LessThanEqual(max).ShrinkTowards(origin);
 
@@ -60,6 +56,6 @@ namespace Tests.V2.GenTests.Int16GenTests
                 action.Should()
                     .Throw<GalaxyCheck.Exceptions.GenErrorException>()
                     .WithGenErrorMessage("'origin' must be between 'min' and 'max'");
-            });
+            }));
     }
 }

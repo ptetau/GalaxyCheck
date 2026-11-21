@@ -2,22 +2,18 @@
 using GalaxyCheck;
 using GalaxyCheck.Gens;
 using Moq;
-using NebulaCheck;
 using System;
 using System.Linq;
-using Gen = NebulaCheck.Gen;
-using Property = NebulaCheck.Property;
-using Test = NebulaCheck.Test;
 
 namespace Tests.V2.GenTests.Int64GenTests
 {
     public class AboutExtensions
     {
         [Property]
-        public NebulaCheck.IGen<Test> BetweenDefersToUnderlyingMethods() =>
+        public Property BetweenDefersToUnderlyingMethods() => new Property(
             from min in Gen.Int64()
             from max in Gen.Int64().GreaterThanEqual(min)
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 {
                     var mockGen = SetupMock();
@@ -36,25 +32,25 @@ namespace Tests.V2.GenTests.Int64GenTests
                     mockGen.Verify(gen => gen.GreaterThanEqual(min), Times.Once);
                     mockGen.Verify(gen => gen.LessThanEqual(max), Times.Once);
                 }
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> GreaterThanDefersToUnderlyingMethod() =>
+        public Property GreaterThanDefersToUnderlyingMethod() => new Property(
             from minExclusive in Gen.Int64().LessThan(long.MaxValue)
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var mockGen = SetupMock();
 
                 mockGen.Object.GreaterThan(minExclusive);
 
                 mockGen.Verify(gen => gen.GreaterThanEqual(minExclusive + 1), Times.Once);
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> GreaterThanErrorsAtMaxValue() =>
+        public Property GreaterThanErrorsAtMaxValue() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var mockGen = SetupMock();
 
@@ -67,25 +63,25 @@ namespace Tests.V2.GenTests.Int64GenTests
                 action.Should()
                     .Throw<GalaxyCheck.Exceptions.GenErrorException>()
                     .WithGenErrorMessage("Arithmetic operation resulted in an overflow.");
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> LessThanDefersToUnderlyingMethod() =>
+        public Property LessThanDefersToUnderlyingMethod() => new Property(
             from maxExclusive in Gen.Int64().GreaterThan(long.MinValue)
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var mockGen = SetupMock();
 
                 mockGen.Object.LessThan(maxExclusive);
 
                 mockGen.Verify(gen => gen.LessThanEqual(maxExclusive - 1), Times.Once);
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> LessThanErrorsAtMinValue() =>
+        public Property LessThanErrorsAtMinValue() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var mockGen = SetupMock();
 
@@ -98,7 +94,7 @@ namespace Tests.V2.GenTests.Int64GenTests
                 action.Should()
                     .Throw<GalaxyCheck.Exceptions.GenErrorException>()
                     .WithGenErrorMessage("Arithmetic operation resulted in an overflow.");
-            });
+            }));
 
         private static Mock<IIntGen<long>> SetupMock()
         {

@@ -1,10 +1,6 @@
 using FluentAssertions;
 using GalaxyCheck;
-using NebulaCheck;
 using System.Linq;
-using Test = NebulaCheck.Test;
-using Property = NebulaCheck.Property;
-using Gen = NebulaCheck.Gen;
 using System.Collections.Generic;
 
 namespace Tests.V2.GenTests.ChooseGenTests
@@ -12,12 +8,12 @@ namespace Tests.V2.GenTests.ChooseGenTests
     public class AboutValueProduction
     {
         [Property]
-        public NebulaCheck.IGen<Test> IfThereIsOneChoice_ItProducesValuesLikeTheSource() =>
+        public Property IfThereIsOneChoice_ItProducesValuesLikeTheSource() => new Property(
             from choiceGen in DomainGen.Gen()
             from choiceWeight in Gen.Int32().GreaterThan(1)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<object> SampleTraversal(GalaxyCheck.IGen<object> gen, int seed) =>
                     AboutValueProduction.SampleTraversal(gen, seed, size);
@@ -27,14 +23,14 @@ namespace Tests.V2.GenTests.ChooseGenTests
                 var sample0 = SampleTraversal(gen, seed);
                 var sample1 = SampleTraversal(choiceGen, seed);
                 sample0.Should().BeEquivalentTo(sample1);
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> IfChoicesWeightsAreOne_ItProducesValuesLikeANonBiasedInt32Gen() =>
+        public Property IfChoicesWeightsAreOne_ItProducesValuesLikeANonBiasedInt32Gen() => new Property(
             from numberOfChoices in Gen.Int32().Between(1, 20) 
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<int> SampleTraversal(GalaxyCheck.IGen<int> gen) =>
                     AboutValueProduction.SampleTraversal(gen, seed, size);
@@ -53,7 +49,7 @@ namespace Tests.V2.GenTests.ChooseGenTests
                 var sample0 = SampleTraversal(gen);
                 var sample1 = SampleTraversal(int32Gen);
                 sample0.Should().BeEquivalentTo(sample1);
-            });
+            }));
 
         private static List<T> SampleTraversal<T>(GalaxyCheck.IGen<T> gen, int seed, int size) => gen.SampleOneTraversal(seed: seed, size: size)
             .Take(100)

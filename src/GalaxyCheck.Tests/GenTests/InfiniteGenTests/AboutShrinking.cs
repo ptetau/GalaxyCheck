@@ -1,34 +1,31 @@
 using FluentAssertions;
 using GalaxyCheck;
-using NebulaCheck;
 using System.Linq;
-using Property = NebulaCheck.Property;
-using Test = NebulaCheck.Test;
 
 namespace Tests.V2.GenTests.InfiniteGenTests
 {
     public class AboutShrinking
     {
         [Property]
-        public NebulaCheck.IGen<Test> WhenItIsNotEnumerated_ItWillNotShrink() =>
+        public Property WhenItIsNotEnumerated_ItWillNotShrink() => new Property(
             from elementGen in DomainGen.Gen()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = elementGen.InfiniteOf();
 
                 var sample = gen.SampleOneTraversal(seed: seed, size: size);
 
                 sample.Should().ContainSingle();
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> WhenItIsEnumeratedOnce_AndTheElementGeneratorDoesNotShrink_ItWillShrinkOnce() =>
+        public Property WhenItIsEnumeratedOnce_AndTheElementGeneratorDoesNotShrink_ItWillShrinkOnce() => new Property(
             from elementGen in DomainGen.Gen()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = elementGen.NoShrink().InfiniteOf().Select(enumerable =>
                 {
@@ -39,15 +36,15 @@ namespace Tests.V2.GenTests.InfiniteGenTests
                 var sample = gen.SampleOneTraversal(seed: seed, size: size);
 
                 sample.Should().HaveCount(2);
-            });
+            }));
 
 
         [Property]
-        public NebulaCheck.IGen<Test> WhenItIsEnumeratedOnce_ItWillShrinkToTheSmallestElementRepeated() =>
+        public Property WhenItIsEnumeratedOnce_ItWillShrinkToTheSmallestElementRepeated() => new Property(
             from elementGen in DomainGen.Gen()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var elementMin = elementGen.Minimum(seed: seed, size: size);
 
@@ -60,6 +57,6 @@ namespace Tests.V2.GenTests.InfiniteGenTests
                 var minimum = infiniteGen.Minimum(seed: seed, size: size);
                 
                 minimum.Take(10).Should().BeEquivalentTo(Enumerable.Range(0, 10).Select(_ => elementMin));
-            });
+            }));
     }
 }

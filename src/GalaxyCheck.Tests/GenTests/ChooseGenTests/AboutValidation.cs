@@ -1,21 +1,17 @@
 ﻿using FluentAssertions;
 using GalaxyCheck;
-using NebulaCheck;
 using System;
 using System.Linq;
-using Test = NebulaCheck.Test;
-using Property = NebulaCheck.Property;
-using Gen = NebulaCheck.Gen;
 
 namespace Tests.V2.GenTests.ChooseGenTests
 {
     public class AboutValidation
     {
         [Property]
-        public NebulaCheck.IGen<Test> ItErrorsWhenNoGensAreGiven() =>
+        public Property ItErrorsWhenNoGensAreGiven() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 void AssertError(GalaxyCheck.IGen<object> gen)
                 {
@@ -43,15 +39,15 @@ namespace Tests.V2.GenTests.ChooseGenTests
                 {
                     AssertError(GalaxyCheck.Gen.Choose<object>());
                 }
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> ItErrorsWhenTheTotalWeightIsZero() =>
+        public Property ItErrorsWhenTheTotalWeightIsZero() => new Property(
             from choiceGen in DomainGen.Gen()
             from choiceWeights in Gen.Constant(0).ListOf().WithCountGreaterThanEqual(1)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 void AssertError(GalaxyCheck.IGen<object> gen)
                 {
@@ -76,15 +72,15 @@ namespace Tests.V2.GenTests.ChooseGenTests
 
                     AssertError(gen);
                 }
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> ItErrorsWhenThereIsANegativelyWeightedChoice() =>
+        public Property ItErrorsWhenThereIsANegativelyWeightedChoice() => new Property(
             from choiceGen in DomainGen.Gen()
             from choiceWeight in Gen.Int32().LessThan(0)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 void AssertError(GalaxyCheck.IGen<object> gen)
                 {
@@ -107,6 +103,6 @@ namespace Tests.V2.GenTests.ChooseGenTests
 
                     AssertError(gen);
                 }
-            });
+            }));
     }
 }

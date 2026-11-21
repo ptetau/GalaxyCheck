@@ -1,12 +1,8 @@
 using FluentAssertions;
 using GalaxyCheck;
-using NebulaCheck;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Gen = NebulaCheck.Gen;
-using Property = NebulaCheck.Property;
-using Test = NebulaCheck.Test;
 
 namespace Tests.V2.GenTests.InfiniteGenTests
 {
@@ -15,47 +11,47 @@ namespace Tests.V2.GenTests.InfiniteGenTests
         private const int ExpectedDefaultIterationLimit = 1000;
 
         [Property]
-        public NebulaCheck.IGen<Test> AGeneratedEnumerableHasTheDefaultIterationLimitIfNotConfiguredOtherwise() =>
+        public Property AGeneratedEnumerableHasTheDefaultIterationLimitIfNotConfiguredOtherwise() => new Property(
             from elementGen in DomainGen.Gen()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = elementGen.InfiniteOf().Select(EnsureSourceCanShrink);
 
                 var sample = gen.SampleOneTraversal(seed: seed, size: size);
 
                 AssertLimit(sample, ExpectedDefaultIterationLimit);
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> AGeneratedEnumerableHasTheGivenLimit() =>
+        public Property AGeneratedEnumerableHasTheGivenLimit() => new Property(
             from elementGen in DomainGen.Gen()
             from limit in Gen.Int32().Between(1, 1000)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = elementGen.InfiniteOf(iterationLimit: limit).Select(EnsureSourceCanShrink);
 
                 var sample = gen.SampleOneTraversal(seed: seed, size: size);
 
                 AssertLimit(sample, limit);
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> AGeneratedEnumerableWithoutALimitNeverThrows() =>
+        public Property AGeneratedEnumerableWithoutALimitNeverThrows() => new Property(
             from elementGen in DomainGen.Gen()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = elementGen.InfiniteOf(iterationLimit: null).Select(EnsureSourceCanShrink);
 
                 var sample = gen.SampleOneTraversal(seed: seed, size: size);
 
                 AssertUnlimited(sample);
-            });
+            }));
 
         private static void AssertLimit<T>(List<IEnumerable<T>> traversal, int expectedLimit)
         {

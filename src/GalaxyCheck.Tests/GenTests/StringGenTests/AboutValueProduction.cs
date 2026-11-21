@@ -1,22 +1,18 @@
 using FluentAssertions;
 using GalaxyCheck;
-using NebulaCheck;
 using System.Linq;
 using System.Collections.Generic;
-using Test = NebulaCheck.Test;
-using Property = NebulaCheck.Property;
-using Gen = NebulaCheck.Gen;
 
 namespace Tests.V2.GenTests.StringGenTests
 {
     public class AboutValueProduction
     {
         [Property]
-        public NebulaCheck.IGen<Test> IfTheCharacterSelectionStrategyIsCharType_ItProducesValuesLikeListOfChar() =>
+        public Property IfTheCharacterSelectionStrategyIsCharType_ItProducesValuesLikeListOfChar() => new Property(
             from charType in Gen.Enum<GalaxyCheck.Gen.CharType>()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<string> SampleTraversal(GalaxyCheck.IGen<string> gen) =>
                     AboutValueProduction.SampleTraversal(gen, seed, size);
@@ -35,14 +31,14 @@ namespace Tests.V2.GenTests.StringGenTests
                 var sample1 = SampleTraversal(gen1);
 
                 sample0.Should().BeEquivalentTo(sample1);
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> IfTheCharacterSelectionStrategyIsFromEnumerable_ItProducesValuesLikeListOfElement() =>
+        public Property IfTheCharacterSelectionStrategyIsFromEnumerable_ItProducesValuesLikeListOfElement() => new Property(
             from chars in Gen.Char().ListOf().WithCountGreaterThan(0)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<string> SampleTraversal(GalaxyCheck.IGen<string> gen) =>
                     AboutValueProduction.SampleTraversal(gen, seed, size);
@@ -61,15 +57,15 @@ namespace Tests.V2.GenTests.StringGenTests
                 var sample1 = SampleTraversal(gen1);
 
                 sample0.Should().BeEquivalentTo(sample1);
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> IfTheStringLengthIsRanged_ItProducesValuesLikeListOfCharConstrainedInTheSameWay() =>
+        public Property IfTheStringLengthIsRanged_ItProducesValuesLikeListOfCharConstrainedInTheSameWay() => new Property(
             from lengths in Gen.Int32().Between(0, 20).Two()
             from lengthBias in DomainGen.Bias()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<string> SampleTraversal(GalaxyCheck.IGen<string> gen) =>
                     AboutValueProduction.SampleTraversal(gen, seed, size);
@@ -90,14 +86,14 @@ namespace Tests.V2.GenTests.StringGenTests
                 var sample1 = SampleTraversal(gen1);
 
                 sample0.Should().BeEquivalentTo(sample1);
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> IfTheStringLengthIsSpecific_ItProducesValuesLikeListOfCharConstrainedInTheSameWay() =>
+        public Property IfTheStringLengthIsSpecific_ItProducesValuesLikeListOfCharConstrainedInTheSameWay() => new Property(
             from length in Gen.Int32().Between(0, 20)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<string> SampleTraversal(GalaxyCheck.IGen<string> gen) =>
                     AboutValueProduction.SampleTraversal(gen, seed, size);
@@ -116,7 +112,7 @@ namespace Tests.V2.GenTests.StringGenTests
                 var sample1 = SampleTraversal(gen1);
 
                 sample0.Should().BeEquivalentTo(sample1);
-            });
+            }));
 
         private static List<string> SampleTraversal(GalaxyCheck.IGen<string> gen, int seed, int size) => gen.SampleOneTraversal(seed: seed, size: size)
             .Take(100)

@@ -1,9 +1,7 @@
 using System.Reflection;
 using Xunit;
-using NebulaCheck;
 using GalaxyCheck;
 using GalaxyCheck.Gens.Injection.Int32;
-using Property = NebulaCheck.Property;
 using System.Linq;
 using System.Collections.Generic;
 using FluentAssertions;
@@ -23,7 +21,7 @@ namespace Tests.V2.GenTests.ParameterGenTests
             var property =
                 from seed in DomainGen.Seed()
                 from size in DomainGen.Size()
-                select Property.ForThese(() =>
+                select TestProperty.ForThese(() =>
                 {
                     List<int> SampleTraversal(GalaxyCheck.IGen<int> gen) =>
                         AboutInt32GenAttributes.SampleTraversal(gen, seed: seed, size: size);
@@ -54,7 +52,7 @@ namespace Tests.V2.GenTests.ParameterGenTests
             var property =
                 from seed in DomainGen.Seed()
                 from size in DomainGen.Size()
-                select Property.ForThese(() =>
+                select TestProperty.ForThese(() =>
                 {
                     List<int> SampleTraversal(GalaxyCheck.IGen<int> gen) =>
                         AboutInt32GenAttributes.SampleTraversal(gen, seed: seed, size: size);
@@ -85,7 +83,7 @@ namespace Tests.V2.GenTests.ParameterGenTests
             var property =
                 from seed in DomainGen.Seed()
                 from size in DomainGen.Size()
-                select Property.ForThese(() =>
+                select TestProperty.ForThese(() =>
                 {
                     List<int> SampleTraversal(GalaxyCheck.IGen<int> gen) =>
                         AboutInt32GenAttributes.SampleTraversal(gen, seed: seed, size: size);

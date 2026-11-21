@@ -1,6 +1,6 @@
-﻿using FluentAssertions;
+﻿using GalaxyCheck;
+using FluentAssertions;
 using GalaxyCheck.Runners;
-using NebulaCheck;
 using System.Linq;
 
 namespace Tests.V2.RendererTests
@@ -8,9 +8,9 @@ namespace Tests.V2.RendererTests
     public class AboutMultiaryExamples
     {
         [Property]
-        public IGen<Test> ItRendersLikeUnary() =>
+        public Property ItRendersLikeUnary() => new Property(
             from values in DomainGen.AnyList().WithCountGreaterThan(1)
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var unaryRenderings = values.SelectMany((value, index) => ExampleRenderer
                     .Render(new object[] { value })
@@ -19,6 +19,6 @@ namespace Tests.V2.RendererTests
                 var multiaryRendering = ExampleRenderer.Render(values.ToArray());
 
                 multiaryRendering.Should().BeEquivalentTo(unaryRenderings);
-            });
+            }));
     }
 }

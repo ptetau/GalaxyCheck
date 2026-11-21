@@ -2,12 +2,8 @@ using FluentAssertions;
 using System.Collections.Generic;
 using GalaxyCheck;
 using GalaxyCheck.Runners.Check;
-using NebulaCheck;
 using System.Linq;
 using Xunit;
-using Gen = NebulaCheck.Gen;
-using Property = NebulaCheck.Property;
-using Test = NebulaCheck.Test;
 
 namespace Tests.V2.RunnerTests.CheckTests
 {
@@ -18,10 +14,10 @@ namespace Tests.V2.RunnerTests.CheckTests
             GalaxyCheck.Gen.Int32().GreaterThanEqual(1).WithBias(GalaxyCheck.Gen.Bias.None).ListOf().WithCount(1000);
 
         [Property]
-        public NebulaCheck.IGen<Test> ItShrinksToTheGivenLimit() =>
+        public Property ItShrinksToTheGivenLimit() => new Property(
             from shrinkLimit in Gen.Int32().Between(0, 100)
             from seed in DomainGen.Seed()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var property = InfinitelyShrinkableGen.ForAll(_ => false);
 
@@ -29,21 +25,21 @@ namespace Tests.V2.RunnerTests.CheckTests
 
                 result.Shrinks.Should().Be(shrinkLimit);
                 result.TerminationReason.Should().Be(TerminationReason.ReachedShrinkLimit);
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> IfTheShrinkLimitIsZero_ThePropertyCanStillBeFalsified() =>
+        public Property IfTheShrinkLimitIsZero_ThePropertyCanStillBeFalsified() => new Property(
             from gen in DomainGen.Gen()
             from shrinkLimit in Gen.Int32().LessThanEqual(0)
             from seed in DomainGen.Seed()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var property = gen.ForAll(_ => false);
 
                 var result = property.Check(seed: seed, shrinkLimit: shrinkLimit);
 
                 result.Falsified.Should().BeTrue();
-            });
+            }));
 
         [Fact]
         public void TheDefaultShrinkLimitIsFiveHundred()

@@ -1,11 +1,8 @@
 ﻿using FluentAssertions;
 using GalaxyCheck;
-using NebulaCheck;
 using System;
 using System.Linq;
 using Xunit;
-using Property = NebulaCheck.Property;
-using Test = NebulaCheck.Test;
 
 namespace Tests.V2.GenTests.ReflectedGenTests
 {
@@ -20,10 +17,10 @@ namespace Tests.V2.GenTests.ReflectedGenTests
         }
 
         [Property]
-        public NebulaCheck.IGen<Test> ItErrorsWhenTheDefaultConstructorThrowsAnException() =>
+        public Property ItErrorsWhenTheDefaultConstructorThrowsAnException() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen.Create<ClassWithDefaultThrowingConstructor>();
 
@@ -32,7 +29,7 @@ namespace Tests.V2.GenTests.ReflectedGenTests
                 action.Should()
                     .Throw<GalaxyCheck.Exceptions.GenErrorException>()
                     .WithGenErrorMessage("'System.Exception' was thrown while calling constructor with message 'Test exception'");
-            });
+            }));
 
         private class ClassWithNonDefaultThrowingConstructor
         {
@@ -43,10 +40,10 @@ namespace Tests.V2.GenTests.ReflectedGenTests
         }
 
         [Property]
-        public NebulaCheck.IGen<Test> ItErrorsWhenTheNonDefaultConstructorThrowsAnException() =>
+        public Property ItErrorsWhenTheNonDefaultConstructorThrowsAnException() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen.Create<ClassWithNonDefaultThrowingConstructor>();
 
@@ -55,7 +52,7 @@ namespace Tests.V2.GenTests.ReflectedGenTests
                 action.Should()
                     .Throw<GalaxyCheck.Exceptions.GenErrorException>()
                     .WithGenErrorMessage("'System.Exception' was thrown while calling constructor with message 'Test exception'");
-            });
+            }));
 
         private class ClassWithThrowingPropertySetter
         {
@@ -76,10 +73,10 @@ namespace Tests.V2.GenTests.ReflectedGenTests
         }
 
         [Property]
-        public NebulaCheck.IGen<Test> ItErrorsWhenAPropertySetterThrowsAnException() =>
+        public Property ItErrorsWhenAPropertySetterThrowsAnException() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen.Create<ClassWithThrowingPropertySetter>();
 
@@ -88,6 +85,6 @@ namespace Tests.V2.GenTests.ReflectedGenTests
                 action.Should()
                     .Throw<GalaxyCheck.Exceptions.GenErrorException>()
                     .WithGenErrorMessage("'System.Exception' was thrown while setting property with message 'Test exception'");
-            });
+            }));
     }
 }
