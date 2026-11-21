@@ -28,6 +28,7 @@ numbers. The user can run properties in xunit v2, xunit v3, TUnit, NUnit, and MS
 - D15 (agent experience): LLM agents write most of the tests. The library gives them machine-readable failures, errors that state the fix, one compact reference file, and a quiet mode with a fixed seed.
 - D16 (old tests): The old test projects are ported. A test of an internal part that no longer exists is deleted. A snapshot of generated values is made again, after a check that the new values are sensible. A test of public behaviour still passes.
 - D17 (README examples): The code examples of README.md did not compile against the library before this spec. Slice S2 rewrote each example as a complete file against the documented API. R51 holds for the rewritten examples.
+- D18 (self-testing): The tests of the library use the current library for their own property tests, as soon as the fast core exists. The old prebuilt copies of the library go.
 
 ## Requirements
 
@@ -97,6 +98,7 @@ numbers. The user can run properties in xunit v2, xunit v3, TUnit, NUnit, and MS
 - R64 (errors that state the fix): The message of each generator error, and of each error of a `[Replay]`, `[MemberGen]`, or `[Example]` attribute, ends with a line that starts with `Fix:` and gives a corrected call or the option to change.
 - R65 (agent reference file): The file `docs/llms.txt` lists each public generator method, each option of a generator, each property option, and each attribute, with a one-line example for each, in at most 40,000 characters. Each package holds the file. Each public type and member of each package has an XML documentation summary, and each package holds the XML documentation file.
 - R66 (quiet mode with a fixed seed): With the environment variable `GALAXYCHECK_AGENT=1`, a property with no seed option uses seed 0, a passed property writes no output, and the failure message holds at most 40 lines and still holds the block of R63. The environment variable `GALAXYCHECK_SEED` sets the seed of each property with no seed option.
+- R67 (self-testing): No project of the solution refers to a `NebulaCheck` or `GalaxyCheck.Stable` package, and no test file uses their namespaces. Each property test of the old test projects runs on the current library through a project reference. Each old test project uses the same test runner version as the other test projects. The folder `packages-local` holds no package of an old copy of the library.
 
 ## Out of scope
 

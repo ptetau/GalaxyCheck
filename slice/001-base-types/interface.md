@@ -207,3 +207,10 @@ The stubs fail with `System.NotImplementedException`. The message holds "not imp
 - Uses: the message of `Assert`, each framework package, `GenErrorException`, `docs/llms.txt`, `dotnet pack`, the environment variables `GALAXYCHECK_AGENT` and `GALAXYCHECK_SEED`
 - Stubs: none
 - Changed: R63, R64, R65, R66
+
+## S12
+
+- Uses: the project files of `GalaxyCheck.sln`, the `.cs` files of `src/GalaxyCheck.Tests` and `src/GalaxyCheck.Tests.V3` (read at run time), the folder `packages-local`, `dotnet test` with a trx file
+- Stubs: none
+- Changed: R67
+

@@ -170,3 +170,4 @@ This design document holds no code.
 - R64: Generator, FrameworkAdapter, PropertyRun.X1, PropertyRun.X2, PropertyRun.X3
 - R65: ReferenceEntry, Package
 - R66: AgentMode, Report, PropertyRun.T11
+- R67: Package, Property, FrameworkAdapter, boundary: nuget.org

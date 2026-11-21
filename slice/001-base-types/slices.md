@@ -301,3 +301,20 @@
 - Status: red
 - Test rounds: 0
 - Review rounds: 0
+
+## S12: The library tests itself
+
+- Story: As a maintainer, I run the tests of the library on the current fast library, so that the test suite is fast and has no old prebuilt copy of the library.
+- Requirements: R67 (self-testing)
+- Acceptance:
+  - Given each project file of `GalaxyCheck.sln`, when a test reads its package references, then none starts with `NebulaCheck` or `GalaxyCheck.Stable`. (R67)
+  - Given each `.cs` file of `src/GalaxyCheck.Tests` and `src/GalaxyCheck.Tests.V3`, when a test reads it, then no line holds `NebulaCheck` or `GalaxyCheck.Stable`. (R67)
+  - Given `src/GalaxyCheck.Tests` and `src/GalaxyCheck.Tests.V3`, when a test reads each project file, then it has a project reference to `GalaxyCheck.Xunit`, and its `xunit.runner.visualstudio` version equals the version in `src/GalaxyCheck.Xunit.Tests`. (R67)
+  - Given the folder `packages-local`, when a test lists it, then no file name starts with `nebulacheck` or `galaxycheck.stable`. (R67)
+  - Given `src/GalaxyCheck.Tests` and `src/GalaxyCheck.Tests.V3`, when `dotnet test` runs each on net10.0, then no test fails, `GalaxyCheck.Tests` has at least 400 passed tests, and `GalaxyCheck.Tests.V3` has at least 16 passed tests. (R67)
+- Layers: tests, build, packaging
+- Tier: standard
+- Status: planned
+- Test rounds: 0
+- Review rounds: 0
+
