@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <RootNamespace>GalaxyCheck</RootNamespace>
     <GenerateDocumentationFile Condition="'$(Configuration)' == 'Release'">true</GenerateDocumentationFile>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">1.0.0-dev</PackageVersion>
     <NuspecFile>GalaxyCheck.Xunit.nuspec</NuspecFile>
     <NuspecProperties>PackageVersion=$(PackageVersion)</NuspecProperties>
     <NuspecBasePath></NuspecBasePath>
