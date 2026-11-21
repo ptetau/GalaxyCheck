@@ -34,10 +34,14 @@ namespace GalaxyCheck.Internal.Infrastructure.Xunit
                 .FirstOrDefault() ?? new TestOutputHelper();
             testOutputHelper.Initialize(MessageBus, test);
 
+            // Runners report a result only for a test that they saw start and finish.
+            MessageBus.QueueMessage(new TestStarting(test));
+
             RunSummary Fail(Exception ex)
             {
                 var executionTime = (decimal)((DateTime.UtcNow - startTime).TotalSeconds);
                 MessageBus.QueueMessage(new TestFailed(test, executionTime, testOutputHelper!.Output, ex));
+                MessageBus.QueueMessage(new TestFinished(test, executionTime, testOutputHelper!.Output));
                 return new RunSummary() { Failed = 1, Total = 1, Skipped = 0, Time = executionTime };
             }
 
@@ -45,6 +49,7 @@ namespace GalaxyCheck.Internal.Infrastructure.Xunit
             {
                 var executionTime = (decimal)((DateTime.UtcNow - startTime).TotalSeconds);
                 MessageBus.QueueMessage(new TestPassed(test, executionTime, testOutputHelper!.Output));
+                MessageBus.QueueMessage(new TestFinished(test, executionTime, testOutputHelper!.Output));
                 return new RunSummary() { Failed = 0, Total = 1, Skipped = 0, Time = executionTime };
             }
 
@@ -52,6 +57,7 @@ namespace GalaxyCheck.Internal.Infrastructure.Xunit
             {
                 var executionTime = (decimal)((DateTime.UtcNow - startTime).TotalSeconds);
                 MessageBus.QueueMessage(new TestSkipped(test, reason));
+                MessageBus.QueueMessage(new TestFinished(test, executionTime, testOutputHelper!.Output));
                 return new RunSummary() { Failed = 0, Total = 0, Skipped = 1, Time = executionTime };
             }
 

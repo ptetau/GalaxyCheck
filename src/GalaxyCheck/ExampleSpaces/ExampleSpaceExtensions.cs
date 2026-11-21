@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace GalaxyCheck.ExampleSpaces
@@ -188,7 +189,7 @@ namespace GalaxyCheck.ExampleSpaces
             static IAsyncEnumerable<ExplorationStage<T>> GetSubspaceExploration(AnalyzeExplorationAsync<T> analyze, IExampleSpace<T> exampleSpace) =>
                 exampleSpace.Subspace
                     .ToAsyncEnumerable()
-                    .SelectAwait(async (exampleSpace, subspaceIndex) =>
+                    .Select(async (IExampleSpace<T> exampleSpace, int subspaceIndex, CancellationToken _) =>
                     {
                         var path = new[] { subspaceIndex };
                         return await AnalyzeExampleSpace(exampleSpace, path, analyze);

@@ -54,7 +54,7 @@ namespace Tests.V2.GenTests.ListGenTests
 
                 var minimum = gen.Minimum(seed: seed, pred: list => list.Any(element => element >= elementMinimum));
 
-                minimum.Should().BeEquivalentTo(elementMinimum);
+                minimum.Should().BeEquivalentTo(new[] { elementMinimum });
             });
     }
 }

@@ -181,8 +181,8 @@ namespace GalaxyCheck.Internal
         public static void Deconstruct<T>(this IEnumerable<T> source, out T? head, out IEnumerable<T> tail)
         {
             var enumerator = source.GetEnumerator();
-            enumerator.MoveNext();
-            head = enumerator.Current;
+            // Current throws on some runtimes if the source is empty.
+            head = enumerator.MoveNext() ? enumerator.Current : default;
             tail = EnumerateTail(enumerator);
         }
 

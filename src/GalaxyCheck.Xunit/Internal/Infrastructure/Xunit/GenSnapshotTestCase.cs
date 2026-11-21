@@ -45,10 +45,23 @@ namespace GalaxyCheck.Internal.Infrastructure.Xunit
                 .FirstOrDefault() ?? new TestOutputHelper();
             testOutputHelper.Initialize(messageBus, test);
 
+            // Runners report a result only for a test that they saw start and finish. The seeds run concurrently, so
+            // the lock keeps the three messages of one result together.
+            var reportLock = new object();
+            void Report(IMessageSinkMessage result, decimal executionTime)
+            {
+                lock (reportLock)
+                {
+                    messageBus.QueueMessage(new TestStarting(test));
+                    messageBus.QueueMessage(result);
+                    messageBus.QueueMessage(new TestFinished(test, executionTime, testOutputHelper!.Output));
+                }
+            }
+
             Task<RunSummary> Fail(Exception ex)
             {
                 var executionTime = (decimal)(DateTime.UtcNow - startTime).TotalSeconds;
-                messageBus.QueueMessage(new TestFailed(test, executionTime, testOutputHelper!.Output, ex));
+                Report(new TestFailed(test, executionTime, testOutputHelper!.Output, ex), executionTime);
                 return Task.FromResult(new RunSummary() { Total = 0, Failed = 1 });
             }
 
@@ -72,7 +85,7 @@ namespace GalaxyCheck.Internal.Infrastructure.Xunit
 
             if (initialization.ShouldSkip)
             {
-                messageBus.QueueMessage(new TestSkipped(test, initialization.SkipReason));
+                Report(new TestSkipped(test, initialization.SkipReason), 0);
                 return new RunSummary() { Skipped = initialization.Seeds.Count };
             }
 
@@ -83,12 +96,12 @@ namespace GalaxyCheck.Internal.Infrastructure.Xunit
 
                     if (exception == null)
                     {
-                        messageBus.QueueMessage(new TestPassed(test, executionTime, testOutputHelper!.Output));
+                        Report(new TestPassed(test, executionTime, testOutputHelper!.Output), executionTime);
                         return true;
                     }
                     else
                     {
-                        messageBus.QueueMessage(new TestFailed(test, executionTime, testOutputHelper!.Output, exception));
+                        Report(new TestFailed(test, executionTime, testOutputHelper!.Output, exception), executionTime);
                         return false;
                     }
                 })

@@ -2,7 +2,6 @@
 using Microsoft.CodeAnalysis.CodeRefactorings;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
-using Microsoft.CodeAnalysis.Testing.Verifiers;
 using Microsoft.CodeAnalysis.Text;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -19,7 +18,7 @@ namespace GalaxyCheck.Xunit.CodeAnalysis.Tests.CodeRefactoringProviders
             string expectedRefactoredCode,
             string expectedRefactoringTitle)
         {
-            var test = new CSharpCodeRefactoringTest<TCodeRefactoringProvider, XUnitVerifier>()
+            var test = new CSharpCodeRefactoringTest<TCodeRefactoringProvider, DefaultVerifier>()
             {
                 TestCode = code,
                 FixedCode = expectedRefactoredCode,
@@ -28,7 +27,7 @@ namespace GalaxyCheck.Xunit.CodeAnalysis.Tests.CodeRefactoringProviders
                 {
                     verifier.Equal(codeAction.Title, expectedRefactoringTitle);
                 },
-                ReferenceAssemblies = ReferenceAssemblies.Net.Net60
+                ReferenceAssemblies = ReferenceAssemblies.Net.Net80
             };
 
             test.ExpectedDiagnostics.Add(new DiagnosticResult("Refactoring", DiagnosticSeverity.Hidden)
@@ -50,7 +49,7 @@ namespace GalaxyCheck.Xunit.CodeAnalysis.Tests.CodeRefactoringProviders
             string code,
             LinePosition codeProvidingRefactorPosition)
         {
-            var test = new CSharpCodeRefactoringTest<TCodeRefactoringProvider, XUnitVerifier>()
+            var test = new CSharpCodeRefactoringTest<TCodeRefactoringProvider, DefaultVerifier>()
             {
                 TestCode = code,
                 FixedCode = code,
@@ -58,7 +57,7 @@ namespace GalaxyCheck.Xunit.CodeAnalysis.Tests.CodeRefactoringProviders
                 {
                     verifier.Fail("Expected code not to be refactored");
                 },
-                ReferenceAssemblies = ReferenceAssemblies.Net.Net60
+                ReferenceAssemblies = ReferenceAssemblies.Net.Net80
             };
 
             test.ExpectedDiagnostics.Add(new DiagnosticResult("Refactoring", DiagnosticSeverity.Hidden)
