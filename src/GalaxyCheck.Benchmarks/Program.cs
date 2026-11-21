@@ -106,6 +106,7 @@ namespace GalaxyCheck.Benchmarks
                         .Replace("CASES_PATH", Path.Combine(template, "Cases.cs"))
                         .Replace("BASELINE_PATH", Path.Combine(source, "src", "GalaxyCheck", "GalaxyCheck.csproj")));
                 File.Copy(Path.Combine(template, "baseline-runner", "Program.cs.txt"), Path.Combine(runner, "Program.cs"));
+                File.Copy(Path.Combine(root, "nuget.config"), Path.Combine(runner, "nuget.config"), true);
 
                 var output = Run("dotnet", new[] { "run", "-c", "Release", "--project", runner, "--", SecondsPerCase.ToString(CultureInfo.InvariantCulture) }, work);
 

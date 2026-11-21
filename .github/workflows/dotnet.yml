@@ -87,6 +87,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nupkg-prerelease
+          path: nupkg-prerelease
           path: ./nupkg-prerelease
 
   prerelease:
@@ -104,6 +105,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: nupkg-prerelease
+          path: nupkg-prerelease
       - name: Push to MyGet
         run: |
           for f in ./nupkg-prerelease/*.nupkg
@@ -158,6 +160,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nupkg-release
+          path: nupkg-release
           path: ./nupkg-release
 
   release:
@@ -174,6 +177,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: nupkg-release
+          path: nupkg-release
       - name: Push to MyGet
         run: |
           for f in ./nupkg-release/*.nupkg

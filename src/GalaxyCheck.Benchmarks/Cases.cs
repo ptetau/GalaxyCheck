@@ -62,14 +62,14 @@ namespace GalaxyCheck.Benchmarks
             batch(); // warm up
 
             long values = 0;
-            var bytesBefore = GC.GetAllocatedBytesForCurrentThread();
+            var bytesBefore = GC.GetTotalAllocatedBytes(true);
             var sw = Stopwatch.StartNew();
             while (sw.Elapsed.TotalSeconds < seconds)
             {
                 values += batch();
             }
             sw.Stop();
-            var bytes = GC.GetAllocatedBytesForCurrentThread() - bytesBefore;
+            var bytes = GC.GetTotalAllocatedBytes(true) - bytesBefore;
 
             return (values / sw.Elapsed.TotalSeconds, (double)bytes / values);
         }

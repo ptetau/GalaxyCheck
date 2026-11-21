@@ -14,7 +14,7 @@
 - Layers: build, packaging, ci, benchmarks
 - Tier: standard
 - Status: building
-- Test rounds: 1
+- Test rounds: 2
 - Review rounds: 1
 
 ## S2: A core that is 100 times faster
