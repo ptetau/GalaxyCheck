@@ -85,7 +85,8 @@ namespace GalaxyCheck.Tests.Slice
         public void test_001_S6_R37_unmet_cover_fails_with_label_required_and_actual_share()
         {
             // 100 of the 1000 values (10%) have the label. The domain is larger than the iterations.
-            var property = Property.ForAll(Gen.Int32().Between(1, 1000), x => true)
+            // The generator has no bias, so that the share does not depend on the size of each test case.
+            var property = Property.ForAll(Gen.Int32().Between(1, 1000).WithBias(Gen.Bias.None), x => true)
                 .Cover("rare", 50, x => x <= 100);
 
             var result = property.Check(iterations: 100, seed: 1);
