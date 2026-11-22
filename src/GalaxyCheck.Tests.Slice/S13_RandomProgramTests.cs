@@ -17,7 +17,7 @@ public class S13_RandomProgramTests
 
     private static Program Build(Random random, int depth)
     {
-        var kind = depth == 0 ? 0 : random.Next(7);
+        var kind = depth == 0 ? 0 : random.Next(9);
         switch (kind)
         {
             case 0:
@@ -72,6 +72,29 @@ public class S13_RandomProgramTests
                 return new Program(Gen.ValueTuple(left.Gen, right.Gen).Select(t => unchecked(t.Item1 - t.Item2)), $"tuple({left.Text}, {right.Text})");
             }
 
+            case 7:
+            {
+                var left = Build(random, depth - 1);
+                var right = Build(random, depth - 1);
+                var third = Build(random, depth - 1);
+                var w1 = random.Next(1, 5);
+                var w2 = random.Next(1, 5);
+                var w3 = random.Next(1, 5);
+                return new Program(
+                    Gen.Choose<int>().WithChoice(left.Gen, w1).WithChoice(right.Gen, w2).WithChoice(third.Gen, w3),
+                    $"choose({left.Text}:{w1}, {right.Text}:{w2}, {third.Text}:{w3})");
+            }
+
+            case 8:
+            {
+                var leaf = Build(random, 0);
+                var k = random.Next(1, 4);
+                var max = random.Next(1, 4);
+                return new Program(
+                    Gen.Recursive<int>(leaf.Gen, g => g.ListOf().WithCountBetween(1, 3).Select(xs => xs.Aggregate(k, (a, b) => unchecked(a * 31 + b))), max),
+                    $"recursive({leaf.Text}, depth {max}, k {k})");
+            }
+
             default:
             {
                 var left = Build(random, depth - 1);
@@ -79,6 +102,22 @@ public class S13_RandomProgramTests
                 return new Program(Gen.Element(new[] { left.Gen, right.Gen }).SelectMany(g => g), $"choice({left.Text}, {right.Text})");
             }
         }
+    }
+
+    private static bool IsOwnError(Exception e)
+    {
+        // An exception that the engine wraps (inner exception, or a message that names the wrapped exception) is a crash.
+        if (e.InnerException is not null || e.Message.Contains("Exception thrown", StringComparison.OrdinalIgnoreCase)
+            || e.Message.Contains("Exception:", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        return e.Message.Contains("filter", StringComparison.OrdinalIgnoreCase)
+            || e.Message.Contains("discard", StringComparison.OrdinalIgnoreCase)
+            || e.Message.Contains("cannot be greater", StringComparison.OrdinalIgnoreCase)
+            || e.Message.Contains("'origin'", StringComparison.Ordinal)
+            || e.Message.Contains("invalid", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool Holds(int x) => x % 3 != 0;
@@ -132,9 +171,14 @@ public class S13_RandomProgramTests
             {
                 problems.Add($"{program.Text}: the run passed the time limit: {e.Message}");
             }
-            catch (Exception e) when (e is HealthCheckException or GalaxyCheck.Exceptions.GenErrorException)
+            catch (HealthCheckException e) when (e.Check == HealthCheck.TooManyDiscards)
             {
-                // A filter can remove each value of a small domain: the library reports that as an error, which is not a crash.
+                // A filter can remove each value of a small domain: the library reports that as a health check.
+                reported++;
+            }
+            catch (GalaxyCheck.Exceptions.GenErrorException e) when (IsOwnError(e))
+            {
+                // An error that the library raises on purpose, for example an exhausted filter.
                 reported++;
             }
             catch (Exception e)
@@ -144,6 +188,7 @@ public class S13_RandomProgramTests
         }
 
         Assert.True(problems.Count == 0, S13.Problems(problems));
+        Assert.True(reported <= Programs / 10, $"at most {Programs / 10} of the {Programs} programs may give a reported error; {reported} did");
         Assert.True(falsified >= 20, $"at least 20 of the {Programs} programs must fail, so that shrinking and replay are tested; {falsified} failed and {reported} gave a reported error");
     }
 }

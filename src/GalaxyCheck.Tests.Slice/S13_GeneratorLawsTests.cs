@@ -126,6 +126,8 @@ internal sealed class S13Recorder<T>
     public List<string> Failing => Calls.Where(c => !c.Held).Select(c => c.Shown).ToList();
 }
 
+public enum S13Color { Red, Green, Blue, Yellow, Black }
+
 public class S13_GeneratorLawsTests
 {
     private static readonly DateTimeOffset Y2K = new(2000, 1, 1, 0, 0, 0, TimeSpan.Zero);
@@ -192,6 +194,18 @@ public class S13_GeneratorLawsTests
             Gen.Tuple(Gen.Int32(), Gen.Int32(), Gen.Int32(), Gen.Int32(), Gen.Int32(), Gen.Int32(), Gen.Int32()),
             t => S13.IsEven(unchecked(t.Item1 + t.Item2 + t.Item3 + t.Item4 + t.Item5 + t.Item6 + t.Item7)), s),
         ["Recursive"] = s => Laws(Tree(), t => !t.StartsWith('('), s),
+        ["Element"] = s => Laws(Gen.Element(new[] { 3, 8, -5, 12, 40, 7, 0, 21 }), S13.IsEven, s),
+        ["Enum"] = s => Laws(Gen.Enum<S13Color>(), c => c is S13Color.Red or S13Color.Blue, s),
+        ["Create Queue"] = s => Laws(Gen.Create<Queue<int>>(), q => q.Count % 2 == 0, s),
+        ["Create Stack"] = s => Laws(Gen.Create<Stack<int>>(), q => q.Count % 2 == 0, s),
+        ["Create SortedSet"] = s => Laws(Gen.Create<SortedSet<int>>(), q => q.Count % 2 == 0, s),
+        ["Create LinkedList"] = s => Laws(Gen.Create<LinkedList<int>>(), q => q.Count % 2 == 0, s),
+        ["Create ImmutableArray"] = s => Laws(Gen.Create<System.Collections.Immutable.ImmutableArray<int>>(), q => q.Length % 2 == 0, s),
+        ["Create ReadOnlyCollection"] = s => Laws(Gen.Create<System.Collections.ObjectModel.ReadOnlyCollection<int>>(), q => q.Count % 2 == 0, s),
+        ["Decimal32"] = s => Laws(Gen.Decimal32(), x => !(double.CreateTruncating(x) > 1.5), s),
+        ["Decimal64"] = s => Laws(Gen.Decimal64(), x => !(double.CreateTruncating(x) > 1.5), s),
+        ["Decimal128"] = s => Laws(Gen.Decimal128(), x => !(double.CreateTruncating(x) > 1.5), s),
+        ["BFloat16"] = s => Laws(Gen.BFloat16(), x => !(double.CreateTruncating(x) > 1.5), s),
     };
 
     public static IEnumerable<object[]> CaseNames() => Cases.Keys.Select(k => new object[] { k });
