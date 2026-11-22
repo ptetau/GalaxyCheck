@@ -54,8 +54,13 @@ namespace GalaxyCheck.Gens
     {
         public abstract void Append(GenSource source, StringBuilder builder);
 
-        /// <summary>The maximum length of a string that the node makes.</summary>
+        /// <summary>
+        /// The maximum length of a string that the node makes, or <see cref="LengthCap"/> when it is longer. The cap
+        /// stops an overflow of the length of nested repeats.
+        /// </summary>
         public abstract long MaxLength { get; }
+
+        public const long LengthCap = PatternParser.MaxStringLength + 1;
     }
 
     internal sealed class PatternEmpty : PatternNode
@@ -83,17 +88,42 @@ namespace GalaxyCheck.Gens
         public override long MaxLength => 1;
     }
 
+    /// <summary>
+    /// Picks a character of a set of ranges. The index of a character counts through the ranges in order, so that a
+    /// class keeps its ranges and not an array of each character.
+    /// </summary>
     internal sealed class PatternCharClass : PatternNode
     {
-        private readonly char[] _chars;
+        private readonly int[] _lows;
+        private readonly int[] _starts;
+        private readonly int _count;
 
-        public PatternCharClass(char[] chars)
+        public PatternCharClass((int, int)[] ranges)
         {
-            _chars = chars;
+            _lows = new int[ranges.Length];
+            _starts = new int[ranges.Length];
+            for (var i = 0; i < ranges.Length; i++)
+            {
+                _lows[i] = ranges[i].Item1;
+                _starts[i] = _count;
+                _count += ranges[i].Item2 - ranges[i].Item1 + 1;
+            }
         }
 
-        public override void Append(GenSource source, StringBuilder builder) =>
-            builder.Append(_chars[IntCore.Index(source, _chars.Length - 1, Gen.Bias.WithSize)]);
+        public int Count => _count;
+
+        public override void Append(GenSource source, StringBuilder builder)
+        {
+            var index = IntCore.Index(source, _count - 1, Gen.Bias.WithSize);
+            var range = Array.BinarySearch(_starts, index);
+            if (range < 0)
+            {
+                // The range that starts last at or before the index.
+                range = ~range - 1;
+            }
+
+            builder.Append((char)(_lows[range] + index - _starts[range]));
+        }
 
         public override long MaxLength => 1;
     }
@@ -122,7 +152,7 @@ namespace GalaxyCheck.Gens
                 long total = 0;
                 foreach (var node in _nodes)
                 {
-                    total = Math.Min(total + node.MaxLength, long.MaxValue / 2);
+                    total = Math.Min(total + node.MaxLength, LengthCap);
                 }
 
                 return total;
@@ -212,7 +242,19 @@ namespace GalaxyCheck.Gens
             }
         }
 
-        public override long MaxLength => Math.Min(_node.MaxLength * _max, long.MaxValue / 2);
+        public override long MaxLength
+        {
+            get
+            {
+                var length = _node.MaxLength;
+                if (_max == 0 || length == 0)
+                {
+                    return 0;
+                }
+
+                return length > LengthCap / _max ? LengthCap : Math.Min(length * _max, LengthCap);
+            }
+        }
     }
 
     /// <summary>
@@ -461,10 +503,10 @@ namespace GalaxyCheck.Gens
                 case '(':
                     return ParseGroup();
                 case '[':
-                    return new PatternCharClass(ToChars(ParseClass(), start));
+                    return ToCharClass(ParseClass(), start);
                 case '.':
                     _pos++;
-                    return new PatternCharClass(ToChars(Universe, start));
+                    return ToCharClass(Universe, start);
                 case '^':
                     _pos++;
                     return Anchor(start == 0, "^", start);
@@ -597,7 +639,7 @@ namespace GalaxyCheck.Gens
                     }
 
                     var set = ParseEscape(inClass: false);
-                    return new PatternCharClass(ToChars(set, start));
+                    return ToCharClass(set, start);
             }
         }
 
@@ -629,7 +671,7 @@ namespace GalaxyCheck.Gens
                 case 'a': return Single('\a');
                 case 'e': return Single('\u001B');
                 case 'b' when inClass: return Single('\b');
-                case '0': return Single('\0');
+                case '0': return Single(ParseOctal());
                 case 'x': return Single(ParseHex(2, start));
                 case 'u': return Single(ParseHex(4, start));
                 case 'p':
@@ -645,6 +687,21 @@ namespace GalaxyCheck.Gens
 
                     return Single(c);
             }
+        }
+
+        /// <summary>
+        /// Parses the octal digits after "\0". As in .NET, "\0" and up to two more octal digits are one character.
+        /// </summary>
+        private char ParseOctal()
+        {
+            var value = 0;
+            for (var i = 0; i < 2 && !AtEnd && Peek >= '0' && Peek <= '7'; i++)
+            {
+                value = value * 8 + (Peek - '0');
+                _pos++;
+            }
+
+            return (char)value;
         }
 
         private char ParseHex(int digits, int start)
@@ -800,30 +857,15 @@ namespace GalaxyCheck.Gens
             return result.ToArray();
         }
 
-        private static char[] ToChars((int, int)[] ranges, int position)
+        private static PatternCharClass ToCharClass((int, int)[] ranges, int position)
         {
-            var count = 0;
-            foreach (var (lo, hi) in ranges)
-            {
-                count += hi - lo + 1;
-            }
-
-            if (count == 0)
+            var charClass = new PatternCharClass(ranges);
+            if (charClass.Count == 0)
             {
                 throw Unsupported("character class that matches no character", position);
             }
 
-            var chars = new char[count];
-            var i = 0;
-            foreach (var (lo, hi) in ranges)
-            {
-                for (var c = lo; c <= hi; c++)
-                {
-                    chars[i++] = (char)c;
-                }
-            }
-
-            return chars;
+            return charClass;
         }
     }
 

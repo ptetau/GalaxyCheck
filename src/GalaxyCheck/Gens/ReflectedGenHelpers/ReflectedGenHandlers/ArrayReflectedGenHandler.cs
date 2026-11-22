@@ -4,7 +4,7 @@ using System.Reflection;
 
 namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
 {
-    internal class ArrayReflectedGenHandler : IReflectedGenHandler
+    internal class ArrayReflectedGenHandler : IReflectedGenHandler, IEmptyCollectionGenHandler
     {
         public bool CanHandleGen(Type type, ReflectedGenHandlerContext context) => type.IsArray;
 
@@ -12,25 +12,21 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
         {
             var elementType = type.GetElementType()!;
             var elementNullabilityInfo = context.NullabilityInfo?.ElementType;
-            var depth = context.CountInHistory(elementType);
-            if (depth > ReflectedGenHandlerContext.MaxRecursionDepth)
-            {
-                // The element would be deeper than the limit, so the collection is empty.
-                return CreateEmpty(type, elementType);
-            }
-
-            var elementGen = innerHandler.CreateGen(elementType, context.Next("[*]", elementType, elementNullabilityInfo));
+            var elementGen = innerHandler.CreateGen(
+                elementType,
+                context.Next("[*]", elementType, elementNullabilityInfo, inCollection: true));
 
             // An array of a type that refers to itself has few elements, so that a tree stays small.
-            int? maxCount = depth > 0 ? ReflectedGenHandlerContext.MaxRecursiveCollectionCount : null;
+            int? maxCount = context.CountInHistory(elementType) > 0 ? ReflectedGenHandlerContext.MaxRecursiveCollectionCount : null;
             return Build(elementType, elementGen, maxCount);
         }
 
-        private static IGen CreateEmpty(Type type, Type elementType) =>
-            (IGen)typeof(ArrayReflectedGenHandler)
+        public IGen? CreateEmptyGen(Type type) => type.IsArray
+            ? (IGen)typeof(ArrayReflectedGenHandler)
                 .GetMethod(nameof(CreateEmptyArrayGen), BindingFlags.Static | BindingFlags.NonPublic)!
-                .MakeGenericMethod(elementType)
-                .Invoke(null!, Array.Empty<object>())!;
+                .MakeGenericMethod(type.GetElementType()!)
+                .Invoke(null!, Array.Empty<object>())!
+            : null;
 
         private static IGen Build(Type elementType, IGen elementGen, int? maxCount)
         {

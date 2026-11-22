@@ -7,9 +7,11 @@ using System.Reflection;
 
 namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
 {
-    internal class CollectionReflectedGenHandler : IReflectedGenHandler
+    internal class CollectionReflectedGenHandler : IReflectedGenHandler, IEmptyCollectionGenHandler
     {
-        public bool CanHandleGen(Type type, ReflectedGenHandlerContext context)
+        public bool CanHandleGen(Type type, ReflectedGenHandlerContext context) => IsCollection(type);
+
+        private static bool IsCollection(Type type)
         {
             if (type.IsGenericType)
             {
@@ -24,22 +26,23 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
         {
             var elementType = type.GetGenericArguments().Single();
             var elementNullabilityInfo = context.NullabilityInfo?.GenericTypeArguments.SingleOrDefault();
-            var depth = context.CountInHistory(elementType);
-            if (depth > ReflectedGenHandlerContext.MaxRecursionDepth)
-            {
-                // The element would be deeper than the limit, so the collection is empty.
-                return CreateEmpty(type, elementType);
-            }
-
-            var elementGen = innerHandler.CreateGen(elementType, context.Next("[*]", elementType, elementNullabilityInfo));
+            var elementGen = innerHandler.CreateGen(
+                elementType,
+                context.Next("[*]", elementType, elementNullabilityInfo, inCollection: true));
 
             // A collection of a type that refers to itself has few elements, so that a tree stays small.
-            int? maxCount = depth > 0 ? ReflectedGenHandlerContext.MaxRecursiveCollectionCount : null;
+            int? maxCount = context.CountInHistory(elementType) > 0 ? ReflectedGenHandlerContext.MaxRecursiveCollectionCount : null;
             return Build(type, elementType, elementGen, maxCount);
         }
 
-        private static IGen CreateEmpty(Type type, Type elementType)
+        public IGen? CreateEmptyGen(Type type)
         {
+            if (!IsCollection(type))
+            {
+                return null;
+            }
+
+            var elementType = type.GetGenericArguments().Single();
             var placeholderGen = typeof(CollectionReflectedGenHandler)
                 .GetMethod(nameof(CreatePlaceholderGen), BindingFlags.Static | BindingFlags.NonPublic)!
                 .MakeGenericMethod(elementType)
