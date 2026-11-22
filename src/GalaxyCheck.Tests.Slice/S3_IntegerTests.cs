@@ -60,7 +60,7 @@ public class S3_IntegerTests
     [Fact]
     public void test_001_S3_R2_uint32_between_10_and_20_stays_in_bounds_and_hits_both()
     {
-        var values = Gen.UInt32().GreaterThanEqual(10).LessThanEqual(20).Sample(iterations: 1000, seed: 0, size: Size);
+        var values = Gen.UInt32().Between(10u, 20u).Sample(iterations: 1000, seed: 0, size: Size);
 
         values.Should().HaveCount(1000);
         values.Should().OnlyContain(v => v >= 10u && v <= 20u);
@@ -89,7 +89,7 @@ public class S3_IntegerTests
     [Fact]
     public void test_001_S3_R3_sbyte_between_minus_50_and_minus_10_always_failing_shrinks_to_minus_10()
     {
-        var result = Property.ForAll(Gen.SByte().GreaterThanEqual(-50).LessThanEqual(-10), (sbyte x) => false).Check(iterations: 100, seed: 0, size: Size);
+        var result = Property.ForAll(Gen.SByte().Between((sbyte)-50, (sbyte)-10),(sbyte x) => false).Check(iterations: 100, seed: 0, size: Size);
 
         result.Falsified.Should().BeTrue();
         result.Counterexample.Should().NotBeNull();
