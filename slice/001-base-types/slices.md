@@ -169,7 +169,7 @@
 - Layers: property api, runner, report, xunit v2 package
 - Tier: standard
 - Status: review
-- Test rounds: 3
+- Test rounds: 4
 - Review rounds: 2
 
 ## S7: Stateful testing
