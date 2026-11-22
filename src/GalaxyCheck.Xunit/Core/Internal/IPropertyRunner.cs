@@ -1,7 +1,6 @@
-﻿using GalaxyCheck.Gens;
+using GalaxyCheck.Gens;
 using System;
 using System.Threading.Tasks;
-using Xunit.Abstractions;
 
 namespace GalaxyCheck.Internal
 {
@@ -18,6 +17,6 @@ namespace GalaxyCheck.Internal
 
     internal interface IPropertyRunner
     {
-        Task Run(PropertyRunParameters parameters, ITestOutputHelper testOutputHelper);
+        Task Run(PropertyRunParameters parameters);
     }
 }

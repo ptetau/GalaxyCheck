@@ -1,135 +1,60 @@
-using System;
+using GalaxyCheck.Internal.Infrastructure.TUnit;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using TUnit.Core;
+using TUnit.Core.Interfaces;
 
-// Stubs. Each attribute is a plain attribute until its slice is built, so the test framework finds no test.
+// The TUnit part of each attribute. The options are in the shared core. TUnit finds a test only by [Test], so a
+// property is written [Test, Property]. Each attribute is a data source, so that TUnit accepts the generated
+// parameters, and it sets the test executor that runs the property in place of one call of the method.
 
 namespace GalaxyCheck
 {
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class PropertyAttribute : Attribute
+    public partial class PropertyAttribute : System.Attribute, IDataSourceAttribute, ITestRegisteredEventReceiver
     {
-        public int Iterations { get; set; }
+        internal string? SkipReason => null;
 
-        public int ShrinkLimit { get; set; }
+        int IEventReceiver.Order => 0;
 
-        public int Seed { get; set; }
+        bool IDataSourceAttribute.SkipIfEmpty { get; set; }
 
-        public int Size { get; set; }
+        bool IDataSourceAttribute.DeferEnumeration { get => false; set { } }
 
-        public int TimeoutMilliseconds { get; set; }
+        IAsyncEnumerable<System.Func<Task<object?[]?>>> IDataSourceAttribute.GetDataRowsAsync(DataGeneratorMetadata dataGeneratorMetadata) =>
+            TUnitAdapter.PlaceholderRow(dataGeneratorMetadata);
 
-        public bool Exhaustive { get; set; } = true;
-    }
-
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class SampleAttribute : PropertyAttribute
-    {
-    }
-
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public sealed class GenSnapshotAttribute : Attribute
-    {
-        public int Iterations { get; set; }
-
-        public int Size { get; set; }
-    }
-
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class ReplayAttribute : Attribute
-    {
-        public string Replay { get; }
-
-        public ReplayAttribute(string replay)
+        ValueTask ITestRegisteredEventReceiver.OnTestRegistered(TestRegisteredContext context)
         {
-            Replay = replay;
+            context.SetTestExecutor(new PropertyTestExecutor());
+            return default;
         }
     }
 
-    [AttributeUsage(AttributeTargets.Parameter)]
-    public class MemberGenAttribute : Attribute
+    public sealed partial class GenSnapshotAttribute : System.Attribute, IDataSourceAttribute, ITestRegisteredEventReceiver
     {
-        public string MemberName { get; }
-
-        public MemberGenAttribute(string memberName)
+        public GenSnapshotAttribute([CallerFilePath] string? testFilePath = null)
         {
-            MemberName = memberName;
+            TestFileName = testFilePath;
         }
-    }
 
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    public class ExampleAttribute : Attribute
-    {
-        public object?[] Inputs { get; }
+        public string? TestFileName { get; }
 
-        public ExampleAttribute(params object?[] inputs)
+        internal string? SkipReason => null;
+
+        int IEventReceiver.Order => 0;
+
+        bool IDataSourceAttribute.SkipIfEmpty { get; set; }
+
+        bool IDataSourceAttribute.DeferEnumeration { get => false; set { } }
+
+        IAsyncEnumerable<System.Func<Task<object?[]?>>> IDataSourceAttribute.GetDataRowsAsync(DataGeneratorMetadata dataGeneratorMetadata) =>
+            TUnitAdapter.PlaceholderRow(dataGeneratorMetadata);
+
+        ValueTask ITestRegisteredEventReceiver.OnTestRegistered(TestRegisteredContext context)
         {
-            Inputs = inputs;
+            context.SetTestExecutor(new GenSnapshotTestExecutor());
+            return default;
         }
-    }
-
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class SuppressHealthCheckAttribute : Attribute
-    {
-        public HealthCheck[] Checks { get; }
-
-        public SuppressHealthCheckAttribute(params HealthCheck[] checks)
-        {
-            Checks = checks;
-        }
-    }
-}
-
-namespace GalaxyCheck.Configuration
-{
-    public interface IConfigureGlobal
-    {
-        void Configure(IGlobalConfiguration instance);
-    }
-
-    public interface IGlobalConfiguration
-    {
-        IGlobalPropertyConfiguration Properties { get; }
-
-        IGlobalGenSnapshotConfiguration GenSnapshots { get; }
-
-        IGlobalFailureMemoryConfiguration FailureMemory { get; }
-    }
-
-    public interface IGlobalPropertyConfiguration
-    {
-        int DefaultIterations { get; set; }
-
-        int DefaultShrinkLimit { get; set; }
-
-        int? Seed { get; set; }
-    }
-
-    public interface IGlobalGenSnapshotConfiguration
-    {
-        int DefaultIterations { get; set; }
-
-        int DefaultSize { get; set; }
-
-        Func<ISnapshot, Task>? AssertSnapshotMatches { get; set; }
-    }
-
-    public interface IGlobalFailureMemoryConfiguration
-    {
-        bool Enabled { get; set; }
-    }
-
-    public interface ISnapshot
-    {
-        object?[] Input { get; }
-
-        object? Output { get; }
-
-        string TestFileName { get; }
-
-        string TestClassName { get; }
-
-        string TestMethodName { get; }
-
-        int Seed { get; }
     }
 }

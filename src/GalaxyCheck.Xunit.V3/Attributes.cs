@@ -1,135 +1,50 @@
-using System;
-using System.Threading.Tasks;
+using GalaxyCheck.Internal.Infrastructure.XunitV3;
+using System.Runtime.CompilerServices;
+using Xunit;
+using Xunit.v3;
 
-// Stubs. Each attribute is a plain attribute until its slice is built, so the test framework finds no test.
+// The xunit v3 part of each attribute. The options are in the shared core.
 
 namespace GalaxyCheck
 {
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class PropertyAttribute : Attribute
+    [XunitTestCaseDiscoverer(typeof(PropertyDiscoverer))]
+    public partial class PropertyAttribute : FactAttribute, ITheoryAttribute
     {
-        public int Iterations { get; set; }
-
-        public int ShrinkLimit { get; set; }
-
-        public int Seed { get; set; }
-
-        public int Size { get; set; }
-
-        public int TimeoutMilliseconds { get; set; }
-
-        public bool Exhaustive { get; set; } = true;
-    }
-
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class SampleAttribute : PropertyAttribute
-    {
-    }
-
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public sealed class GenSnapshotAttribute : Attribute
-    {
-        public int Iterations { get; set; }
-
-        public int Size { get; set; }
-    }
-
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class ReplayAttribute : Attribute
-    {
-        public string Replay { get; }
-
-        public ReplayAttribute(string replay)
+        // The constructors match the xunit v2 package, so xunit gets no source line for a property.
+        public PropertyAttribute()
+            : base(null, -1)
         {
-            Replay = replay;
+        }
+
+        bool ITheoryAttribute.DisableDiscoveryEnumeration => false;
+
+        bool ITheoryAttribute.IncludeTestCaseIndex => false;
+
+        bool ITheoryAttribute.SkipTestWithoutData => false;
+
+        // xunit skips the test before it runs, so the shared core never sees a skip reason.
+        internal string? SkipReason => null;
+    }
+
+    [XunitTestCaseDiscoverer(typeof(PropertyDiscoverer))]
+    public partial class SampleAttribute
+    {
+        public SampleAttribute()
+        {
         }
     }
 
-    [AttributeUsage(AttributeTargets.Parameter)]
-    public class MemberGenAttribute : Attribute
+    [XunitTestCaseDiscoverer(typeof(GenSnapshotDiscoverer))]
+    public sealed partial class GenSnapshotAttribute : FactAttribute
     {
-        public string MemberName { get; }
-
-        public MemberGenAttribute(string memberName)
+        public GenSnapshotAttribute([CallerFilePath] string? testFilePath = null)
+            : base(testFilePath, -1)
         {
-            MemberName = memberName;
+            TestFileName = testFilePath;
         }
-    }
 
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    public class ExampleAttribute : Attribute
-    {
-        public object?[] Inputs { get; }
+        public string? TestFileName { get; }
 
-        public ExampleAttribute(params object?[] inputs)
-        {
-            Inputs = inputs;
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class SuppressHealthCheckAttribute : Attribute
-    {
-        public HealthCheck[] Checks { get; }
-
-        public SuppressHealthCheckAttribute(params HealthCheck[] checks)
-        {
-            Checks = checks;
-        }
-    }
-}
-
-namespace GalaxyCheck.Configuration
-{
-    public interface IConfigureGlobal
-    {
-        void Configure(IGlobalConfiguration instance);
-    }
-
-    public interface IGlobalConfiguration
-    {
-        IGlobalPropertyConfiguration Properties { get; }
-
-        IGlobalGenSnapshotConfiguration GenSnapshots { get; }
-
-        IGlobalFailureMemoryConfiguration FailureMemory { get; }
-    }
-
-    public interface IGlobalPropertyConfiguration
-    {
-        int DefaultIterations { get; set; }
-
-        int DefaultShrinkLimit { get; set; }
-
-        int? Seed { get; set; }
-    }
-
-    public interface IGlobalGenSnapshotConfiguration
-    {
-        int DefaultIterations { get; set; }
-
-        int DefaultSize { get; set; }
-
-        Func<ISnapshot, Task>? AssertSnapshotMatches { get; set; }
-    }
-
-    public interface IGlobalFailureMemoryConfiguration
-    {
-        bool Enabled { get; set; }
-    }
-
-    public interface ISnapshot
-    {
-        object?[] Input { get; }
-
-        object? Output { get; }
-
-        string TestFileName { get; }
-
-        string TestClassName { get; }
-
-        string TestMethodName { get; }
-
-        int Seed { get; }
+        internal string? SkipReason => null;
     }
 }

@@ -1,4 +1,4 @@
-﻿using GalaxyCheck.Configuration;
+using GalaxyCheck.Configuration;
 using System;
 using System.Linq;
 using System.Reflection;
@@ -45,7 +45,7 @@ namespace GalaxyCheck.Internal
         }
 
         private static async Task<object?> InvokeTestMethod(
-            object testClassInstance,
+            object? testClassInstance,
             MethodInfo testMethodInfo,
             object[] parameters)
         {

@@ -1,5 +1,6 @@
-﻿using GalaxyCheck.Configuration;
+using GalaxyCheck.Configuration;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
@@ -15,19 +16,43 @@ namespace GalaxyCheck.Internal
 
     internal static class PropertyInitializer
     {
+        private static readonly MethodInfo ConstantMethod = typeof(Gen)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Single(method => method.Name == nameof(Gen.Constant) && method.IsGenericMethodDefinition && method.GetParameters().Length == 1);
+
         public static PropertyInitializationResult Initialize(
             Type testClassType,
             MethodInfo testMethodInfo,
             object[] constructorArguments,
-            object[]? testMethodArguments,
+            object?[]? testMethodArguments,
+            IPropertyFactory propertyFactory,
+            IGlobalPropertyConfiguration config) =>
+                InitializeWithInstance(
+                    testClassType,
+                    testMethodInfo,
+                    Activator.CreateInstance(testClassType, constructorArguments)!,
+                    testMethodArguments,
+                    propertyFactory,
+                    config);
+
+        /// <summary>Builds the property of a test method on an instance of its class that the framework made.</summary>
+        /// <param name="testClassInstance">The instance of the test class, or null for a static test method.</param>
+        /// <param name="testMethodArguments">The values of a data row for the first parameters, or null.</param>
+        public static PropertyInitializationResult InitializeWithInstance(
+            Type testClassType,
+            MethodInfo testMethodInfo,
+            object? testClassInstance,
+            object?[]? testMethodArguments,
             IPropertyFactory propertyFactory,
             IGlobalPropertyConfiguration config)
         {
-            var testClassInstance = Activator.CreateInstance(testClassType, constructorArguments)!;
             var propertyAttribute = testMethodInfo.GetCustomAttributes<PropertyAttribute>(inherit: true).Single();
 
             var genFactory = ReflectionHelpers.TryResolveGenFactory(testClassType, testMethodInfo);
-            var customGens = ReflectionHelpers.ResolveCustomGens(testClassInstance, testMethodInfo);
+            var customGens = WithDataRow(
+                ReflectionHelpers.ResolveCustomGens(testClassType, testClassInstance, testMethodInfo),
+                testMethodInfo,
+                testMethodArguments);
             var property = propertyFactory.CreateProperty(testMethodInfo, testClassInstance, genFactory, customGens, testMethodArguments);
             var replay = testMethodInfo.GetCustomAttributes<ReplayAttribute>().SingleOrDefault()?.Replay;
 
@@ -47,7 +72,33 @@ namespace GalaxyCheck.Internal
             return new PropertyInitializationResult(
                 propertyAttribute.Runner,
                 propertyRunParameters,
-                propertyAttribute.Skip?.Length > 0 ? propertyAttribute.Skip : null);
+                propertyAttribute.SkipReason);
+        }
+
+        /// <summary>
+        /// Fixes the parameters that a data row gives, so that the property generates only the rest. A method that
+        /// returns a property gets the row as its arguments instead.
+        /// </summary>
+        private static IReadOnlyDictionary<int, IGen> WithDataRow(
+            IReadOnlyDictionary<int, IGen> customGens,
+            MethodInfo testMethodInfo,
+            object?[]? testMethodArguments)
+        {
+            if (testMethodArguments == null || testMethodArguments.Length == 0)
+            {
+                return customGens;
+            }
+
+            var parameters = testMethodInfo.GetParameters();
+            var result = new Dictionary<int, IGen>(customGens);
+            for (var i = 0; i < testMethodArguments.Length && i < parameters.Length; i++)
+            {
+                result[i] = (IGen)ConstantMethod
+                    .MakeGenericMethod(parameters[i].ParameterType)
+                    .Invoke(null, new[] { testMethodArguments[i] })!;
+            }
+
+            return result;
         }
 
         /// <summary>The health checks that the method or its class suppresses, or null when none does.</summary>

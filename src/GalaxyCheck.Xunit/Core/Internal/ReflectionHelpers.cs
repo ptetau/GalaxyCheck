@@ -1,4 +1,4 @@
-﻿using GalaxyCheck.Gens;
+using GalaxyCheck.Gens;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,7 +17,11 @@ namespace GalaxyCheck.Internal
             return genFactoryAttribute?.Value;
         }
 
-        public static IReadOnlyDictionary<int, IGen> ResolveCustomGens(object testClassInstance, MethodInfo methodInfo)
+        public static IReadOnlyDictionary<int, IGen> ResolveCustomGens(object testClassInstance, MethodInfo methodInfo) =>
+            ResolveCustomGens(testClassInstance.GetType(), testClassInstance, methodInfo);
+
+        /// <param name="testClassInstance">The instance that holds the members, or null to read only static members.</param>
+        public static IReadOnlyDictionary<int, IGen> ResolveCustomGens(Type testClassType, object? testClassInstance, MethodInfo methodInfo)
         {
             return methodInfo
                 .GetParameters()
@@ -26,23 +30,24 @@ namespace GalaxyCheck.Internal
                     var memberGenAttribute = parameter.GetCustomAttribute<MemberGenAttribute>();
                     return memberGenAttribute == null
                         ? null :
-                        new { gen = ResolveMemberGen(testClassInstance, memberGenAttribute.MemberName), parameterIndex = i };
+                        new { gen = ResolveMemberGen(testClassType, testClassInstance, memberGenAttribute.MemberName), parameterIndex = i };
                 })
                 .Where(x => x != null)
                 .ToDictionary(x => x!.parameterIndex, x => x!.gen);
         }
 
-        private static IGen ResolveMemberGen(object target, string memberName)
+        private static IGen ResolveMemberGen(Type targetType, object? target, string memberName)
         {
-            var bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+            var bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
+                (target == null ? BindingFlags.Default : BindingFlags.Instance);
 
-            var property = target.GetType().GetProperty(memberName, bindingFlags);
+            var property = targetType.GetProperty(memberName, bindingFlags);
             if (property != null)
             {
                 return CastToGen(property.GetValue(target)!, memberName);
             }
 
-            var field = target.GetType().GetField(memberName, bindingFlags);
+            var field = targetType.GetField(memberName, bindingFlags);
             if (field != null)
             {
                 return CastToGen(field.GetValue(target)!, memberName);
