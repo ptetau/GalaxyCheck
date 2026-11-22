@@ -113,9 +113,9 @@
   - Given a C# union of `Cat`, `Dog`, and `Bird` on net11.0, when `Gen.Create<T>()` samples 100 values, then each of the three cases appears. (R33)
 - Layers: generator api, generator core, collection generators, automatic generator, xunit v2 package, build, runner
 - Tier: standard
-- Status: building
+- Status: review
 - Test rounds: 1
-- Review rounds: 0
+- Review rounds: 1
 
 ## S5: Text, realistic data, and recursive generators
 
