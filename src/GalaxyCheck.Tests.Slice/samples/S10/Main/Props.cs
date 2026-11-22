@@ -31,13 +31,15 @@ public class Props
     [Replay("0")]
     public bool ReplayZero(int x) => true;
 
-    public static IGen<int> FiveGen() => Gen.Int32().Between(5, 5);
+    // A member generator is a property or a field.
+    public static IGen<int> FiveGen => Gen.Int32().Between(5, 5);
 
     [Property]
     public void MemberGenFive([MemberGen("FiveGen")] int x) => Rec.Line("five:" + x);
 
+    // A sample test is a property whose inputs are listed in its failure message.
     [Sample]
-    public IGen<int> SampleFive() => Gen.Int32().Between(5, 5);
+    public void SampleFive([MemberGen("FiveGen")] int x) { }
 
     [Property]
     [InlineData(1)]
@@ -56,8 +58,8 @@ public class Forms
     [Property] public Property FormPropertyHolds() => Property.ForAll(Gen.Int32(), x => true);
     [Property] public Property FormPropertyFalsified() => Property.ForAll(Gen.Int32(), x => x < 10);
 
-    [Property] public IGen<Test> FormGenHolds() => Property.ForAll(Gen.Int32(), x => true);
-    [Property] public IGen<Test> FormGenFalsified() => Property.ForAll(Gen.Int32(), x => x < 10);
+    [Property] public IGen<Property.Test<int>> FormGenHolds() => Property.ForAll(Gen.Int32(), x => true);
+    [Property] public IGen<Property.Test<int>> FormGenFalsified() => Property.ForAll(Gen.Int32(), x => x < 10);
 
     [Property] public async Task FormTaskHolds(int x) { await Task.Yield(); }
     [Property] public async Task FormTaskFalsified(int x) { await Task.Yield(); if (x >= 10) throw new InvalidOperationException("too big"); }
@@ -68,8 +70,8 @@ public class Forms
     [Property] public AsyncProperty FormAsyncPropertyHolds() => Property.ForAllAsync(Gen.Int32(), async x => { await Task.Yield(); return true; });
     [Property] public AsyncProperty FormAsyncPropertyFalsified() => Property.ForAllAsync(Gen.Int32(), async x => { await Task.Yield(); return x < 10; });
 
-    [Property] public IGen<AsyncTest> FormAsyncGenHolds() => Property.ForAllAsync(Gen.Int32(), async x => { await Task.Yield(); return true; });
-    [Property] public IGen<AsyncTest> FormAsyncGenFalsified() => Property.ForAllAsync(Gen.Int32(), async x => { await Task.Yield(); return x < 10; });
+    [Property] public IGen<Property.AsyncTest<int>> FormAsyncGenHolds() => Property.ForAllAsync(Gen.Int32(), async x => { await Task.Yield(); return true; });
+    [Property] public IGen<Property.AsyncTest<int>> FormAsyncGenFalsified() => Property.ForAllAsync(Gen.Int32(), async x => { await Task.Yield(); return x < 10; });
 }
 
 public class PublicTypes

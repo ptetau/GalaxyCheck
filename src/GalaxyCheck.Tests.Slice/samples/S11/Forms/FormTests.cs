@@ -22,8 +22,8 @@ public class FormTests
     [Test, GalaxyCheck.PropertyTest] public Property<int> Property_Holds() => Property.ForAll(Gen.Int32(), x => true);
     [Test, GalaxyCheck.PropertyTest] public Property<int> Property_Falsified() => Property.ForAll(Gen.Int32(), x => false);
 
-    [Test, GalaxyCheck.PropertyTest] public IGen<GalaxyCheck.Test> Gen_Holds() => Property.ForAll(Gen.Int32(), x => true);
-    [Test, GalaxyCheck.PropertyTest] public IGen<GalaxyCheck.Test> Gen_Falsified() => Property.ForAll(Gen.Int32(), x => false);
+    [Test, GalaxyCheck.PropertyTest] public IGen<Property.Test<int>> Gen_Holds() => Property.ForAll(Gen.Int32(), x => true);
+    [Test, GalaxyCheck.PropertyTest] public IGen<Property.Test<int>> Gen_Falsified() => Property.ForAll(Gen.Int32(), x => false);
 
     [Test, GalaxyCheck.PropertyTest] public async Task AsyncVoid_Holds(int x) { await Task.Yield(); }
     [Test, GalaxyCheck.PropertyTest] public async Task AsyncVoid_Falsified(int x) { await Task.Yield(); throw new InvalidOperationException("falsified"); }
@@ -40,11 +40,11 @@ public class FormTests
         Property.ForAllAsync(Gen.Int32(), async x => { await Task.Yield(); return false; });
 
     [Test, GalaxyCheck.PropertyTest]
-    public IGen<GalaxyCheck.AsyncTest> AsyncGen_Holds() =>
+    public IGen<Property.AsyncTest<int>> AsyncGen_Holds() =>
         Property.ForAllAsync(Gen.Int32(), async x => { await Task.Yield(); return true; });
 
     [Test, GalaxyCheck.PropertyTest]
-    public IGen<GalaxyCheck.AsyncTest> AsyncGen_Falsified() =>
+    public IGen<Property.AsyncTest<int>> AsyncGen_Falsified() =>
         Property.ForAllAsync(Gen.Int32(), async x => { await Task.Yield(); return false; });
 
     // R25: the generator of the parameter comes from the named member.
@@ -54,8 +54,11 @@ public class FormTests
     public void MemberGenFive([GalaxyCheck.MemberGen(nameof(Five))] int x) => Log.Write("MemberGenFive", x.ToString());
 
     // R26
+    public static IGen<int> ConstantGen => Gen.Int32().Between(7777, 7777);
+
+    // A sample test is a property whose inputs are listed in its failure message.
     [Test, GalaxyCheck.Sample]
-    public IGen<int> SampleConstant() => Gen.Int32().Between(7777, 7777);
+    public void SampleConstant([GalaxyCheck.MemberGen(nameof(ConstantGen))] int x) { }
 
     // R28
     [Test, GalaxyCheck.PropertyTest(Iterations = 5)]
