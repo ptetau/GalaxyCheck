@@ -1,4 +1,4 @@
-﻿
+
 
 namespace GalaxyCheck
 {
@@ -47,14 +47,19 @@ namespace GalaxyCheck.Gens
                 return Gen.Advanced.Error<char>("'charType' was not a valid flag value");
             }
 
-            var chars = CharacterSetsByFlag
-                .Aggregate(
-                    Enumerable.Empty<char>(),
-                    (acc, curr) => charType.HasFlag(curr.Key) ? acc.Concat(curr.Value) : acc)
-                .ToList();
+            var chars = CharsOf(charType).ToList();
 
-            return Gen.Int32().Between(0, chars.Count - 1).Select(i => chars[i]);
+            return new ElementGen<char>(chars);
         }
+
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<Gen.CharType, char[]> CharsByType = new();
+
+        /// <summary>The characters of a valid char type, in the order of simplicity.</summary>
+        internal static char[] CharsOf(Gen.CharType charType) => CharsByType.GetOrAdd(charType, type => CharacterSetsByFlag
+            .Aggregate(
+                Enumerable.Empty<char>(),
+                (acc, curr) => type.HasFlag(curr.Key) ? acc.Concat(curr.Value) : acc)
+            .ToArray());
 
         private static readonly IReadOnlyDictionary<Gen.CharType, IReadOnlyList<char>> CharacterSetsByFlag =
             new Dictionary<Gen.CharType, IReadOnlyList<char>>

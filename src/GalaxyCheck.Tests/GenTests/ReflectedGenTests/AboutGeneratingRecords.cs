@@ -1,9 +1,6 @@
 ﻿using FluentAssertions;
 using GalaxyCheck;
-using NebulaCheck;
 using System.Linq;
-using Property = NebulaCheck.Property;
-using Test = NebulaCheck.Test;
 
 namespace Tests.V2.GenTests.ReflectedGenTests
 {
@@ -12,26 +9,26 @@ namespace Tests.V2.GenTests.ReflectedGenTests
         private record EmptyRecord();
 
         [Property]
-        public NebulaCheck.IGen<Test> ItCanGenerateAnEmptyRecord() =>
+        public Property ItCanGenerateAnEmptyRecord() => new Property(
             from value in DomainGen.Any()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen.Create<EmptyRecord>();
 
                 var instance = gen.SampleOne(seed: seed, size: size);
 
                 instance.Should().NotBeNull();
-            });
+            }));
 
         private record RecordWithOneProperty(int Property);
 
         [Property]
-        public NebulaCheck.IGen<Test> ItCanGenerateARecordWithOneProperty() =>
+        public Property ItCanGenerateARecordWithOneProperty() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen
                     .Factory()
@@ -42,15 +39,15 @@ namespace Tests.V2.GenTests.ReflectedGenTests
 
                 instance.Should().NotBeNull();
                 instance.Property.Should().NotBe(0);
-            });
+            }));
 
         private record RecordWithTwoProperties(int Property1, int Property2);
 
         [Property]
-        public NebulaCheck.IGen<Test> ItCanGenerateARecordWithTwoProperties() =>
+        public Property ItCanGenerateARecordWithTwoProperties() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen
                     .Factory()
@@ -62,6 +59,6 @@ namespace Tests.V2.GenTests.ReflectedGenTests
                 instance.Should().NotBeNull();
                 instance.Property1.Should().NotBe(0);
                 instance.Property2.Should().NotBe(0);
-            });
+            }));
     }
 }

@@ -1,19 +1,16 @@
 ﻿using FluentAssertions;
 using GalaxyCheck;
-using NebulaCheck;
 using System.Linq;
-using Property = NebulaCheck.Property;
-using Test = NebulaCheck.Test;
 
 namespace Tests.V2.GenTests.ReflectedGenTests
 {
     public class AboutGeneratingTuples
     {
         [Property]
-        public NebulaCheck.IGen<Test> ItCanGenerateATwoTuple() =>
+        public Property ItCanGenerateATwoTuple() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen
                     .Factory()
@@ -25,6 +22,6 @@ namespace Tests.V2.GenTests.ReflectedGenTests
                 instance.Should().NotBeNull();
                 instance.x.Should().NotBe(0);
                 instance.y.Should().NotBe(0);
-            });
+            }));
     }
 }

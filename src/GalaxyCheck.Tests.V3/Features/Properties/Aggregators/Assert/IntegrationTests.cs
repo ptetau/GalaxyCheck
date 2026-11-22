@@ -1,4 +1,4 @@
-﻿namespace GalaxyCheck.Tests.Features.Properties.Aggregators.Assert;
+namespace GalaxyCheck.Tests.Features.Properties.Aggregators.Assert;
 
 public class IntegrationTests
 {
@@ -7,7 +7,7 @@ public class IntegrationTests
     {
         var property = Gen.Int32().ForAll(x => x < 1000);
 
-        var action = () => property.Assert();
+        var action = () => property.Assert(seed: 0);
 
         action.Should().Throw<PropertyFailedException>().Which.Message.MatchSnapshot();
     }
@@ -21,7 +21,7 @@ public class IntegrationTests
             select (x, y);
         var property = gen.ForAll(input => input.x < 1000);
 
-        var action = () => property.Assert();
+        var action = () => property.Assert(seed: 0);
 
         action.Should().Throw<PropertyFailedException>().Which.Message.MatchSnapshot();
     }

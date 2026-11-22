@@ -3,21 +3,13 @@
   "Discards": 0,
   "Shrinks": 0,
   "Counterexample": {
-    "Id": {},
     "Value": 100,
-    "Distance": 0.0,
     "ReplayParameters": {
-      "Rng": {
-        "Family": 0,
-        "Seed": 0,
-        "Order": 0
-      },
+      "Seed": 0,
       "Size": {
         "Value": 100
-      },
-      "RngWaypoint": null
+      }
     },
-    "ReplayPath": [],
     "Replay": "",
     "Exception": null,
     "PresentedInput": [
@@ -26,28 +18,18 @@
   },
   "Checks": [],
   "InitialParameters": {
-    "Rng": {
-      "Family": 0,
-      "Seed": 0,
-      "Order": 0
-    },
+    "Seed": 0,
     "Size": {
       "Value": 0
-    },
-    "RngWaypoint": null
+    }
   },
   "NextParameters": {
-    "Rng": {
-      "Family": 0,
-      "Seed": 0,
-      "Order": 0
-    },
+    "Seed": 0,
     "Size": {
       "Value": 100
-    },
-    "RngWaypoint": null
+    }
   },
-  "TerminationReason": "ReachedMaximumIterations",
+  "TerminationReason": "FoundPragmaticSmallestCounterexample",
   "Falsified": true,
-  "RandomnessConsumption": 0
+  "RandomnessConsumption": 2
 }

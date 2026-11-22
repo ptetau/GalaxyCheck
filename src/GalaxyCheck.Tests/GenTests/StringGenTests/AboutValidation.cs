@@ -1,11 +1,7 @@
 ﻿using FluentAssertions;
 using GalaxyCheck;
-using NebulaCheck;
 using System;
 using System.Linq;
-using Test = NebulaCheck.Test;
-using Property = NebulaCheck.Property;
-using Gen = NebulaCheck.Gen;
 using GalaxyCheck.Gens;
 
 namespace Tests.V2.GenTests.StringGenTests
@@ -13,7 +9,7 @@ namespace Tests.V2.GenTests.StringGenTests
     public class AboutValidation
     {
         [Property]
-        public NebulaCheck.IGen<Test> ItErrorsWhenCharTypesIsNone() =>
+        public Property ItErrorsWhenCharTypesIsNone() => new Property(
             from charType in Gen
                 .Choose(
                     Gen.Int32().LessThanEqual(0),
@@ -21,7 +17,7 @@ namespace Tests.V2.GenTests.StringGenTests
                 .Select(x => (GalaxyCheck.Gen.CharType)x)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen
                     .String()
@@ -33,13 +29,13 @@ namespace Tests.V2.GenTests.StringGenTests
                 action.Should()
                     .Throw<GalaxyCheck.Exceptions.GenErrorException>()
                     .WithGenErrorMessage("'charType' was not a valid flag value");
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> ItErrorsWhenCharsIsEmpty() =>
+        public Property ItErrorsWhenCharsIsEmpty() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen
                     .String()
@@ -51,14 +47,14 @@ namespace Tests.V2.GenTests.StringGenTests
                 action.Should()
                     .Throw<GalaxyCheck.Exceptions.GenErrorException>()
                     .WithGenErrorMessage("'chars' must not be empty");
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> ItErrorsWhenLengthIsNegative() =>
+        public Property ItErrorsWhenLengthIsNegative() => new Property(
             from length in Gen.Int32().LessThan(0)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen.String().WithLength(length);
 
@@ -67,14 +63,14 @@ namespace Tests.V2.GenTests.StringGenTests
                 action.Should()
                     .Throw<GalaxyCheck.Exceptions.GenErrorException>()
                     .WithGenErrorMessage("'length' cannot be negative");
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> ItErrorsWhenTheMinimumLengthIsNegative() =>
+        public Property ItErrorsWhenTheMinimumLengthIsNegative() => new Property(
             from minLength in Gen.Int32().LessThan(0)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen.String().WithLengthGreaterThanEqual(minLength);
 
@@ -83,14 +79,14 @@ namespace Tests.V2.GenTests.StringGenTests
                 action.Should()
                     .Throw<GalaxyCheck.Exceptions.GenErrorException>()
                     .WithGenErrorMessage("'minLength' cannot be negative");
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> ItErrorsWhenTheMaximumLengthIsNegative() =>
+        public Property ItErrorsWhenTheMaximumLengthIsNegative() => new Property(
             from maxLength in Gen.Int32().LessThan(0)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen.String().WithLengthLessThanEqual(maxLength);
 
@@ -99,15 +95,15 @@ namespace Tests.V2.GenTests.StringGenTests
                 action.Should()
                     .Throw<GalaxyCheck.Exceptions.GenErrorException>()
                     .WithGenErrorMessage("'maxLength' cannot be negative");
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> ItErrorsWhenMinimumLengthIsGreaterThanMaximumLength() =>
+        public Property ItErrorsWhenMinimumLengthIsGreaterThanMaximumLength() => new Property(
             from minLength in Gen.Int32().Between(1, 100)
             from maxLength in Gen.Int32().GreaterThanEqual(0).LessThan(minLength)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 void ShouldError(IStringGen gen)
                 {
@@ -120,6 +116,6 @@ namespace Tests.V2.GenTests.StringGenTests
 
                 ShouldError(GalaxyCheck.Gen.String().WithLengthGreaterThanEqual(minLength).WithLengthLessThanEqual(maxLength));
                 ShouldError(GalaxyCheck.Gen.String().WithLengthLessThanEqual(maxLength).WithLengthGreaterThanEqual(minLength));
-            });
+            }));
     }
 }

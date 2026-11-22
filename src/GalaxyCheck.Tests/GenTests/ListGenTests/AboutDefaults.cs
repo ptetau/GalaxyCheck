@@ -1,21 +1,18 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using GalaxyCheck;
-using NebulaCheck;
 using System.Collections.Generic;
 using System.Linq;
-using Property = NebulaCheck.Property;
-using Test = NebulaCheck.Test;
 
 namespace Tests.V2.GenTests.ListGenTests
 {
     public class AboutDefaults
     {
         [Property]
-        public NebulaCheck.IGen<Test> TheDefaultMinimumCountIsZero() =>
+        public Property TheDefaultMinimumCountIsZero() => new Property(
             from elementGen in DomainGen.Gen()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<IReadOnlyList<object>> SampleTraversal(GalaxyCheck.IGen<IReadOnlyList<object>> gen) =>
                     AboutDefaults.SampleTraversal(gen, seed: seed, size: size);
@@ -24,14 +21,14 @@ namespace Tests.V2.GenTests.ListGenTests
                 var gen1 = elementGen.ListOf().WithCountGreaterThanEqual(0);
 
                 SampleTraversal(gen0).Should().BeEquivalentTo(SampleTraversal(gen1));
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> TheDefaultMaximumCountIsTwenty() =>
+        public Property TheDefaultMaximumCountIsTwenty() => new Property(
             from elementGen in DomainGen.Gen()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<IReadOnlyList<object>> SampleTraversal(GalaxyCheck.IGen<IReadOnlyList<object>> gen) =>
                     AboutDefaults.SampleTraversal(gen, seed: seed, size: size);
@@ -40,14 +37,14 @@ namespace Tests.V2.GenTests.ListGenTests
                 var gen1 = elementGen.ListOf().WithCountLessThanEqual(20);
 
                 SampleTraversal(gen0).Should().BeEquivalentTo(SampleTraversal(gen1));
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> TheDefaultCountBiasIsWithSize() =>
+        public Property TheDefaultCountBiasIsWithSize() => new Property(
             from elementGen in DomainGen.Gen()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<IReadOnlyList<object>> SampleTraversal(GalaxyCheck.IGen<IReadOnlyList<object>> gen) =>
                     AboutDefaults.SampleTraversal(gen, seed: seed, size: size);
@@ -56,11 +53,9 @@ namespace Tests.V2.GenTests.ListGenTests
                 var gen1 = elementGen.ListOf().WithCountBias(GalaxyCheck.Gen.Bias.WithSize);
 
                 SampleTraversal(gen0).Should().BeEquivalentTo(SampleTraversal(gen1));
-            });
+            }));
 
-        private static List<IReadOnlyList<object>> SampleTraversal(GalaxyCheck.IGen<IReadOnlyList<object>> gen, int seed, int size) => gen.Advanced
-            .SampleOneExampleSpace(seed: seed, size: size)
-            .Traverse()
+        private static List<IReadOnlyList<object>> SampleTraversal(GalaxyCheck.IGen<IReadOnlyList<object>> gen, int seed, int size) => gen.SampleOneTraversal(seed: seed, size: size)
             .Take(100)
             .ToList();
     }

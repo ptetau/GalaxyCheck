@@ -1,21 +1,17 @@
 ﻿using FluentAssertions;
 using GalaxyCheck;
-using NebulaCheck;
 using System.Collections.Generic;
 using System.Linq;
-using Gen = NebulaCheck.Gen;
-using Property = NebulaCheck.Property;
-using Test = NebulaCheck.Test;
 
 namespace Tests.V2.GenTests.Int16GenTests
 {
     public class AboutDefaults
     {
         [Property]
-        public NebulaCheck.IGen<Test> TheDefaultMinimumIsTheMinimumInt16() =>
+        public Property TheDefaultMinimumIsTheMinimumInt16() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<short> SampleTraversal(GalaxyCheck.IGen<short> gen) => gen.SampleOneTraversal(seed: seed, size: size);
 
@@ -26,13 +22,13 @@ namespace Tests.V2.GenTests.Int16GenTests
                 var sample1 = SampleTraversal(gen1);
 
                 sample0.Should().BeEquivalentTo(sample1);
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> TheDefaultMaximumIsTheMaximumInt16() =>
+        public Property TheDefaultMaximumIsTheMaximumInt16() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<short> SampleTraversal(GalaxyCheck.IGen<short> gen) => gen.SampleOneTraversal(seed: seed, size: size);
 
@@ -43,15 +39,15 @@ namespace Tests.V2.GenTests.Int16GenTests
                 var sample1 = SampleTraversal(gen1);
 
                 sample0.Should().BeEquivalentTo(sample1);
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> IfTheRangeSpansZero_TheDefaultOriginIsZero() =>
+        public Property IfTheRangeSpansZero_TheDefaultOriginIsZero() => new Property(
             from min in Gen.Int16().LessThanEqual(0)
             from max in Gen.Int16().GreaterThanEqual(0)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<short> SampleTraversal(GalaxyCheck.IGen<short> gen) => gen.SampleOneTraversal(seed: seed, size: size);
 
@@ -62,15 +58,15 @@ namespace Tests.V2.GenTests.Int16GenTests
                 var sample1 = SampleTraversal(gen1);
 
                 sample0.Should().BeEquivalentTo(sample1);
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> IfTheRangeIsPositive_TheDefaultOriginIsTheMinimum_BecauseItIsClosestToZero() =>
+        public Property IfTheRangeIsPositive_TheDefaultOriginIsTheMinimum_BecauseItIsClosestToZero() => new Property(
             from min in Gen.Int16().GreaterThanEqual(0)
             from max in Gen.Int16().GreaterThanEqual(min)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<short> SampleTraversal(GalaxyCheck.IGen<short> gen) => gen.SampleOneTraversal(seed: seed, size: size);
 
@@ -81,15 +77,15 @@ namespace Tests.V2.GenTests.Int16GenTests
                 var sample1 = SampleTraversal(gen1);
 
                 sample0.Should().BeEquivalentTo(sample1);
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> IfTheRangeIsNegative_TheDefaultOriginIsTheMaximum_BecauseItIsClosestToZero() =>
+        public Property IfTheRangeIsNegative_TheDefaultOriginIsTheMaximum_BecauseItIsClosestToZero() => new Property(
             from min in Gen.Int16().LessThanEqual(0)
             from max in Gen.Int16().Between(min, 0)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<short> SampleTraversal(GalaxyCheck.IGen<short> gen) => gen.SampleOneTraversal(seed: seed, size: size);
 
@@ -100,13 +96,13 @@ namespace Tests.V2.GenTests.Int16GenTests
                 var sample1 = SampleTraversal(gen1);
 
                 sample0.Should().BeEquivalentTo(sample1);
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> TheDefaultBiasIsWithSize() =>
+        public Property TheDefaultBiasIsWithSize() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<short> SampleTraversal(GalaxyCheck.IGen<short> gen) => gen.SampleOneTraversal(seed: seed, size: size);
 
@@ -117,6 +113,6 @@ namespace Tests.V2.GenTests.Int16GenTests
                 var sample1 = SampleTraversal(gen1);
 
                 sample0.Should().BeEquivalentTo(sample1);
-            });
+            }));
     }
 }

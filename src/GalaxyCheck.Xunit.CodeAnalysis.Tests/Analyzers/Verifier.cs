@@ -22,7 +22,7 @@ namespace GalaxyCheck.Xunit.CodeAnalysis.Tests.Analyzers
         {
             var test = new CSharpCodeFixTest<TAnalyzer, EmptyCodeFixProvider, DefaultVerifier>()
             {
-                ReferenceAssemblies = new ReferenceAssemblies("net10.0", new PackageIdentity("Microsoft.NETCore.App.Ref", "10.0.0"), System.IO.Path.Combine("ref", "net10.0"))
+                ReferenceAssemblies = new ReferenceAssemblies(GalaxyCheck.Xunit.CodeAnalysis.Tests.TargetReference.Name, new PackageIdentity("Microsoft.NETCore.App.Ref", GalaxyCheck.Xunit.CodeAnalysis.Tests.TargetReference.Version), System.IO.Path.Combine("ref", GalaxyCheck.Xunit.CodeAnalysis.Tests.TargetReference.Name))
             };
 
             foreach (var source in sources)

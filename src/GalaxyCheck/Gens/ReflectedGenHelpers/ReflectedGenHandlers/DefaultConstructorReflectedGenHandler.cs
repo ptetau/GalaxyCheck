@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -91,7 +91,7 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
                     return innerHandler
                         .CreateGen(property.PropertyType, context)
                         .Cast<object>()
-                        .Advanced.ReferenceRngWaypoint(rngWaypoint => rngWaypoint.Influence(context.CalculateStableSeed()))
+                        .Advanced.ReferenceRngWaypoint(context.CalculateStableSeed())
                         .Select((Func<object?, SetMemberAction>)(value => (ref object obj) => property.SetValue(obj, value)));
                 });
         }
@@ -109,7 +109,7 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
                     return innerHandler
                         .CreateGen(field.FieldType, context)
                         .Cast<object>()
-                        .Advanced.ReferenceRngWaypoint(rngWaypoint => rngWaypoint.Influence(context.CalculateStableSeed()))
+                        .Advanced.ReferenceRngWaypoint(context.CalculateStableSeed())
                         .Select((Func<object?, SetMemberAction>)(value => (ref object obj) => field.SetValue(obj, value)));
                 });
         }

@@ -1,10 +1,7 @@
 ﻿using FluentAssertions;
 using GalaxyCheck;
-using NebulaCheck;
 using System;
 using System.Linq;
-using Property = NebulaCheck.Property;
-using Test = NebulaCheck.Test;
 
 namespace Tests.V2.GenTests.ReflectedGenTests
 {
@@ -21,11 +18,11 @@ namespace Tests.V2.GenTests.ReflectedGenTests
         }   
 
         [Property]
-        public NebulaCheck.IGen<Test> ItCanGenerateAnObjectWithANestedProperty() =>
+        public Property ItCanGenerateAnObjectWithANestedProperty() => new Property(
             from value in DomainGen.Any()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen
                     .Create<ClassWithOneNestedProperty>()
@@ -36,7 +33,7 @@ namespace Tests.V2.GenTests.ReflectedGenTests
                 instance.Should().NotBeNull();
                 instance.Property.Should().NotBeNull();
                 instance.Property.Property.Should().Be(value);
-            });
+            }));
 
         private class ClassWithRecursiveProperty
         {
@@ -44,11 +41,11 @@ namespace Tests.V2.GenTests.ReflectedGenTests
         }
 
         [Property]
-        public NebulaCheck.IGen<Test> IfTheClassHasARecursiveProperty_ItErrors() =>
+        public Property IfTheClassHasARecursiveProperty_ItErrors() => new Property(
             from value in DomainGen.Any()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen.Create<ClassWithRecursiveProperty>();
 
@@ -57,6 +54,6 @@ namespace Tests.V2.GenTests.ReflectedGenTests
                 action.Should()
                     .Throw<GalaxyCheck.Exceptions.GenErrorException>()
                     .WithGenErrorMessage("detected circular reference on type '*ClassWithRecursiveProperty' at path '$.Property'");
-            });
+            }));
     }
 }

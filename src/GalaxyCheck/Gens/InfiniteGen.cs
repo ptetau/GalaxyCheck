@@ -1,4 +1,4 @@
-﻿namespace GalaxyCheck
+namespace GalaxyCheck
 {
     using GalaxyCheck.Gens;
     using System.Collections.Generic;
@@ -39,15 +39,9 @@
 namespace GalaxyCheck.Gens
 {
     using GalaxyCheck.Gens.Internal;
-    using GalaxyCheck.Gens.Internal.Iterations;
-    using GalaxyCheck.Gens.Iterations.Generic;
     using GalaxyCheck.Gens.Parameters;
-    using GalaxyCheck.ExampleSpaces;
-    using GalaxyCheck.Internal;
     using System.Collections;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Linq;
 
     internal record InfiniteGen<T> : BaseGen<IEnumerable<T>>, IGen<IEnumerable<T>>
     {
@@ -65,183 +59,97 @@ namespace GalaxyCheck.Gens
         {
         }
 
-        protected override IEnumerable<IGenIteration<IEnumerable<T>>> Run(GenParameters parameters)
+        public override IEnumerable<T> Generate(GenSource source)
         {
-            var rng = parameters.Rng;
-            do
+            // The seed is for the elements that are enumerated after the test case ended. It does not shrink.
+            var seed = source.DrawUniform(ulong.MaxValue);
+            source.FreezeLast();
+            return new InfiniteEnumerable(_elementGen.Advanced, source, source.TestCase, seed, source.Size, _iterationLimit);
+        }
+
+        /// <summary>
+        /// Generates each element on its first enumeration. After its test case, the enumerable repeats the elements
+        /// that the test case enumerated, so that a counterexample is the same after the test case as in it. While its test case runs, an element is a choice of the
+        /// test case, so it shrinks with the other choices. Each enumeration gives the same elements.
+        /// </summary>
+        private sealed class InfiniteEnumerable : IEnumerable<T>
+        {
+            private readonly IGenAdvanced<T> _elementGen;
+            private readonly GenSource _source;
+            private readonly int _testCase;
+            private readonly int _size;
+            private readonly int? _iterationLimit;
+            private readonly List<T> _elements = new();
+            private readonly ulong _seed;
+            private int _enumeratedInTestCase;
+            private GenSource? _detachedSource;
+
+            public InfiniteEnumerable(IGenAdvanced<T> elementGen, GenSource source, int testCase, ulong seed, int size, int? iterationLimit)
             {
-                var initialRng = rng;
-                var nextRng = initialRng.Next();
-                var forkedRng = initialRng.Fork();
+                _elementGen = elementGen;
+                _source = source;
+                _testCase = testCase;
+                _seed = seed;
+                _size = size;
+                _iterationLimit = iterationLimit;
+            }
 
-                var exampleSpace = CreateInfiniteEnumerableSpace(_elementGen, parameters with { Rng = forkedRng }, _iterationLimit);
-
-                yield return GenIterationFactory.Instance(
-                    parameters with { Rng = initialRng },
-                    parameters with { Rng = nextRng },
-                    exampleSpace);
-
-                rng = rng.Next();
-            } while (true);
-        }
-
-        private static IExampleSpace<IEnumerable<T>> CreateInfiniteEnumerableSpace(
-            IGen<T> elementGen,
-            GenParameters parameters,
-            int? iterationLimit)
-        {
-            IEnumerable<T> SealEnumerable(IEnumerable<T> source) => ThrowOnLimit(source.Repeat(), iterationLimit);
-
-            var enumerable = CreateInfiniteEnumerable(elementGen, parameters, iterationLimit);
-
-            IExample<IEnumerable<T>> rootExample = new Example<IEnumerable<T>>(
-                ExampleId.Primitive(parameters.Rng.Seed),
-                enumerable.Select(x => x.Current.Value),
-                100);
-
-            return ExampleSpaceFactory.Delay(
-                rootExample,
-                () =>
-                {
-                    if (enumerable.MaxIterations == 0)
-                    {
-                        return Enumerable.Empty<IExampleSpace<IEnumerable<T>>>();
-                    }
-
-                    if (enumerable.MaxIterations == 1)
-                    {
-                        var exampleSpace = enumerable.First().Map(element => SealEnumerable(new[] { element }));
-                        return new[] { exampleSpace };
-                    }
-
-                    var exampleSpaces = enumerable.Take(enumerable.MaxIterations).ToList();
-
-                    var rootExampleExplored = ExampleSpaceFactory.Merge(
-                        exampleSpaces,
-                        ShrinkTowardsLength(1),
-                        (_) => 0,
-                        enableSmallestExampleSpacesOptimization: false,
-                        enableUniqueIds: true);
-
-                    return rootExampleExplored.Subspace.Select(es => es.Map(SealEnumerable));
-                });
-        }
-
-        private static SpyEnumerable<IExampleSpace<T>> CreateInfiniteEnumerable(
-            IGen<T> elementGen,
-            GenParameters parameters,
-            int? iterationLimit)
-        {
-            var source = elementGen.Advanced
-                .Run(parameters)
-                .WithDiscardCircuitBreaker(_ => true, iteration => iteration.IsDiscard())
-                .Select(iteration => iteration.Match<IGenInstance<T>?>(
-                    onInstance: instance => instance,
-                    onError: _ => null,
-                    onDiscard: _ => null))
-                .Where(instance => instance != null)
-                .Select(instance => instance!.ExampleSpace);
-
-            return new SpyEnumerable<IExampleSpace<T>>(ThrowOnLimit(source, iterationLimit));
-        }
-
-        private static ShrinkFunc<IReadOnlyCollection<IExampleSpace<T>>> ShrinkTowardsLength(int length)
-        {
-            // If the value type is a collection, that is, this generator is building a "collection of collections",
-            // it is "less complex" to order the inner collections by descending length. It also lets us find the
-            // minimal shrink a lot more efficiently in some examples,
-            // e.g. https://github.com/jlink/shrinking-challenge/blob/main/challenges/large_union_list.md
-
-            return ShrinkFunc.TowardsCountOptimized<IExampleSpace<T>, decimal>(length, exampleSpace =>
+            public IEnumerator<T> GetEnumerator()
             {
-                return -exampleSpace.Current.Distance;
-            });
-        }
-
-        private static IEnumerable<U> ThrowOnLimit<U>(IEnumerable<U> source, int? iterationLimit) =>
-            iterationLimit.HasValue
-                ? source.Select((x, i) =>
+                for (var i = 0; ; i++)
                 {
-                    var iterationCount = i + 1;
-                    if (iterationCount > iterationLimit.Value)
+                    if (_iterationLimit.HasValue && i >= _iterationLimit.Value)
                     {
                         ThrowGenLimitExceeded();
                     }
 
-                    return x;
-                })
-                : source;
+                    T element;
+                    lock (_elements)
+                    {
+                        if (i >= _elements.Count)
+                        {
+                            _elements.Add(GenerateElement());
+                        }
 
-        private static void ThrowGenLimitExceeded()
-        {
-            var message = "Infinite enumerable exceeded iteration limit. This is a built-in safety mechanism to prevent hanging tests. Relax this constraint by configuring the iterationLimit parameter.";
-            throw new Exceptions.GenLimitExceededException(message);
-        }
+                        element = _elements[i];
+                    }
 
-        private class SpyEnumerator<U> : IEnumerator<U>
-        {
-            private int _currentIterations = 0;
-            private int _maxIterations = 0;
-
-            private readonly IEnumerator<U> _inner;
-
-            public SpyEnumerator(IEnumerator<U> inner)
-            {
-                _inner = inner;
-            }
-
-            public int MaxIterations => _maxIterations;
-
-            public U Current => _inner.Current;
-
-            object IEnumerator.Current => Current!;
-
-            public void Dispose()
-            {
-                _inner.Dispose();
-            }
-
-            public bool MoveNext()
-            {
-                _currentIterations++;
-
-                if (_currentIterations > _maxIterations)
-                {
-                    _maxIterations = _currentIterations;
+                    yield return element;
                 }
-
-                return _inner.MoveNext();
-            }
-
-            public void Reset()
-            {
-                _inner.Reset();
-            }
-        }
-
-        private class SpyEnumerable<U> : IEnumerable<U>
-        {
-            private readonly ConcurrentBag<SpyEnumerator<U>> _enumerators = new ConcurrentBag<SpyEnumerator<U>>();
-            private readonly IEnumerable<U> _inner;
-
-            public SpyEnumerable(IEnumerable<U> inner)
-            {
-                _inner = inner;
-            }
-
-            public int MaxIterations => _enumerators.Any() ? _enumerators.Max(x => x.MaxIterations) : 0;
-
-            public IEnumerator<U> GetEnumerator()
-            {
-                var enumerator = new SpyEnumerator<U>(_inner.GetEnumerator());
-
-                _enumerators.Add(enumerator);
-
-                return enumerator;
             }
 
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+            private T GenerateElement()
+            {
+                if (_source.IsActive && _source.TestCase == _testCase)
+                {
+                    var start = _source.BeginSpan();
+                    var element = _elementGen.Generate(_source);
+                    _source.EndSpan(start);
+                    _enumeratedInTestCase++;
+                    return element;
+                }
+
+                if (_enumeratedInTestCase > 0)
+                {
+                    return _elements[_elements.Count % _enumeratedInTestCase];
+                }
+
+                if (_detachedSource is null)
+                {
+                    _detachedSource = new GenSource(_seed, _size, capacity: 8);
+                    _detachedSource.BeginRandom(_size);
+                }
+
+                return _elementGen.Generate(_detachedSource);
+            }
+
+            private static void ThrowGenLimitExceeded()
+            {
+                var message = "Infinite enumerable exceeded iteration limit. This is a built-in safety mechanism to prevent hanging tests. Relax this constraint by configuring the iterationLimit parameter.";
+                throw new Exceptions.GenLimitExceededException(message);
+            }
         }
     }
-
 }

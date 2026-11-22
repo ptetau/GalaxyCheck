@@ -1,8 +1,7 @@
-﻿using FluentAssertions;
-using NebulaCheck;
+﻿using GalaxyCheck;
+using FluentAssertions;
 using System.Collections.Generic;
 using static Tests.V2.DomainGenAttributes;
-using Property = NebulaCheck.Property;
 
 namespace Tests.V2.GenTests.ByteGenTests
 {

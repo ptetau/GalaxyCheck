@@ -1,13 +1,8 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using GalaxyCheck;
-using GalaxyCheck.ExampleSpaces;
-using NebulaCheck;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Gen = NebulaCheck.Gen;
-using Property = NebulaCheck.Property;
-using Test = NebulaCheck.Test;
 
 namespace Tests.V2.GenTests.InfiniteGenTests
 {
@@ -16,51 +11,51 @@ namespace Tests.V2.GenTests.InfiniteGenTests
         private const int ExpectedDefaultIterationLimit = 1000;
 
         [Property]
-        public NebulaCheck.IGen<Test> AGeneratedEnumerableHasTheDefaultIterationLimitIfNotConfiguredOtherwise() =>
+        public Property AGeneratedEnumerableHasTheDefaultIterationLimitIfNotConfiguredOtherwise() => new Property(
             from elementGen in DomainGen.Gen()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = elementGen.InfiniteOf().Select(EnsureSourceCanShrink);
 
-                var sample = gen.Advanced.SampleOneExampleSpace(seed: seed, size: size);
+                var sample = gen.SampleOneTraversal(seed: seed, size: size);
 
                 AssertLimit(sample, ExpectedDefaultIterationLimit);
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> AGeneratedEnumerableHasTheGivenLimit() =>
+        public Property AGeneratedEnumerableHasTheGivenLimit() => new Property(
             from elementGen in DomainGen.Gen()
             from limit in Gen.Int32().Between(1, 1000)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = elementGen.InfiniteOf(iterationLimit: limit).Select(EnsureSourceCanShrink);
 
-                var sample = gen.Advanced.SampleOneExampleSpace(seed: seed, size: size);
+                var sample = gen.SampleOneTraversal(seed: seed, size: size);
 
                 AssertLimit(sample, limit);
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> AGeneratedEnumerableWithoutALimitNeverThrows() =>
+        public Property AGeneratedEnumerableWithoutALimitNeverThrows() => new Property(
             from elementGen in DomainGen.Gen()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = elementGen.InfiniteOf(iterationLimit: null).Select(EnsureSourceCanShrink);
 
-                var sample = gen.Advanced.SampleOneExampleSpace(seed: seed, size: size);
+                var sample = gen.SampleOneTraversal(seed: seed, size: size);
 
                 AssertUnlimited(sample);
-            });
+            }));
 
-        private static void AssertLimit<T>(IExampleSpace<IEnumerable<T>> exampleSpace, int expectedLimit)
+        private static void AssertLimit<T>(List<IEnumerable<T>> traversal, int expectedLimit)
         {
-            exampleSpace.Traverse().Take(10).ToList().ForEach(enumerable =>
+            traversal.Take(10).ToList().ForEach(enumerable =>
             {
                 AssertLimit(enumerable, expectedLimit);
             });
@@ -78,9 +73,9 @@ namespace Tests.V2.GenTests.InfiniteGenTests
                 .WithMessage("Infinite enumerable exceeded iteration limit. This is a built-in safety mechanism to prevent hanging tests. Relax this constraint by configuring the iterationLimit parameter.");
         }
 
-        private static void AssertUnlimited<T>(IExampleSpace<IEnumerable<T>> exampleSpace)
+        private static void AssertUnlimited<T>(List<IEnumerable<T>> traversal)
         {
-            exampleSpace.Traverse().Take(10).ToList().ForEach(enumerable =>
+            traversal.Take(10).ToList().ForEach(enumerable =>
             {
                 AssertUnlimited(enumerable);
             });

@@ -1,4 +1,5 @@
-﻿using GalaxyCheck.Properties;
+using GalaxyCheck.Properties;
+using GalaxyCheck.Runners;
 using GalaxyCheck.Runners.Check;
 using System.Collections.Generic;
 using System.Linq;
@@ -43,7 +44,7 @@ namespace GalaxyCheck.Runners.Sample
         {
             var propertyWithoutFailures = property.Select(MuteTestFailure);
 
-            var checkResult = propertyWithoutFailures.Check(iterations: iterations, seed: seed, size: size);
+            var checkResult = CheckRunner.Run<object>(propertyWithoutFailures, iterations, seed, size, null, null, true, recordChecks: true);
 
             return ExtractSampleFromCheckResult(checkResult);
         }
@@ -56,7 +57,7 @@ namespace GalaxyCheck.Runners.Sample
         {
             var propertyWithoutFailures = property.Select(MuteTestFailure);
 
-            var checkResult = await propertyWithoutFailures.CheckAsync(iterations: iterations, seed: seed, size: size);
+            var checkResult = await CheckRunner.RunAsync<object>(propertyWithoutFailures, iterations, seed, size, null, null, true, recordChecks: true);
 
             return ExtractSampleFromCheckResult(checkResult);
         }
@@ -69,7 +70,7 @@ namespace GalaxyCheck.Runners.Sample
         {
             var property = advanced.AsGen().ForAll(_ => true);
 
-            var checkResult = property.Check(iterations: iterations, seed: seed, size: size);
+            var checkResult = CheckRunner.Run(property, iterations, seed, size, null, null, true, recordChecks: true);
 
             return ExtractSampleFromCheckResult(checkResult);
         }

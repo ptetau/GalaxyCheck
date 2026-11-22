@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
@@ -36,6 +36,12 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers
                     return acc + curr;
                 }
             });
+
+        public static string ErrorMessage(this ReflectedGenHandlerContext context, string message)
+        {
+            var suffix = context.Members.Count == 1 ? "" : $" at path '{context.MemberPath}'";
+            return message + suffix;
+        }
 
         public static IGen<T> Error<T>(this ReflectedGenHandlerContext context, string message)
         {

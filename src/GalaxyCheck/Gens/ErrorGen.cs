@@ -1,4 +1,4 @@
-﻿namespace GalaxyCheck
+namespace GalaxyCheck
 {
     using GalaxyCheck.Gens;
     using System;
@@ -33,10 +33,7 @@
 namespace GalaxyCheck.Gens
 {
     using GalaxyCheck.Gens.Internal;
-    using GalaxyCheck.Gens.Internal.Iterations;
-    using GalaxyCheck.Gens.Iterations.Generic;
     using GalaxyCheck.Gens.Parameters;
-    using System.Collections.Generic;
 
     internal record ErrorGen<T> : BaseGen<T>, IGen<T>
     {
@@ -47,12 +44,6 @@ namespace GalaxyCheck.Gens
             _message = message;
         }
 
-        protected override IEnumerable<IGenIteration<T>> Run(GenParameters parameters)
-        {
-            while (true)
-            {
-                yield return GenIterationFactory.Error<T>(parameters, _message);
-            }
-        }
+        public override T Generate(GenSource source) => throw new GenErrorSignal(_message);
     }
 }

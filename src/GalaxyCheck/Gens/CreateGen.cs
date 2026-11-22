@@ -1,11 +1,6 @@
-﻿using GalaxyCheck.ExampleSpaces;
 using GalaxyCheck.Gens;
-using GalaxyCheck.Gens.Internal;
-using GalaxyCheck.Gens.Internal.Iterations;
-using GalaxyCheck.Gens.Iterations.Generic;
 using GalaxyCheck.Gens.Parameters;
 using System;
-using System.Collections.Generic;
 using System.Reflection;
 
 namespace GalaxyCheck
@@ -29,27 +24,17 @@ namespace GalaxyCheck
         public static IGen<object> Create(Type type, NullabilityInfo? nullabilityInfo = null) => Factory().Create(type, nullabilityInfo);
 
         /// <summary>
-        /// Generates instances by the given function. Instances will not shrink by default, to enable shrinking on the
-        /// generator, use <see cref="Extensions.Unfold{T}(IGen{T}, Func{T, IExampleSpace{T}})"/>. The function must
-        /// return the parameters to be used in the next iteration, considering any randomness that was used in this
-        /// to generate this iteration.
+        /// Creates a generator from a function of the generation parameters. The seed of the parameters is a choice
+        /// that does not shrink, so the values of the generator do not shrink.
         /// </summary>
-        /// <param name="func">The generator function.</param>
-        /// <returns>A generator for the given type, create by the given function.</returns>
-        public static IGen<T> Create<T>(Func<GenParameters, (T value, GenParameters nextParameters)> func)
-        {
-            IEnumerable<IGenIteration<T>> GenFunc(GenParameters parameters)
+        /// <param name="func">The function that creates a value from the parameters.</param>
+        /// <returns>The new generator.</returns>
+        public static IGen<T> Create<T>(Func<GenParameters, (T value, GenParameters nextParameters)> func) =>
+            new Gens.Internal.FunctionGen<T>(source =>
             {
-                while (true)
-                {
-                    var replayParameters = parameters;
-                    var (value, nextParameters) = func(replayParameters);
-                    parameters = nextParameters;
-                    yield return GenIterationFactory.Instance(replayParameters, nextParameters, ExampleSpaceFactory.Singleton(value));
-                }
-            }
-
-            return new FunctionalGen<T>(GenFunc);
-        }
+                var seed = (int)(uint)source.DrawUniform(uint.MaxValue);
+                source.FreezeLast();
+                return func(GenParameters.Parse(seed, source.Size)).value;
+            });
     }
 }

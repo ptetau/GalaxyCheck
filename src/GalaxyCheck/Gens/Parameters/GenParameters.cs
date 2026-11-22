@@ -1,38 +1,12 @@
-﻿namespace GalaxyCheck.Gens.Parameters
+namespace GalaxyCheck.Gens.Parameters
 {
-    public record GenParameters(
-        IRng Rng,
-        Size Size,
-        IRng? RngWaypoint)
+    /// <summary>
+    /// The seed and the size of a run, or of the test case of a counterexample.
+    /// </summary>
+    public record GenParameters(int Seed, Size Size)
     {
-        public static GenParameters Parse(int seed, int size, int? seedWaypoint = null)
-        {
-            return new GenParameters(
-                Internal.Rng.Create(seed),
-                new Size(size),
-                seedWaypoint == null ? null : Internal.Rng.Create(seedWaypoint.Value));
-        }
+        public static GenParameters Parse(int seed, int size) => new GenParameters(seed, new Size(size));
 
-        internal static GenParameters Create(IRng rng, Size size)
-        {
-            return new GenParameters(rng, size, null);
-        }
-
-        internal static GenParameters CreateRandom(Size size)
-        {
-            return new GenParameters(Internal.Rng.Spawn(), size, null);
-        }
-
-        public override string ToString()
-        {
-            var result = $"Rng={Rng},Size={Size}";
-
-            if (RngWaypoint != null)
-            {
-                result += $",RngWaypoing={RngWaypoint}";
-            }
-
-            return result;
-        }
+        public override string ToString() => $"Seed={Seed},Size={Size}";
     }
 }

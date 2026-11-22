@@ -1,4 +1,4 @@
-﻿namespace GalaxyCheck
+namespace GalaxyCheck
 {
     using GalaxyCheck.Gens;
     using System.Collections.Generic;
@@ -29,8 +29,6 @@
 namespace GalaxyCheck.Gens
 {
     using GalaxyCheck.Gens.Internal;
-    using GalaxyCheck.Gens.Iterations.Generic;
-    using GalaxyCheck.Gens.Parameters;
     using GalaxyCheck.Internal;
     using System;
     using System.Collections.Generic;
@@ -69,7 +67,7 @@ namespace GalaxyCheck.Gens
                 .Select((parameterInfo, parameterIndex) =>
                 {
                     var customGen = customGens.ContainsKey(parameterIndex) ? customGens[parameterIndex] : null;
-                    return ResolveGen(genFactory, customGen, parameterInfo).Advanced.ReferenceRngWaypoint(rng => rng.Influence(parameterIndex));
+                    return ResolveGen(genFactory, customGen, parameterInfo).Advanced.ReferenceRngWaypoint(parameterIndex);
                 });
 
             return Gen.Zip(gens).Select(xs => xs.ToArray());
@@ -144,9 +142,9 @@ namespace GalaxyCheck.Gens
             return true;
         }
 
-        private static Iterations.IGenErrorData SelectParameterError(ParameterInfo parameterInfo, Iterations.IGenErrorData error)
+        private static string SelectParameterError(ParameterInfo parameterInfo, string error)
         {
-            return new GenErrorData($"unable to generate value for parameter '{parameterInfo.Name}', {error.Message}");
+            return $"unable to generate value for parameter '{parameterInfo.Name}', {error}";
         }
     }
 }

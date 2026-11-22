@@ -1,9 +1,8 @@
-﻿using GalaxyCheck.ExampleSpaces;
-using GalaxyCheck.Properties;
-using GalaxyCheck.Runners.Check;
+using GalaxyCheck.Gens.Internal;
+using GalaxyCheck.Gens.Parameters;
+using GalaxyCheck.Runners;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace GalaxyCheck
 {
@@ -14,22 +13,22 @@ namespace GalaxyCheck
         public static T SampleOne<T>(
             this IGen<T> gen,
             int? seed = null,
-            int? size = null) => gen.Sample(iterations: 1, seed: seed, size: size ?? 100).Single();
+            int? size = null) => gen.Sample(iterations: 1, seed: seed, size: size ?? 100)[0];
 
         public static List<T> Sample<T>(
             this IGen<T> gen,
             int? iterations = null,
             int? seed = null,
-            int? size = null) => gen.Advanced.SampleWithMetrics(iterations: iterations, seed: seed, size: size).Values;
+            int? size = null) => SampleHelpers.Run(gen.Advanced, iterations, seed, size).Values;
 
         public static SampleOneWithMetricsResult<T> SampleOneWithMetrics<T>(
             this IGenAdvanced<T> advanced,
             int? seed = null,
             int? size = null)
         {
-            var sample = advanced.SampleExampleSpacesWithMetrics(iterations: 1, seed: seed, size: size);
+            var sample = SampleHelpers.Run(advanced, iterations: 1, seed: seed, size: size ?? 100);
             return new SampleOneWithMetricsResult<T>(
-                sample.Values.Single().Current.Value,
+                sample.Values[0],
                 sample.Discards,
                 sample.RandomnessConsumption);
         }
@@ -38,24 +37,7 @@ namespace GalaxyCheck
             this IGenAdvanced<T> advanced,
             int? iterations = null,
             int? seed = null,
-            int? size = null) => advanced.SampleExampleSpacesWithMetrics(iterations: iterations, seed: seed, size: size).Select(ex => ex.Current.Value);
-
-        public static IExampleSpace<T> SampleOneExampleSpace<T>(
-            this IGenAdvanced<T> advanced,
-            int? seed = null,
-            int? size = null) => advanced.SampleExampleSpaces(iterations: 1, seed: seed, size: size).Single();
-
-        public static List<IExampleSpace<T>> SampleExampleSpaces<T>(
-            this IGenAdvanced<T> advanced,
-            int? iterations = null,
-            int? seed = null,
-            int? size = null) => advanced.SampleExampleSpacesWithMetrics(iterations: iterations, seed: seed, size: size).Values;
-
-        public static SampleWithMetricsResult<IExampleSpace<T>> SampleExampleSpacesWithMetrics<T>(
-            this IGenAdvanced<T> advanced,
-            int? iterations = null,
-            int? seed = null,
-            int? size = null) => SampleHelpers.RunExampleSpaceSample(advanced, iterations: iterations, seed: seed, size: size);
+            int? size = null) => SampleHelpers.Run(advanced, iterations, seed, size);
     }
 }
 
@@ -71,37 +53,41 @@ namespace GalaxyCheck.Runners.Sample
         int Discards,
         int RandomnessConsumption);
 
-    internal static class SampleWithMetricsResultExtensions
-    {
-        public static SampleWithMetricsResult<TResult> Select<T, TResult>(
-            this SampleWithMetricsResult<T> result,
-            Func<T, TResult> selector) =>
-                new SampleWithMetricsResult<TResult>(
-                    result.Values.Select(selector).ToList(),
-                    result.Discards,
-                    result.RandomnessConsumption);
-    }
-
     internal static class SampleHelpers
     {
-        internal static SampleWithMetricsResult<IExampleSpace<T>> RunExampleSpaceSample<T>(
-            IGenAdvanced<T> advanced,
+        internal static SampleWithMetricsResult<T> Run<T>(
+            IGenAdvanced<T> gen,
             int? iterations,
             int? seed,
             int? size)
         {
-            var property = advanced.AsGen().ForAll(_ => true);
+            var resolvedIterations = iterations ?? CheckRunner.DefaultIterations;
+            var resolvedSeed = CheckRunner.CreateSeed(seed);
+            var source = GenSource.Create(resolvedSeed, 0);
+            var values = new List<T>(Math.Max(0, resolvedIterations));
 
-            var checkResult = property.Check(iterations: iterations, seed: seed, size: size, deepCheck: false);
+            for (var i = 0; i < resolvedIterations; i++)
+            {
+                var iterationSize = CheckRunner.SizeOf(i, resolvedIterations, size);
+                source.BeginRandom(iterationSize);
+                try
+                {
+                    values.Add(gen.Generate(source));
+                }
+                catch (Exception ex) when (!CheckRunner.IsPassedOn(ex))
+                {
+                    throw CheckRunner.GenError(ex, GenParameters.Parse(resolvedSeed, iterationSize));
+                }
+                finally
+                {
+                    source.End();
+                }
+            }
 
-            var values = checkResult.Checks
-                .Select(check => check.ExampleSpace)
-                .ToList();
-
-            return new SampleWithMetricsResult<IExampleSpace<T>>(
+            return new SampleWithMetricsResult<T>(
                 values,
-                checkResult.Discards,
-                checkResult.RandomnessConsumption);
+                source.Discards,
+                (int)Math.Min(int.MaxValue, source.Consumption));
         }
     }
 }

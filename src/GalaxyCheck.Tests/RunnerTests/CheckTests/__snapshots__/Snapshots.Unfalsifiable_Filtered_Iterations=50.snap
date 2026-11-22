@@ -1,32 +1,22 @@
 ﻿{
   "Iterations": 50,
-  "Discards": 60,
+  "Discards": 67,
   "Shrinks": 0,
   "Counterexample": null,
   "Checks": [],
   "InitialParameters": {
-    "Rng": {
-      "Family": 0,
-      "Seed": 0,
-      "Order": 0
-    },
+    "Seed": 0,
     "Size": {
       "Value": 0
-    },
-    "RngWaypoint": null
+    }
   },
   "NextParameters": {
-    "Rng": {
-      "Family": 0,
-      "Seed": 1168100330,
-      "Order": 155
-    },
+    "Seed": 0,
     "Size": {
-      "Value": 0
-    },
-    "RngWaypoint": null
+      "Value": 100
+    }
   },
   "TerminationReason": "ReachedMaximumIterations",
   "Falsified": false,
-  "RandomnessConsumption": 155
+  "RandomnessConsumption": 234
 }

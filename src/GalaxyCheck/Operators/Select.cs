@@ -1,6 +1,5 @@
-﻿using GalaxyCheck.Gens.Internal;
-using GalaxyCheck.Gens.Internal.Iterations;
-using GalaxyCheck.ExampleSpaces;
+using GalaxyCheck.Gens.Internal;
+using GalaxyCheck.Gens.Parameters;
 using System;
 
 namespace GalaxyCheck
@@ -13,29 +12,17 @@ namespace GalaxyCheck
         /// <typeparam name="T">The type of the generator's value.</typeparam>
         /// <typeparam name="TResult">The type of the resultant generator's value.</typeparam>
         /// <param name="gen">The generator to apply the projection to.</param>
-        /// <param name="selector">A projection function to apply to each value.</param>
+        /// <param name="selector">A transform function to apply to each value.</param>
         /// <returns>A new generator with the projection applied.</returns>
-        /// <summary>
-        /// Projects each element in a generator to a new form.
-        /// </summary>
-        /// <typeparam name="T">The type of the generator's value.</typeparam>
-        /// <typeparam name="TResult">The type of the resultant generator's value.</typeparam>
-        /// <param name="gen">The generator to apply the projection to.</param>
-        /// <param name="selector">A projection function to apply to each value.</param>
-        /// <returns>A new generator with the projection applied.</returns>
-        public static IGen<TResult> Select<T, TResult>(this IGen<T> gen, Func<T, TResult> selector)
-        {
-            GenInstanceTransformation<T, TResult> transformation = (instance) => {
-                var sourceExampleSpace = instance.ExampleSpace;
-                var projectedExampleSpace = instance.ExampleSpace.Map(selector);
+        public static IGen<TResult> Select<T, TResult>(this IGen<T> gen, Func<T, TResult> selector) =>
+            new SelectGen<T, TResult>(gen, selector);
+    }
+}
 
-                return GenIterationFactory.Instance(
-                    instance.ReplayParameters,
-                    instance.NextParameters,
-                    projectedExampleSpace);
-            };
-
-            return gen.TransformInstances(transformation);
-        }
+namespace GalaxyCheck.Gens.Internal
+{
+    internal sealed record SelectGen<T, TResult>(IGen<T> Source, Func<T, TResult> Selector) : BaseGen<TResult>
+    {
+        public override TResult Generate(GenSource source) => Selector(Source.Advanced.Generate(source));
     }
 }

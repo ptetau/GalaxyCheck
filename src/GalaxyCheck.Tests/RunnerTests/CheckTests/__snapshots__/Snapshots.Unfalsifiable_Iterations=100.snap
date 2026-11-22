@@ -5,28 +5,18 @@
   "Counterexample": null,
   "Checks": [],
   "InitialParameters": {
-    "Rng": {
-      "Family": 0,
-      "Seed": 0,
-      "Order": 0
-    },
+    "Seed": 0,
     "Size": {
       "Value": 0
-    },
-    "RngWaypoint": null
+    }
   },
   "NextParameters": {
-    "Rng": {
-      "Family": 0,
-      "Seed": 261656807,
-      "Order": 137
-    },
+    "Seed": 0,
     "Size": {
-      "Value": 0
-    },
-    "RngWaypoint": null
+      "Value": 99
+    }
   },
   "TerminationReason": "ReachedMaximumIterations",
   "Falsified": false,
-  "RandomnessConsumption": 137
+  "RandomnessConsumption": 200
 }

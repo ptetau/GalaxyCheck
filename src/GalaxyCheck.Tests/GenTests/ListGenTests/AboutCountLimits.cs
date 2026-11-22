@@ -1,23 +1,19 @@
 ﻿using FluentAssertions;
 using GalaxyCheck;
-using NebulaCheck;
 using System;
 using System.Linq;
-using Gen = NebulaCheck.Gen;
-using Property = NebulaCheck.Property;
-using Test = NebulaCheck.Test;
 
 namespace Tests.V2.GenTests.ListGenTests
 {
     public class AboutCountLimits
     {
         [Property]
-        public NebulaCheck.IGen<Test> ItHasACountLimitEnabledByDefault() =>
+        public Property ItHasACountLimitEnabledByDefault() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
             from elementGen in DomainGen.Gen()
             from excessiveCount in Gen.Int32().Between(1001, 2000)
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 void AssertCountLimit(GalaxyCheck.Gens.IListGen<object> gen)
                 {
@@ -35,15 +31,15 @@ namespace Tests.V2.GenTests.ListGenTests
                 AssertCountLimit(elementGen.ListOf().WithCountLessThanEqual(excessiveCount));
                 AssertCountLimit(elementGen.ListOf().WithCountBetween(excessiveCount, excessiveCount));
                 AssertCountLimit(elementGen.ListOf().WithCount(excessiveCount));
-            });
+            }));
 
         [Property(Iterations = 10)]
-        public NebulaCheck.IGen<Test> TheCountLimitCanBeDisabled() =>
+        public Property TheCountLimitCanBeDisabled() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
             from elementGen in DomainGen.Gen()
             from excessiveCount in Gen.Int32().Between(1001, 2000)
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 void AssertCountLimitDisabled(GalaxyCheck.Gens.IListGen<object> gen)
                 {
@@ -54,6 +50,6 @@ namespace Tests.V2.GenTests.ListGenTests
                 AssertCountLimitDisabled(elementGen.ListOf().WithCountLessThanEqual(excessiveCount));
                 AssertCountLimitDisabled(elementGen.ListOf().WithCountBetween(excessiveCount, excessiveCount));
                 AssertCountLimitDisabled(elementGen.ListOf().WithCount(excessiveCount));
-            });
+            }));
     }
 }

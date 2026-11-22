@@ -1,20 +1,17 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using GalaxyCheck;
-using NebulaCheck;
 using System.Collections.Generic;
 using System.Linq;
-using Property = NebulaCheck.Property;
-using Test = NebulaCheck.Test;
 
 namespace Tests.V2.GenTests.ReflectedGenTests
 {
     public class AboutGeneratingArrays
     {
         [Property]
-        public NebulaCheck.IGen<Test> ItCanGenerateArrays() =>
+        public Property ItCanGenerateArrays() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<int[]> SampleTraversal(GalaxyCheck.IGen<int[]> gen) =>
                     AboutGeneratingArrays.SampleTraversal(gen, seed, size);
@@ -26,11 +23,9 @@ namespace Tests.V2.GenTests.ReflectedGenTests
                 var sample1 = SampleTraversal(gen1);
 
                 sample0.Should().BeEquivalentTo(sample1);
-            });
+            }));
 
-        private static List<T> SampleTraversal<T>(GalaxyCheck.IGen<T> gen, int seed, int size) => gen.Advanced
-            .SampleOneExampleSpace(seed: seed, size: size)
-            .Traverse()
+        private static List<T> SampleTraversal<T>(GalaxyCheck.IGen<T> gen, int seed, int size) => gen.SampleOneTraversal(seed: seed, size: size)
             .Take(100)
             .ToList();
     }

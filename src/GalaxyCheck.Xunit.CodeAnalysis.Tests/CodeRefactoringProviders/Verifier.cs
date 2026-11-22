@@ -27,7 +27,7 @@ namespace GalaxyCheck.Xunit.CodeAnalysis.Tests.CodeRefactoringProviders
                 {
                     verifier.Equal(codeAction.Title, expectedRefactoringTitle);
                 },
-                ReferenceAssemblies = new ReferenceAssemblies("net10.0", new PackageIdentity("Microsoft.NETCore.App.Ref", "10.0.0"), System.IO.Path.Combine("ref", "net10.0"))
+                ReferenceAssemblies = new ReferenceAssemblies(GalaxyCheck.Xunit.CodeAnalysis.Tests.TargetReference.Name, new PackageIdentity("Microsoft.NETCore.App.Ref", GalaxyCheck.Xunit.CodeAnalysis.Tests.TargetReference.Version), System.IO.Path.Combine("ref", GalaxyCheck.Xunit.CodeAnalysis.Tests.TargetReference.Name))
             };
 
             test.ExpectedDiagnostics.Add(new DiagnosticResult("Refactoring", DiagnosticSeverity.Hidden)
@@ -57,7 +57,7 @@ namespace GalaxyCheck.Xunit.CodeAnalysis.Tests.CodeRefactoringProviders
                 {
                     verifier.Fail("Expected code not to be refactored");
                 },
-                ReferenceAssemblies = new ReferenceAssemblies("net10.0", new PackageIdentity("Microsoft.NETCore.App.Ref", "10.0.0"), System.IO.Path.Combine("ref", "net10.0"))
+                ReferenceAssemblies = new ReferenceAssemblies(GalaxyCheck.Xunit.CodeAnalysis.Tests.TargetReference.Name, new PackageIdentity("Microsoft.NETCore.App.Ref", GalaxyCheck.Xunit.CodeAnalysis.Tests.TargetReference.Version), System.IO.Path.Combine("ref", GalaxyCheck.Xunit.CodeAnalysis.Tests.TargetReference.Name))
             };
 
             test.ExpectedDiagnostics.Add(new DiagnosticResult("Refactoring", DiagnosticSeverity.Hidden)

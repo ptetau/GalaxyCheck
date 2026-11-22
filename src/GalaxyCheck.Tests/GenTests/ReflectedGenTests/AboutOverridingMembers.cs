@@ -1,12 +1,9 @@
 ﻿using FluentAssertions;
 using GalaxyCheck;
-using NebulaCheck;
 using System;
 using System.Linq;
 using Xunit;
 using static Tests.V2.DomainGenAttributes;
-using Property = NebulaCheck.Property;
-using Test = NebulaCheck.Test;
 
 namespace Tests.V2.GenTests.ReflectedGenTests
 {
@@ -17,11 +14,11 @@ namespace Tests.V2.GenTests.ReflectedGenTests
 
 
         [Property]
-        public NebulaCheck.IGen<Test> ItCanOverrideAnExternalInitProperty() =>
+        public Property ItCanOverrideAnExternalInitProperty() => new Property(
             from value in DomainGen.Any()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen
                     .Create<RecordWithOneProperty>()
@@ -31,16 +28,16 @@ namespace Tests.V2.GenTests.ReflectedGenTests
 
                 instance.Should().NotBeNull();
                 instance.Property.Should().Be(value);
-            });
+            }));
 
         private record RecordWithOneNestedProperty(RecordWithOneProperty Property);
 
         [Property]
-        public NebulaCheck.IGen<Test> ItCanOverrideANestedExternalInitProperty() =>
+        public Property ItCanOverrideANestedExternalInitProperty() => new Property(
             from value in DomainGen.Any()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen
                     .Create<RecordWithOneNestedProperty>()
@@ -50,7 +47,7 @@ namespace Tests.V2.GenTests.ReflectedGenTests
 
                 instance.Should().NotBeNull();
                 instance.Property.Property.Should().Be(value);
-            });
+            }));
 
         private record RecordWithOneProperty2(int Property);
 
@@ -78,11 +75,11 @@ namespace Tests.V2.GenTests.ReflectedGenTests
         }
 
         [Property]
-        public NebulaCheck.IGen<Test> ItErrorsWhenExpressionIsNotMemberAccess() =>
+        public Property ItErrorsWhenExpressionIsNotMemberAccess() => new Property(
             from memberGen in DomainGen.Gen()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen
                     .Create<RecordWithAMethod>()
@@ -93,14 +90,14 @@ namespace Tests.V2.GenTests.ReflectedGenTests
                 action.Should()
                     .Throw<GalaxyCheck.Exceptions.GenErrorException>()
                     .WithGenErrorMessage("expression 'x => x.Method()' was invalid, an overriding expression may only contain member access");
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> ItErrorsWhenExpressionIsNotMemberAccess_AndACorrectOverrideWasSpecifiedAfterwards() =>
+        public Property ItErrorsWhenExpressionIsNotMemberAccess_AndACorrectOverrideWasSpecifiedAfterwards() => new Property(
             from memberGen in DomainGen.Gen()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen
                     .Create<RecordWithAMethod>()
@@ -112,7 +109,7 @@ namespace Tests.V2.GenTests.ReflectedGenTests
                 action.Should()
                     .Throw<GalaxyCheck.Exceptions.GenErrorException>()
                     .WithGenErrorMessage("expression 'x => x.Method()' was invalid, an overriding expression may only contain member access");
-            });
+            }));
 
         private class ClassWithNonDefaultConstructor
         {
@@ -125,11 +122,11 @@ namespace Tests.V2.GenTests.ReflectedGenTests
         }
 
         [Property(Skip = "Future validation")]
-        public NebulaCheck.IGen<Test> ItErrorsWhenMemberAccessIsCircumventedByConstructor() =>
+        public Property ItErrorsWhenMemberAccessIsCircumventedByConstructor() => new Property(
             from memberGen in DomainGen.Gen()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen
                     .Create<ClassWithNonDefaultConstructor>()
@@ -140,6 +137,6 @@ namespace Tests.V2.GenTests.ReflectedGenTests
                 action.Should()
                     .Throw<GalaxyCheck.Exceptions.GenErrorException>()
                     .WithGenErrorMessage("expression 'x => x.Property' targeted a valid member, but the type did not have a default constructor, so the member override would be ignored");
-            });
+            }));
     }
 }

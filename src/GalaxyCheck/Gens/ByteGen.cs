@@ -1,4 +1,4 @@
-﻿namespace GalaxyCheck
+namespace GalaxyCheck
 {
     using GalaxyCheck.Gens;
     using System;
@@ -73,15 +73,13 @@
 namespace GalaxyCheck.Gens
 {
     using GalaxyCheck.Gens.Internal;
-    using GalaxyCheck.Gens.Iterations.Generic;
     using GalaxyCheck.Gens.Parameters;
-    using System.Collections.Generic;
 
     internal record ByteGen(
         byte? Min = null,
         byte? Max = null,
         byte? Origin = null,
-        Gen.Bias? Bias = null) : GenProvider<byte>, IIntGen<byte>
+        Gen.Bias? Bias = null) : BaseGen<byte>, IIntGen<byte>
     {
         public IIntGen<byte> GreaterThanEqual(byte min) => this with { Min = min };
 
@@ -91,29 +89,23 @@ namespace GalaxyCheck.Gens
 
         public IIntGen<byte> WithBias(Gen.Bias bias) => this with { Bias = bias };
 
-        protected override IGen<byte> Get
+        public override byte Generate(GenSource source)
         {
-            get
+            long min = Min ?? byte.MinValue;
+            long max = Max ?? byte.MaxValue;
+
+            if (min > max)
             {
-                var gen = Gen
-                    .Int16()
-                    .GreaterThanEqual(Min ?? byte.MinValue)
-                    .LessThanEqual(Max ?? byte.MaxValue);
-
-                if (Origin != null)
-                {
-                    gen = gen.ShrinkTowards(Origin.Value);
-                }
-
-                if (Bias != null)
-                {
-                    gen = gen.WithBias(Bias.Value);
-                }
-
-                return gen
-                    .Select(x => (byte)x)
-                    .SelectError(error => new GenErrorData(error.Message));
+                throw new GenErrorSignal("'min' cannot be greater than 'max'");
             }
+
+            if (Origin != null && (Origin < min || Origin > max))
+            {
+                throw new GenErrorSignal("'origin' must be between 'min' and 'max'");
+            }
+
+            var origin = Origin ?? IntCore.InferOrigin(min, max);
+            return (byte)IntCore.Int64(source, min, max, origin, Bias ?? Gen.Bias.WithSize);
         }
     }
 }

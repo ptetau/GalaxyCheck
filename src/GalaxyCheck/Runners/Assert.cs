@@ -1,4 +1,4 @@
-﻿using GalaxyCheck.Runners;
+using GalaxyCheck.Runners;
 using GalaxyCheck.Runners.Check;
 using System;
 using System.Collections.Generic;
@@ -18,9 +18,12 @@ namespace GalaxyCheck
             string? replay = null,
             bool deepCheck = true,
             Func<string, string>? formatReproduction = null,
-            Func<string, string>? formatMessage = null)
+            Func<string, string>? formatMessage = null,
+            TimeSpan? timeout = null,
+            bool exhaustive = true,
+            HealthCheck[]? suppressHealthChecks = null)
         {
-            var checkResult = property.Check(iterations: iterations, seed: seed, size: size, shrinkLimit: shrinkLimit, replay: replay, deepCheck: deepCheck);
+            var checkResult = property.Check(iterations: iterations, seed: seed, size: size, shrinkLimit: shrinkLimit, replay: replay, deepCheck: deepCheck, timeout: timeout, exhaustive: exhaustive, suppressHealthChecks: suppressHealthChecks);
             ThrowIfFalsified(checkResult, formatReproduction, formatMessage);
         }
 
@@ -33,9 +36,12 @@ namespace GalaxyCheck
             string? replay = null,
             bool deepCheck = true,
             Func<string, string>? formatReproduction = null,
-            Func<string, string>? formatMessage = null)
+            Func<string, string>? formatMessage = null,
+            TimeSpan? timeout = null,
+            bool exhaustive = true,
+            HealthCheck[]? suppressHealthChecks = null)
         {
-            var checkResult = await property.CheckAsync(iterations: iterations, seed: seed, size: size, shrinkLimit: shrinkLimit, replay: replay, deepCheck: deepCheck);
+            var checkResult = await property.CheckAsync(iterations: iterations, seed: seed, size: size, shrinkLimit: shrinkLimit, replay: replay, deepCheck: deepCheck, timeout: timeout, exhaustive: exhaustive, suppressHealthChecks: suppressHealthChecks);
             ThrowIfFalsified(checkResult, formatReproduction, formatMessage);
         }
 
@@ -59,11 +65,8 @@ namespace GalaxyCheck
         {
             var value = (object)counterexample.Value!;
             return new Counterexample<object?>(
-                counterexample.Id,
                 value,
-                counterexample.Distance,
                 counterexample.ReplayParameters,
-                counterexample.ReplayPath,
                 counterexample.Replay,
                 counterexample.Exception,
                 counterexample.PresentedInput);

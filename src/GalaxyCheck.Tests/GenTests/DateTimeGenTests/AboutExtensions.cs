@@ -1,22 +1,18 @@
 ﻿using GalaxyCheck;
 using GalaxyCheck.Gens;
 using Moq;
-using NebulaCheck;
 using System;
 using System.Linq;
-using Gen = NebulaCheck.Gen;
-using Property = NebulaCheck.Property;
-using Test = NebulaCheck.Test;
 
 namespace Tests.V2.GenTests.DateTimeGenTests
 {
     public class AboutExtensions
     {
         [Property]
-        public NebulaCheck.IGen<Test> BetweenDefersToUnderlyingMethods() =>
+        public Property BetweenDefersToUnderlyingMethods() => new Property(
             from fromDate in Gen.DateTime()
             from untilDate in Gen.DateTime().From(fromDate)
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 {
                     var mockGen = SetupMock();
@@ -35,7 +31,7 @@ namespace Tests.V2.GenTests.DateTimeGenTests
                     mockGen.Verify(gen => gen.From(fromDate), Times.Once);
                     mockGen.Verify(gen => gen.Until(untilDate), Times.Once);
                 }
-            });
+            }));
 
         private static Mock<IDateTimeGen> SetupMock()
         {

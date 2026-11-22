@@ -1,78 +1,90 @@
-﻿using GalaxyCheck.Gens.Parameters;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.IO.Compression;
-using System.Linq;
-using System.Text;
 
 namespace GalaxyCheck.Runners.Replaying
 {
+    /// <summary>
+    /// A replay holds the size and the choices of one test case. Replaying the choices gives the same value.
+    /// </summary>
+    internal record Replay(int Seed, int Size, ulong[] Choices);
+
     internal static class ReplayEncoding
     {
-        private static string EncodeInt(int seed) => seed.ToString();
-        private static int DecodeInt(string str) => int.Parse(str);
+        private const byte Version = 2;
+        private const int MaxChoices = 1 << 20;
 
-        private static string EncodeExampleSpacePath(IEnumerable<int> exampleSpacePath) =>
-            string.Join(":", exampleSpacePath.Select(EncodeInt));
-        private static IEnumerable<int> DecodeExampleSpacePath(string str) =>
-            str.Split(':').Where(x => x != "").Select(DecodeInt);
-
-        private static string CompressString(string str)
+        public static string Encode(int seed, int size, ulong[] choices, int length)
         {
-            using var msIn = new MemoryStream(Encoding.ASCII.GetBytes(str));
-            using var msOut = new MemoryStream();
-            using var gzs = new GZipStream(msOut, CompressionMode.Compress);
-
-            msIn.CopyTo(gzs);
-            gzs.Close();
-
-            return Convert.ToBase64String(msOut.ToArray());
-        }
-
-        private static string DecompressString(string str)
-        {
-            using var msIn = new MemoryStream(Convert.FromBase64String(str));
-            using var gzs = new GZipStream(msIn, CompressionMode.Decompress);
-            using var msOut = new MemoryStream();
-
-            gzs.CopyTo(msOut);
-
-            return Encoding.ASCII.GetString(msOut.ToArray());
-        }
-
-        public static string Encode(Replay replay)
-        {
-            var encodingComponents = new List<string>()
+            var bytes = new List<byte>(16 + length * 2) { Version };
+            WriteVarint(bytes, (uint)seed);
+            WriteVarint(bytes, (ulong)size);
+            WriteVarint(bytes, (ulong)length);
+            for (var i = 0; i < length; i++)
             {
-                EncodeInt(replay.GenParameters.Rng.Seed),
-                EncodeInt(replay.GenParameters.Size.Value),
-                EncodeExampleSpacePath(replay.ExampleSpacePath)
-            };
-
-            if (replay.GenParameters.RngWaypoint != null)
-            {
-                encodingComponents.Add(EncodeInt(replay.GenParameters.RngWaypoint.Seed));
+                WriteVarint(bytes, choices[i]);
             }
 
-            return CompressString(string.Join(".", encodingComponents));
+            return Convert.ToBase64String(bytes.ToArray());
         }
 
         public static Replay Decode(string str)
         {
-            var decompressed = DecompressString(str);
+            byte[] bytes;
+            try
+            {
+                bytes = Convert.FromBase64String(str);
+            }
+            catch (FormatException)
+            {
+                throw Invalid(str);
+            }
 
-            var components = decompressed.Split('.');
+            var position = 0;
+            if (bytes.Length == 0 || bytes[position++] != Version) throw Invalid(str);
 
-            var seed = DecodeInt(components[0]);
-            var size = DecodeInt(components[1]);
-            var exampleSpacePath = DecodeExampleSpacePath(components[2]);
+            var seed = (int)(uint)ReadVarint(bytes, ref position, str);
+            var size = ReadVarint(bytes, ref position, str);
+            var length = ReadVarint(bytes, ref position, str);
 
-            int? seedWapoint = components.Count() > 3 ? DecodeInt(components[3]) : null;
+            if (size > 100 || length > MaxChoices) throw Invalid(str);
 
-            return new Replay(
-                GenParameters.Parse(seed, size, seedWapoint),
-                exampleSpacePath);
+            var choices = new ulong[length];
+            for (var i = 0; i < choices.Length; i++)
+            {
+                choices[i] = ReadVarint(bytes, ref position, str);
+            }
+
+            if (position != bytes.Length) throw Invalid(str);
+
+            return new Replay(seed, (int)size, choices);
         }
+
+        private static void WriteVarint(List<byte> bytes, ulong value)
+        {
+            while (value >= 0x80)
+            {
+                bytes.Add((byte)(value | 0x80));
+                value >>= 7;
+            }
+
+            bytes.Add((byte)value);
+        }
+
+        private static ulong ReadVarint(byte[] bytes, ref int position, string str)
+        {
+            ulong value = 0;
+            for (var shift = 0; shift < 64; shift += 7)
+            {
+                if (position >= bytes.Length) throw Invalid(str);
+                var b = bytes[position++];
+                value |= (ulong)(b & 0x7F) << shift;
+                if ((b & 0x80) == 0) return value;
+            }
+
+            throw Invalid(str);
+        }
+
+        private static Exception Invalid(string str) =>
+            new FormatException($"The replay '{str}' is not valid. It may come from another version of GalaxyCheck.");
     }
 }

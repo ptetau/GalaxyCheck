@@ -1,4 +1,4 @@
-﻿using GalaxyCheck.Runners.Replaying;
+using GalaxyCheck.Runners.Replaying;
 
 namespace GalaxyCheck.Tests.Features.Replaying;
 
@@ -22,10 +22,10 @@ public class AboutReplaying
             .Which.Should().Be(counterexample.Value);
     }
 
-    [Stable.Property]
-    public Stable.Property IfReplayIsAnInvalidFormat_ItThrows()
+    [Property]
+    public Property IfReplayIsAnInvalidFormat_ItThrows()
     {
-        return Stable.Property.ForAll(FeatureGen.NotBase64(), DomainGen.Properties.Any(), Test);
+        return Property.ForAll(FeatureGen.NotBase64(), DomainGen.Properties.Any(), Test);
 
         static void Test(string replay, PropertyProxy property)
         {
@@ -39,15 +39,15 @@ public class AboutReplaying
         }
     }
 
-    [Stable.Property]
-    public Stable.Property IfReplayEncodesAnInvalidPath_ItThrows()
+    [Property]
+    public Property IfReplayEncodesAnInvalidPath_ItThrows()
     {
-        return Stable.Property.ForAll(FeatureGen.Replay(allowEmptyPath: false), DomainGen.Properties.Nullary(), Test);
+        return Property.ForAll(FeatureGen.Replay(allowEmptyPath: false), DomainGen.Properties.Nullary(), Test);
 
         static void Test(Replay replay, Property property)
         {
             // Act
-            Action test = () => property.Check(args => args with { Replay = ReplayEncoding.Encode(replay) });
+            Action test = () => property.Check(args => args with { Replay = ReplayEncoding.Encode(replay.Seed, replay.Size, replay.Choices, replay.Choices.Length) });
 
             // Assert
             test.Should()
@@ -56,15 +56,15 @@ public class AboutReplaying
         }
     }
 
-    [Stable.Property]
-    public Stable.Property IfReplayEncodesAnError_ItThrows()
+    [Property]
+    public Property IfReplayEncodesAnError_ItThrows()
     {
-        return Stable.Property.ForAll(FeatureGen.Replay(), DomainGen.Gens.Error().ToProperty(), Test);
+        return Property.ForAll(FeatureGen.Replay(), DomainGen.Gens.Error().ToProperty(), Test);
 
         static void Test(Replay replay, Property property)
         {
             // Act
-            Action test = () => property.Check(args => args with { Replay = ReplayEncoding.Encode(replay) });
+            Action test = () => property.Check(args => args with { Replay = ReplayEncoding.Encode(replay.Seed, replay.Size, replay.Choices, replay.Choices.Length) });
 
             // Assert
             test.Should()

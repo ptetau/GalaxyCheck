@@ -18,7 +18,7 @@ namespace Tests.V2.GenTests.ReflectedGenTests
             public int Z_Property { get; set; }
         }
 
-        [NebulaCheck.Property]
+        [Property]
         public void AddingNewPropertiesDoesNotChangeHowExistingPropertiesAreGenerated([Seed] int seed, [Size] int size)
         {
             var gen0 = Gen.Create<ClassWithPropertiesV1>().Advanced.SetRngWaypoint();
@@ -42,7 +42,7 @@ namespace Tests.V2.GenTests.ReflectedGenTests
             public int Z_Field = 0;
         }
 
-        [NebulaCheck.Property]
+        [Property]
         public void AddingNewFieldsDoesNotChangeHowExistingFieldsAreGenerated([Seed] int seed, [Size] int size)
         {
             var gen0 = Gen.Create<ClassWithFieldsV1>().Advanced.SetRngWaypoint();
@@ -61,7 +61,7 @@ namespace Tests.V2.GenTests.ReflectedGenTests
             int Property,
             int Z_Property);
 
-        [NebulaCheck.Property]
+        [Property]
         public void AddingNewPropertiesToStandardRecordConstructorDoesNotChangeHowExistingPropertiesAreGenerated([Seed] int seed, [Size] int size)
         {
             var gen0 = Gen.Create<RecordV1>().Advanced.SetRngWaypoint();

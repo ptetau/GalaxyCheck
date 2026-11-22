@@ -1,5 +1,5 @@
-﻿Falsified after 60 tests (34 shrinks)
-Reproduction: <scrubbed>
+﻿Falsified after 36 tests (5 shrinks)
+Reproduction: AgAjAgDoBw==
 Counterexample: 1000
 
 Property function returned false

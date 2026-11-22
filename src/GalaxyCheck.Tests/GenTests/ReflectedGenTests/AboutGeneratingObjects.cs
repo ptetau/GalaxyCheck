@@ -1,10 +1,7 @@
 ﻿using FluentAssertions;
 using GalaxyCheck;
-using NebulaCheck;
 using System.Linq;
 using Xunit;
-using Property = NebulaCheck.Property;
-using Test = NebulaCheck.Test;
 
 namespace Tests.V2.GenTests.ReflectedGenTests
 {
@@ -28,10 +25,10 @@ namespace Tests.V2.GenTests.ReflectedGenTests
         }
 
         [Property]
-        public NebulaCheck.IGen<Test> ItCanGenerateAnObjectWithAProperty() =>
+        public Property ItCanGenerateAnObjectWithAProperty() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen
                     .Factory()
@@ -42,7 +39,7 @@ namespace Tests.V2.GenTests.ReflectedGenTests
 
                 instance.Should().NotBeNull();
                 instance.Property.Should().NotBe(0);
-            });
+            }));
 
         private class ClassWithTwoProperties
         {
@@ -52,12 +49,12 @@ namespace Tests.V2.GenTests.ReflectedGenTests
         }
 
         [Property]
-        public NebulaCheck.IGen<Test> ItCanGenerateAnObjectWithTwoProperties() =>
+        public Property ItCanGenerateAnObjectWithTwoProperties() => new Property(
             from value1 in DomainGen.Any()
             from value2 in DomainGen.Any()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen
                     .Factory()
@@ -69,7 +66,7 @@ namespace Tests.V2.GenTests.ReflectedGenTests
                 instance.Should().NotBeNull();
                 instance.Property1.Should().NotBe(0);
                 instance.Property2.Should().NotBe(0);
-            });
+            }));
 
         private class ClassWithOneField
         {
@@ -79,10 +76,10 @@ namespace Tests.V2.GenTests.ReflectedGenTests
         }
 
         [Property]
-        public NebulaCheck.IGen<Test> ItCanGenerateAnObjectWithAField() =>
+        public Property ItCanGenerateAnObjectWithAField() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen
                     .Factory()
@@ -93,7 +90,7 @@ namespace Tests.V2.GenTests.ReflectedGenTests
 
                 instance.Should().NotBeNull();
                 instance.Field.Should().NotBe(0);
-            });
+            }));
 
         private class ClassWithOneReadOnlyProperty
         {

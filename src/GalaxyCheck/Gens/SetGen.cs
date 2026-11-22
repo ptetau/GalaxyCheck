@@ -1,4 +1,4 @@
-﻿namespace GalaxyCheck
+namespace GalaxyCheck
 {
     using GalaxyCheck.Gens;
     using GalaxyCheck.Gens.Internal;
@@ -54,16 +54,10 @@
 
 namespace GalaxyCheck.Gens
 {
-    using GalaxyCheck.ExampleSpaces;
     using GalaxyCheck.Gens.Internal;
-    using GalaxyCheck.Gens.Internal.Iterations;
-    using GalaxyCheck.Gens.Iterations.Generic;
     using GalaxyCheck.Gens.Parameters;
-    using GalaxyCheck.Internal;
     using System;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
-    using System.Linq;
 
     public interface ISetGen<T> : IGen<IReadOnlySet<T>>
     {
@@ -97,8 +91,10 @@ namespace GalaxyCheck.Gens
 
     internal record SetGen<T>(
         IGen<T> ElementGen,
-        RangeIntention Count) : GenProvider<IReadOnlySet<T>>, ISetGen<T>
+        RangeIntention Count) : BaseGen<IReadOnlySet<T>>, ISetGen<T>
     {
+        private const int MaxAttemptsPerElement = 100;
+
         public ISetGen<T> WithCount(int count) => this with { Count = RangeIntention.Exact(count) };
 
         public ISetGen<T> WithCountGreaterThanEqual(int minCount) => this with { Count = Count.WithMinimum(minCount) };
@@ -110,219 +106,72 @@ namespace GalaxyCheck.Gens
             throw new System.NotImplementedException();
         }
 
-        protected override IGen<IReadOnlySet<T>> Get => TryGetCountRange(Count).Match(
-            fromLeft: range => range == null
-                ? GenSetOfUnspecifiedCount(ElementGen, Gen.Bias.WithSize)
-                : GenSetOfSpecifiedCount(ElementGen, range.Value, Gen.Bias.WithSize),
-            fromRight: gen => gen);
-
-        private static IGen<IReadOnlySet<T>> GenSetOfSpecifiedCount(
-            IGen<T> elementGen,
-            (int minCount, int maxCount) range,
-            Gen.Bias bias)
+        public override IReadOnlySet<T> Generate(GenSource source)
         {
-            var (minCount, maxCount) = range;
+            var (minCount, maxCount) = CountRange.Resolve(Count, enableCountLimit: false);
+            var elementGen = ElementGen.Advanced;
 
-            var shrink = ShrinkTowardsCount(minCount);
-            var measureCount = MeasureFunc.DistanceFromOrigin(minCount, minCount, maxCount);
-            return
-                from count in GenCount(minCount, maxCount, bias)
-                from set in GenSetOfCount(elementGen, count, minCount, shrink, measureCount)
-                select set;
-        }
+            var targetCount = source.IsReplaying ? 0 : IntCore.RandomInt32(source, minCount, maxCount, Gen.Bias.WithSize);
+            var set = new HashSet<T>();
 
-        private static IGen<int> GenCount(int minCount, int maxCount, Gen.Bias bias) =>
-            Gen.Int32().GreaterThanEqual(minCount).LessThanEqual(maxCount).WithBias(bias).NoShrink();
-
-        private static IGen<IReadOnlySet<T>> GenSetOfCount(
-            IGen<T> elementGen,
-            int count,
-            int minCount,
-            ShrinkFunc<IReadOnlyCollection<IExampleSpace<T>>> shrink,
-            MeasureFunc<int> measureCount)
-        {
-            IEnumerable<IGenIteration<IReadOnlySet<T>>> Run(GenParameters parameters)
+            var size = source.Size;
+            try
             {
-                var nextParameters = parameters;
-                var values = ImmutableHashSet<T>.Empty;
-                var instances = ImmutableList<IGenInstance<T>>.Empty;
-
-                while (instances.Count < count)
+                while (set.Count < maxCount)
                 {
-                    var elementIterationEnumerator = elementGen
-                        .Where(value => values.Contains(value) == false)
-                        .Advanced.Run(nextParameters).GetEnumerator();
-
-                    while (true)
+                    var elementStart = source.BeginSpan();
+                    if (set.Count >= minCount)
                     {
-                        if (!elementIterationEnumerator.MoveNext())
-                        {
-                            throw new Exception("Fatal: Element generator exhausted");
-                        }
+                        var more = source.IsReplaying
+                            ? source.Read(1) == 1
+                            : source.Record(set.Count < targetCount ? 1UL : 0UL) == 1;
 
-                        var either = elementIterationEnumerator.Current.ToEither<T, IReadOnlySet<T>>();
-
-                        if (either.IsLeft(out IGenInstance<T> instance))
+                        if (!more)
                         {
-                            instances = instances.Add(instance);
-                            values = values.Add(instance.ExampleSpace.Current.Value);
-                            nextParameters = instance.NextParameters;
                             break;
                         }
-                        else if (either.IsRight(out IGenIteration<IReadOnlySet<T>> right))
-                        {
-                            yield return right;
-                        }
-                        else
-                        {
-                            throw new Exception("Fatal: Unhandled branch");
-                        }
-
                     }
-                }
 
-                var exampleSpace = ExampleSpaceFactory
-                    .Merge(
-                        instances.Select(instance => instance.ExampleSpace).ToList(),
-                        shrink,
-                        exampleSpaces => exampleSpaces.Sum(exs => exs.Current.Distance) + measureCount(exampleSpaces.Count),
-                        enableSmallestExampleSpacesOptimization: true,
-                        enableUniqueIds: true)
-                    .Map(values => ImmutableHashSet.CreateRange(values))
-                    .Filter(set => set.Count >= minCount);
-
-                yield return GenIterationFactory.Instance(parameters, nextParameters, exampleSpace!);
-            }
-
-            return new FunctionalGen<IReadOnlySet<T>>(Run).Repeat();
-        }
-
-        private static IGen<IReadOnlySet<T>> GenSetOfUnspecifiedCount(
-            IGen<T> elementGen,
-            Gen.Bias bias)
-        {
-            var minAttempts = 0;
-            var maxAttempts = 100;
-
-            var shrink = ShrinkTowardsCount(0);
-            var measureCount = MeasureFunc.DistanceFromOrigin(minAttempts, minAttempts, maxAttempts);
-
-            return
-                from attempts in Gen.Int32().Between(minAttempts, maxAttempts).WithBias(bias).NoShrink()
-                from set in GenSetOfAttempts(elementGen, attempts, shrink, measureCount)
-                select set;
-        }
-
-        private static IGen<IReadOnlySet<T>> GenSetOfAttempts(
-            IGen<T> elementGen,
-            int attempts,
-            ShrinkFunc<IReadOnlyCollection<IExampleSpace<T>>> shrink,
-            MeasureFunc<int> measureCount)
-        {
-            IEnumerable<IGenIteration<IReadOnlySet<T>>> Run(GenParameters parameters)
-            {
-                var nextParameters = parameters;
-                var values = ImmutableHashSet<T>.Empty;
-                var instances = ImmutableList<IGenInstance<T>>.Empty;
-                var numberOfAttempts = 0;
-
-                while (numberOfAttempts < attempts)
-                {
-                    var elementIterationEnumerator = elementGen
-                        .Where(value => values.Contains(value) == false)
-                        .Advanced.Run(nextParameters).GetEnumerator();
-
-                    while (numberOfAttempts < attempts)
+                    var added = false;
+                    for (var attempt = 0; attempt < MaxAttemptsPerElement; attempt++)
                     {
-                        if (!elementIterationEnumerator.MoveNext())
-                        {
-                            throw new Exception("Fatal: Element generator exhausted");
-                        }
+                        var start = source.BeginSpan();
+                        var element = elementGen.Generate(source);
+                        source.EndSpan(start);
 
-                        var either = elementIterationEnumerator.Current.ToEither<T, IReadOnlySet<T>>();
-
-                        if (either.IsLeft(out IGenInstance<T> instance))
+                        if (set.Add(element))
                         {
-                            numberOfAttempts++;
-                            instances = instances.Add(instance);
-                            values = values.Add(instance.ExampleSpace.Current.Value);
-                            nextParameters = instance.NextParameters;
+                            added = true;
                             break;
                         }
-                        else if (either.IsRight(out IGenIteration<IReadOnlySet<T>> right))
+
+                        if ((attempt + 1) % 5 == 0 && !source.IsReplaying)
                         {
-                            numberOfAttempts++;
-                            yield return right;
-                        }
-                        else
-                        {
-                            throw new Exception("Fatal: Unhandled branch");
+                            // A bigger size may hold more unique values.
+                            source.Size = Math.Min(100, source.Size + 5);
                         }
                     }
+
+                    source.EndSpan(elementStart);
+
+                    if (!added)
+                    {
+                        if (set.Count < minCount)
+                        {
+                            throw new Exceptions.GenExhaustionException();
+                        }
+
+                        // The element generator has no more unique values. Stop here, as a "stop" choice would.
+                        break;
+                    }
                 }
-
-                var exampleSpace = ExampleSpaceFactory
-                    .Merge(
-                        instances.Select(instance => instance.ExampleSpace).ToList(),
-                        shrink,
-                        exampleSpaces => exampleSpaces.Sum(exs => exs.Current.Distance) + measureCount(exampleSpaces.Count),
-                        enableSmallestExampleSpacesOptimization: true,
-                        enableUniqueIds: true)
-                    .Map(values => ImmutableHashSet.CreateRange(values));
-
-                yield return GenIterationFactory.Instance(parameters, nextParameters, exampleSpace!);
             }
-
-            return new FunctionalGen<IReadOnlySet<T>>(Run).Repeat();
-        }
-
-        private static ShrinkFunc<IReadOnlyCollection<IExampleSpace<T>>> ShrinkTowardsCount(int count)
-        {
-            // Order of sets should not be important, so don't provide a variable order function. This cuts down the
-            // number of shrinks.
-            return ShrinkFunc.TowardsCountOptimized<IExampleSpace<T>, decimal>(count, exampleSpace => 0);
-        }
-
-        private static Either<(int minCount, int maxCount)?, IGen<IReadOnlySet<T>>> TryGetCountRange(RangeIntention count)
-        {
-            Either<(int minCount, int maxCount)?, IGen<IReadOnlySet<T>>> CountError(string message) =>
-                new Right<(int minCount, int maxCount)?, IGen<IReadOnlySet<T>>>(Error(message));
-
-            Either<(int minCount, int maxCount)?, IGen<IReadOnlySet<T>>> FromUnspecified() =>
-                new Left<(int minCount, int maxCount)?, IGen<IReadOnlySet<T>>>(null);
-
-            Either<(int minCount, int maxCount)?, IGen<IReadOnlySet<T>>> FromExact(int count) =>
-                count < 0 ? CountError("'count' cannot be negative") : (count, count);
-
-            Either<(int minCount, int maxCount)?, IGen<IReadOnlySet<T>>> FromBounded(int? minCount, int? maxCount)
+            finally
             {
-                var resolvedMinCount = minCount ?? 0;
-                var resolvedMaxCount = maxCount ?? resolvedMinCount + 20;
-
-                if (resolvedMinCount < 0)
-                {
-                    return CountError("'minCount' cannot be negative");
-                }
-
-                if (resolvedMaxCount < 0)
-                {
-                    return CountError("'maxCount' cannot be negative");
-                }
-
-                if (resolvedMinCount > resolvedMaxCount)
-                {
-                    return CountError("'minCount' cannot be greater than 'maxCount'");
-                }
-
-                return (resolvedMinCount, resolvedMaxCount);
+                source.Size = size;
             }
 
-            return count.Match(
-                onUnspecified: () => FromUnspecified(),
-                onExact: count => FromExact(count),
-                onBounded: (minCount, maxCount) => FromBounded(minCount, maxCount));
+            return set;
         }
-
-        private static IGen<IReadOnlySet<T>> Error(string message) => Gen.Advanced.Error<IReadOnlySet<T>>(message);
     }
 }

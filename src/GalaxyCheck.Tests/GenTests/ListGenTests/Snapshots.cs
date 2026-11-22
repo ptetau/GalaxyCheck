@@ -1,4 +1,4 @@
-﻿using GalaxyCheck;
+using GalaxyCheck;
 using GalaxyCheck.Gens;
 using Snapshooter;
 using Snapshooter.Xunit;
@@ -61,10 +61,7 @@ namespace Tests.V2.GenTests.ListGenTests
             {
                 var gen0 = gen.WithCountBias(bias);
 
-                var sample = gen.Advanced
-                    .SampleOneExampleSpace(seed: seed, size: 75)
-                    .Take(500)
-                    .Render(x => JsonSerializer.Serialize(x));
+                var sample = gen.RenderOneTraversal(seed: seed, size: 75, x => JsonSerializer.Serialize(x));
 
                 var nameExtension = string.Join("_", new[]
                 {
