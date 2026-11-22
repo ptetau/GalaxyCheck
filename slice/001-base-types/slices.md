@@ -138,9 +138,9 @@
   - Given the pattern, Uri, Version, email, realistic, and recursive generators, when each samples 100 values with seed 0 and size 50 on net10.0 and on net11.0, then the two lists are equal. (R20)
 - Layers: generator api, string generators, automatic generator, data
 - Tier: hard
-- Status: building
+- Status: review
 - Test rounds: 1
-- Review rounds: 0
+- Review rounds: 1
 
 ## S6: Property features
 
