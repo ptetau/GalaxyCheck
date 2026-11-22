@@ -265,7 +265,7 @@
 - Layers: nunit package, shared framework core, packaging, mstest package, each framework package, store
 - Tier: standard
 - Status: building
-- Test rounds: 0
+- Test rounds: 1
 - Review rounds: 0
 
 ## S10: The source generator and the reference pages
