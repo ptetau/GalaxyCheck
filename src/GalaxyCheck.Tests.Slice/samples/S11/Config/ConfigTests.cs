@@ -12,6 +12,6 @@ public class GlobalSettings : IConfigureGlobal
 
 public class ConfigTests
 {
-    [GalaxyCheck.Property]
+    [Test, GalaxyCheck.PropertyTest]
     public void CountedRun(int x) => Log.Write("CountedRun", x.ToString());
 }

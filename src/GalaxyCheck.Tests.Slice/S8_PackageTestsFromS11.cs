@@ -148,4 +148,20 @@ public class S11_PackageTests
         tunit["GalaxyCheck.ReplayAttribute"].ConstructorParameterCounts.Should().Contain(1);
         tunit["GalaxyCheck.MemberGenAttribute"].ConstructorParameterCounts.Should().Contain(1);
     }
+
+    [Fact]
+    public void test_001_S8_R22_tunit_has_property_test_attribute_and_property_arguments_attribute()
+    {
+        var tunit = TUnitTypes();
+        tunit.Should().ContainKey("GalaxyCheck.PropertyAttribute");
+        tunit.Should().ContainKey("GalaxyCheck.PropertyTestAttribute");
+        tunit.Should().ContainKey("GalaxyCheck.PropertyArgumentsAttribute");
+
+        var options = new[] { "Iterations", "ShrinkLimit", "Seed", "Size", "TimeoutMilliseconds", "Exhaustive" };
+        tunit["GalaxyCheck.PropertyTestAttribute"].Members.Should().Contain(options);
+        tunit["GalaxyCheck.PropertyTestAttribute"].Members.Should().Contain(tunit["GalaxyCheck.PropertyAttribute"].Members.Where(m => options.Contains(m)));
+
+        // params object?[] values: one constructor parameter.
+        tunit["GalaxyCheck.PropertyArgumentsAttribute"].ConstructorParameterCounts.Should().Contain(1);
+    }
 }

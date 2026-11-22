@@ -11,21 +11,38 @@ namespace GalaxyCheck.Internal.Infrastructure.TUnit
     internal static class TUnitAdapter
     {
         /// <summary>
-        /// One row with no values: the property generates each parameter when the test runs. A method with another data
-        /// source ([Arguments], [MethodDataSource]) gets no row from GalaxyCheck, so that each of its rows is one test.
+        /// The rows of a property. Each [PropertyArguments] is one row for the first parameters, and the property
+        /// generates the rest. With no [PropertyArguments], one row with no values: the property generates each
+        /// parameter. A method with another data source ([Arguments], [MethodDataSource]) gets no row from
+        /// GalaxyCheck, so that each of its rows is one test.
         /// </summary>
-        public static async IAsyncEnumerable<Func<Task<object?[]?>>> PlaceholderRow(DataGeneratorMetadata dataGeneratorMetadata)
+        public static async IAsyncEnumerable<Func<Task<object?[]?>>> PropertyRows(DataGeneratorMetadata dataGeneratorMetadata)
         {
             await Task.CompletedTask;
 
             var method = dataGeneratorMetadata.TestInformation;
-            var hasOtherDataSource = method != null && FindMethod(method.Type, method.Name, method.Parameters)?
-                .GetCustomAttributes(inherit: true)
-                .Any(attribute => attribute is IDataSourceAttribute && attribute is not PropertyAttribute && attribute is not GenSnapshotAttribute) == true;
+            var attributes = method == null
+                ? Array.Empty<object>()
+                : FindMethod(method.Type, method.Name, method.Parameters)?.GetCustomAttributes(inherit: true) ?? Array.Empty<object>();
 
-            if (!hasOtherDataSource)
+            var hasOtherDataSource = attributes.Any(attribute =>
+                attribute is IDataSourceAttribute && attribute is not PropertyAttribute && attribute is not GenSnapshotAttribute);
+            if (hasOtherDataSource)
+            {
+                yield break;
+            }
+
+            var rows = attributes.OfType<PropertyArgumentsAttribute>().ToList();
+            if (rows.Count == 0)
             {
                 yield return () => Task.FromResult<object?[]?>(null);
+                yield break;
+            }
+
+            foreach (var row in rows)
+            {
+                var values = row.Values;
+                yield return () => Task.FromResult<object?[]?>((object?[])values.Clone());
             }
         }
 
