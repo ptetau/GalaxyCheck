@@ -120,7 +120,7 @@
 ## S5: Text, realistic data, and recursive generators
 
 - Story: As a user, I generate strings from a pattern, real Uri and email values, realistic names, and tree-shaped data, so that my inputs look like real data.
-- Requirements: R34 (pattern strings), R35 (Uri, Version, email), R53 (recursive generators), R54 (recursive automatic generation), R59 (realistic data)
+- Requirements: R20 (same values on both targets), R34 (pattern strings), R35 (Uri, Version, email), R53 (recursive generators), R54 (recursive automatic generation), R59 (realistic data)
 - Acceptance:
   - Given the pattern `[a-c]{2,4}-\d{3}`, when the generator samples 1000 values, then each value matches the whole pattern. (R34)
   - Given the pattern `[a-c]{2,4}-\d{3}` and a property that always fails, when the property fails, then the counterexample is `aa-000`. (R34)
@@ -135,6 +135,7 @@
   - Given a tree type of leaves and nodes, and a recursive generator with a depth limit of 3, when it samples 1000 values, then no value is deeper than 3 and a value of depth 3 appears. (R53)
   - Given that generator and the property "the tree has no node", when the property fails, then the counterexample is one node whose children are leaves. (R53)
   - Given a class `Node` with a property of type `List<Node>`, when `Gen.Create<Node>()` samples 100 values, then the run ends and no value is deeper than the limit. (R54)
+  - Given the pattern, Uri, Version, email, realistic, and recursive generators, when each samples 100 values with seed 0 and size 50 on net10.0 and on net11.0, then the two lists are equal. (R20)
 - Layers: generator api, string generators, automatic generator, data
 - Tier: hard
 - Status: red

@@ -42,7 +42,7 @@ public class S6_TargetsTests
     }
 
     [Fact]
-    public void test_001_S4_R20_same_text_values_on_net10_and_net11()
+    public void test_001_S5_R20_same_text_values_on_net10_and_net11()
     {
         var net10 = Net10.Value;
         var net11 = Net11.Value;
