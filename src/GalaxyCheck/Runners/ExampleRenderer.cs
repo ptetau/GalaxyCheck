@@ -59,6 +59,7 @@ namespace GalaxyCheck.Runners
                     new AbbreviationRendererHandler(),
                     new StringExampleRendererHandler(),
                     new PrimitiveExampleRendererHandler(),
+                    new StatefulCommandRendererHandler(),
                     new EnumerableExampleRendererHandler(elementLimit: BreadthLimit),
                     new ClassTupleRendererHandler(),
                     new TupleLiteralRendererHandler(),
@@ -141,6 +142,14 @@ namespace GalaxyCheck.Runners
                 obj is Delegate;
 
             public string Render(object? obj, IExampleRendererHandler renderer, ImmutableList<object?> path) => obj?.ToString() ?? "null";
+        }
+
+        /// <summary>Renders a stateful command by its own text, which holds its inputs.</summary>
+        private class StatefulCommandRendererHandler : IExampleRendererHandler
+        {
+            public bool CanRender(object? obj) => obj is Stateful.IStatefulCommand;
+
+            public string Render(object? obj, IExampleRendererHandler renderer, ImmutableList<object?> path) => obj!.ToString() ?? "null";
         }
 
         private class EnumerableExampleRendererHandler : IExampleRendererHandler
