@@ -51,7 +51,9 @@ namespace GalaxyCheck.Gens
         {
             get
             {
-                var gen = LeafGen;
+                // Each depth reads the choice of a branch, and the last depth has only the leaf, so that a tree has the
+                // same choices at each depth and the shrinker can put a subtree in the place of its parent.
+                IGen<T> gen = new WeightedChoiceGen<T>(new[] { LeafGen.Advanced }, new[] { 1 });
                 for (var depth = 1; depth <= MaxDepth; depth++)
                 {
                     gen = new WeightedChoiceGen<T>(new[] { LeafGen.Advanced, Wrap(gen).Advanced }, new[] { 1, 1 });

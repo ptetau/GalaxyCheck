@@ -48,6 +48,9 @@ namespace GalaxyCheck.Gens.Parameters
 
         internal bool IsReplaying { get; private set; }
 
+        /// <summary>True in an exhaustive run, which replays the choices of each value of a finite domain.</summary>
+        internal bool IsWalking { get; set; }
+
         internal int TestCase { get; private set; }
 
         internal bool IsActive { get; private set; }
@@ -186,6 +189,12 @@ namespace GalaxyCheck.Gens.Parameters
             }
 
             return value;
+        }
+
+        /// <summary>Replaces a recorded choice, when the value that it made has a simpler choice.</summary>
+        internal void Rewrite(int index, ulong value)
+        {
+            _choices[index] = value;
         }
 
         /// <summary>Marks the last recorded choice, so that the shrinker does not change it.</summary>

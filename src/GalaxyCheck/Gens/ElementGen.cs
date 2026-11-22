@@ -40,6 +40,6 @@ namespace GalaxyCheck.Gens
         }
 
         public override T Generate(GenSource source) =>
-            Elements[IntCore.Index(source, Elements.Count - 1, Gen.Bias.WithSize)];
+            Elements[IntCore.Index(source, Elements.Count - 1, Gen.Bias.None)];
     }
 }

@@ -23,10 +23,20 @@ namespace GalaxyCheck.Gens.Internal
             bool isDown;
             ulong distance;
 
+            // The distance comes before the side, so that a value nearer to the origin is simpler on either side.
             if (source.IsReplaying)
             {
-                isDown = up != 0 && down != 0 ? source.Read(1) == 1 : up == 0;
-                distance = source.Read(isDown ? down : up);
+                var distanceIndex = source.Length;
+                distance = source.Read(up > down ? up : down);
+                isDown = up != 0 && down != 0 ? ReadSide(source, distance) : up == 0;
+
+                // A distance past the end of its side is the end of the side, and is recorded as the end.
+                var sideMax = isDown ? down : up;
+                if (distance > sideMax)
+                {
+                    distance = sideMax;
+                    source.Rewrite(distanceIndex, distance);
+                }
             }
             else
             {
@@ -34,17 +44,33 @@ namespace GalaxyCheck.Gens.Internal
                     ? Uniform(source, up, down)
                     : Biased(source, up, down, boundsAreExtremes);
 
+                source.Record(distance);
                 if (up != 0 && down != 0)
                 {
-                    source.Record(isDown ? 1UL : 0UL);
+                    source.Record(isDown && distance != 0 ? 1UL : 0UL);
                 }
-
-                source.Record(distance);
             }
 
             return isDown
                 ? unchecked((long)((ulong)origin - distance))
                 : unchecked((long)((ulong)origin + distance));
+        }
+
+        /// <summary>
+        /// Reads the side of a value. The side of the origin is always up, so that the origin has one sequence of
+        /// choices.
+        /// </summary>
+        private static bool ReadSide(GenSource source, ulong distance)
+        {
+            var sideIndex = source.Length;
+            var isDown = source.Read(1) == 1;
+            if (isDown && distance == 0)
+            {
+                source.Rewrite(sideIndex, 0);
+                return false;
+            }
+
+            return isDown;
         }
 
         public static int Int32(GenSource source, int min, int max, int origin, Gen.Bias bias) =>

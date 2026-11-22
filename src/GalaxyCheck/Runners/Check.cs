@@ -195,6 +195,11 @@ namespace GalaxyCheck.Runners
                 {
                     outcome = Evaluate(source);
                 }
+                catch (Exceptions.GenExhaustionException) when (source.IsWalking)
+                {
+                    // A filter discards a value of the walk of an exhaustive run.
+                    outcome = Exhausted<T>();
+                }
                 catch (Exceptions.GenExhaustionException) when (options.Watches(HealthCheck.TooManyDiscards))
                 {
                     throw ExhaustionHealthCheck();
@@ -241,6 +246,22 @@ namespace GalaxyCheck.Runners
                     }
 
                     run.CompleteCandidate(outcome);
+                }
+
+                if (run.BeginFinalReplay())
+                {
+                    try
+                    {
+                        run.CompleteFinalReplay(Evaluate(source));
+                    }
+                    catch (Exception)
+                    {
+                        // The best choices made a value before, so this does not happen; keep the counterexample.
+                    }
+                    finally
+                    {
+                        source.End();
+                    }
                 }
             }
 
@@ -303,6 +324,11 @@ namespace GalaxyCheck.Runners
                 {
                     outcome = await Evaluate(source);
                 }
+                catch (Exceptions.GenExhaustionException) when (source.IsWalking)
+                {
+                    // A filter discards a value of the walk of an exhaustive run.
+                    outcome = Exhausted<T>();
+                }
                 catch (Exceptions.GenExhaustionException) when (options.Watches(HealthCheck.TooManyDiscards))
                 {
                     throw ExhaustionHealthCheck();
@@ -348,6 +374,22 @@ namespace GalaxyCheck.Runners
                     }
 
                     run.CompleteCandidate(outcome);
+                }
+
+                if (run.BeginFinalReplay())
+                {
+                    try
+                    {
+                        run.CompleteFinalReplay(await Evaluate(source));
+                    }
+                    catch (Exception)
+                    {
+                        // The best choices made a value before, so this does not happen; keep the counterexample.
+                    }
+                    finally
+                    {
+                        source.End();
+                    }
                 }
             }
 
@@ -397,6 +439,7 @@ namespace GalaxyCheck.Runners
         private TestCaseOutcome<T> _counterexample;
         private bool _hasCounterexample;
         private int _counterexampleSize;
+        private bool _lastFailureKept = true;
 
         public CheckRun(
             int? iterations,
@@ -461,6 +504,7 @@ namespace GalaxyCheck.Runners
             _currentSize = _size ?? CheckRunner.SizeOf(0, _iterations, null);
             Source = GenSource.Create(_seed, _currentSize);
             Source.SizeFixed = _size != null;
+            Source.IsWalking = _finite != null;
         }
 
         public GenSource Source { get; }
@@ -576,6 +620,7 @@ namespace GalaxyCheck.Runners
             // A test case over the time limit does not shrink: each candidate could wait for the limit again.
             var limit = _replay != null || outcome.TimedOut ? 0 : _shrinkLimit;
             Shrinker = new Shrinker(Source, limit);
+            Source.IsWalking = false;
 
             return true;
         }
@@ -669,7 +714,35 @@ namespace GalaxyCheck.Runners
 
         public void CompleteCandidate(in TestCaseOutcome<T> outcome)
         {
-            if (outcome.Failed && Shrinker!.TryAccept(Source))
+            if (!outcome.Failed) return;
+
+            if (Shrinker!.TryAccept(Source))
+            {
+                _counterexample = outcome;
+                _lastFailureKept = true;
+            }
+            else
+            {
+                _lastFailureKept = false;
+            }
+        }
+
+        /// <summary>
+        /// Starts a last run of the counterexample when a candidate failed after it and was not kept, so that the last
+        /// failing input of the test function is the counterexample. Returns false when no run is needed.
+        /// </summary>
+        public bool BeginFinalReplay()
+        {
+            if (_lastFailureKept) return false;
+
+            _lastFailureKept = true;
+            Source.BeginReplay(Shrinker!.Best, Shrinker.BestLength, _counterexampleSize);
+            return true;
+        }
+
+        public void CompleteFinalReplay(in TestCaseOutcome<T> outcome)
+        {
+            if (outcome.Failed)
             {
                 _counterexample = outcome;
             }
