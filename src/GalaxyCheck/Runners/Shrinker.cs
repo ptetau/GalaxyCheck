@@ -35,6 +35,8 @@ namespace GalaxyCheck.Runners
         private int _bestSpanCount;
         private int[] _bestCarries;
         private int _bestCarryCount;
+        private int[] _bestStops;
+        private int _bestStopCount;
 
         private ulong[] _candidate;
         private int _candidateLength;
@@ -50,6 +52,10 @@ namespace GalaxyCheck.Runners
         private readonly int _shrinkLimit;
         private int _candidates;
 
+        // True in the last stage, which moves content toward the front.
+        private bool _normalizing;
+        private readonly List<int> _runs = new List<int>();
+
         // The structure of the best choices: the parent and the next sibling of each span. Built on demand.
         private int[] _parent = Array.Empty<int>();
         private int[] _next = Array.Empty<int>();
@@ -63,6 +69,7 @@ namespace GalaxyCheck.Runners
             _bestFrozen = new byte[_best.Length];
             _bestSpans = new int[Math.Max(source.SpanCount * 2, 2)];
             _bestCarries = new int[Math.Max(source.CarryCount, 2)];
+            _bestStops = new int[Math.Max(source.StopCount, 2)];
             _candidate = new ulong[_best.Length];
             _zeroFailed = new int[_best.Length];
             Copy(source);
@@ -99,6 +106,16 @@ namespace GalaxyCheck.Runners
         public bool IsSimpler(ulong[] choices, int length)
         {
             if (length != _bestLength) return length < _bestLength;
+
+            if (_normalizing)
+            {
+                for (var i = length - 1; i >= 0; i--)
+                {
+                    if (choices[i] != _best[i]) return choices[i] < _best[i];
+                }
+
+                return false;
+            }
 
             for (var i = 0; i < length; i++)
             {
@@ -140,6 +157,14 @@ namespace GalaxyCheck.Runners
 
             Array.Copy(source.Carries, _bestCarries, source.CarryCount);
             _bestCarryCount = source.CarryCount;
+
+            if (_bestStops.Length < source.StopCount)
+            {
+                _bestStops = new int[Math.Max(source.StopCount, _bestStops.Length * 2)];
+            }
+
+            Array.Copy(source.Stops, _bestStops, source.StopCount);
+            _bestStopCount = source.StopCount;
         }
 
         private bool IsCarry(int index)
@@ -147,6 +172,16 @@ namespace GalaxyCheck.Runners
             for (var k = 0; k < _bestCarryCount; k++)
             {
                 if (_bestCarries[k] == index) return true;
+            }
+
+            return false;
+        }
+
+        private bool IsStop(int index)
+        {
+            for (var k = 0; k < _bestStopCount; k++)
+            {
+                if (_bestStops[k] == index) return true;
             }
 
             return false;
@@ -209,8 +244,106 @@ namespace GalaxyCheck.Runners
                     improved = Shrinks > shrinks;
                 }
 
-                if (!improved) yield break;
+                if (improved) continue;
+
+                // The choices are as simple as the passes make them. Put the content of the parts first.
+                var length = _bestLength;
+                _normalizing = true;
+                while (true)
+                {
+                    shrinks = Shrinks;
+                    foreach (var _ in Normalize())
+                    {
+                        yield return true;
+                        if (Stop()) yield break;
+                    }
+
+                    if (Shrinks == shrinks || _bestLength < length) break;
+                }
+
+                _normalizing = false;
+                if (_bestLength == length) yield break;
             }
+        }
+
+        /// <summary>
+        /// Moves the elements of collections toward the front, when the test still fails with choices of the same
+        /// length: the elements of a collection move into an empty collection just before it, and the elements of two
+        /// collections of one parent swap. The order inside a collection stays as the other passes set it. While it runs, choices of the same length are simpler when they are
+        /// smaller in the last place that differs, so that the simplest parts come last.
+        /// </summary>
+        private IEnumerable<bool> Normalize()
+        {
+            if (!BuildStructure()) yield break;
+
+            var runs = _runs;
+            runs.Clear();
+            for (var m = 0; m < _bestSpanCount; m++)
+            {
+                // Only the elements of a collection move: a run that the end of its collection follows.
+                if (FirstOfRun(m) && IsStop(RunOf(m).End)) runs.Add(m);
+            }
+
+            foreach (var first in runs)
+            {
+                var (runStart, runEnd, _) = RunOf(first);
+                var lowest = runStart;
+                while (lowest > 0 && IsStop(lowest - 1) && OnlyInAncestors(lowest - 1, runStart, runEnd))
+                {
+                    lowest--;
+                }
+
+                for (var q = lowest; q < runStart; q++)
+                {
+                    _candidateLength = 0;
+                    Append(_best, 0, q);
+                    Append(_best, runStart, runEnd - runStart);
+                    Append(_best, q, runStart - q);
+                    Append(_best, runEnd, _bestLength - runEnd);
+                    if (!IsSimpler(_candidate, _candidateLength)) continue;
+
+                    var shrinks = Shrinks;
+                    yield return true;
+                    if (Shrinks > shrinks) yield break;
+                }
+            }
+
+            for (var a = 0; a < runs.Count; a++)
+            {
+                for (var b = 0; b < runs.Count; b++)
+                {
+                    if (_parent[runs[a]] != _parent[runs[b]]) continue;
+
+                    var (aStart, aEnd, _) = RunOf(runs[a]);
+                    var (bStart, bEnd, _) = RunOf(runs[b]);
+                    if (aEnd > bStart) continue;
+
+                    _candidateLength = 0;
+                    Append(_best, 0, aStart);
+                    Append(_best, bStart, bEnd - bStart);
+                    Append(_best, aEnd, bStart - aEnd);
+                    Append(_best, aStart, aEnd - aStart);
+                    Append(_best, bEnd, _bestLength - bEnd);
+                    if (!IsSimpler(_candidate, _candidateLength)) continue;
+
+                    var shrinks = Shrinks;
+                    yield return true;
+                    if (Shrinks > shrinks) yield break;
+                }
+            }
+        }
+
+        /// <summary>True when each span that holds the choice also holds the run.</summary>
+        private bool OnlyInAncestors(int index, int runStart, int runEnd)
+        {
+            for (var k = 0; k < _bestSpanCount; k++)
+            {
+                var start = SpanStart(k);
+                var end = SpanEnd(k);
+                if (start <= index && index < end && (start > runStart || end < runEnd)) return false;
+            }
+
+            return true;
         }
 
         private IEnumerable<bool> CheapPasses()
@@ -277,7 +410,7 @@ namespace GalaxyCheck.Runners
             }
         }
 
-        private const int StructuralPassCount = 7;
+        private const int StructuralPassCount = 8;
 
         private IEnumerable<bool> StructuralPass(int pass) => pass switch
         {
@@ -287,7 +420,8 @@ namespace GalaxyCheck.Runners
             3 => ReorderSiblings(),
             4 => ReplaceByDescendant(),
             5 => Redistribute(),
-            _ => DeleteSpanAndAdjust(),
+            6 => DeleteSpanAndAdjust(),
+            _ => MergeNeighbours(),
         };
 
         /// <summary>
@@ -375,6 +509,71 @@ namespace GalaxyCheck.Runners
                         _candidate[j < start ? j : j - (end - start)] = _best[j] - 1;
                         yield return true;
                         if (Shrinks > shrinks) yield break;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Deletes a span and moves its amount onto the same choice of the next or the previous sibling of equal length,
+        /// so that two elements become one. The amount adds or subtracts, and the binary choice after it, such as a
+        /// side, may flip: two values then join into their sum, also across the sign.
+        /// </summary>
+        private IEnumerable<bool> MergeNeighbours()
+        {
+            if (!BuildStructure()) yield break;
+
+            for (var k = _bestSpanCount - 1; k >= 0; k--)
+            {
+                if (k >= _bestSpanCount || !BuildStructure()) yield break;
+
+                var m = _next[k];
+                if (m < 0) continue;
+
+                var length = SpanEnd(k) - SpanStart(k);
+                if (length != SpanEnd(m) - SpanStart(m)) continue;
+
+                for (var direction = 0; direction < 2; direction++)
+                {
+                    // The deleted span and the span that takes its amount.
+                    var deleted = direction == 0 ? k : m;
+                    var kept = direction == 0 ? m : k;
+                    var start = SpanStart(deleted);
+                    var end = SpanEnd(deleted);
+                    var keptStart = SpanStart(kept);
+                    var shift = keptStart > start ? end - start : 0;
+
+                    for (var o = 0; o < length; o++)
+                    {
+                        var from = start + o;
+                        var to = keptStart + o;
+                        if (_best[from] == 0 || _best[from] <= 1 && _best[to] <= 1 || !IsFree(from) || !IsFree(to)) continue;
+
+                        var flips = o + 1 < length && IsFree(to + 1) && _best[to + 1] <= 1 && _best[from + 1] <= 1;
+                        for (var variant = 0; variant < 3; variant++)
+                        {
+                            // The sum, the sum across the sign, and the difference on the side of the larger.
+                            var flip = variant == 1 || variant == 2 && _best[from] > _best[to];
+                            if (flip && !flips) continue;
+
+                            ulong value;
+                            if (variant < 2)
+                            {
+                                if (_best[to] > ulong.MaxValue - _best[from]) continue;
+                                value = _best[to] + _best[from];
+                            }
+                            else
+                            {
+                                value = _best[to] > _best[from] ? _best[to] - _best[from] : _best[from] - _best[to];
+                            }
+
+                            var shrinks = Shrinks;
+                            Without(start, end);
+                            _candidate[to - shift] = value;
+                            if (flip) _candidate[to + 1 - shift] = 1 - _best[to + 1];
+                            yield return true;
+                            if (Shrinks > shrinks) yield break;
+                        }
                     }
                 }
             }

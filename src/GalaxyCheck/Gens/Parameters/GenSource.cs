@@ -31,6 +31,9 @@ namespace GalaxyCheck.Gens.Parameters
         private int[] _carries = new int[4];
         private int _carryCount;
 
+        private int[] _stops = new int[4];
+        private int _stopCount;
+
         internal GenSource(ulong seed, int size, int capacity = 64)
         {
             _rng = seed;
@@ -138,6 +141,10 @@ namespace GalaxyCheck.Gens.Parameters
 
         internal int[] Carries => _carries;
 
+        internal int StopCount => _stopCount;
+
+        internal int[] Stops => _stops;
+
         internal ulong RngState => _rng;
 
         internal void BeginRandom(int size)
@@ -161,6 +168,7 @@ namespace GalaxyCheck.Gens.Parameters
             _length = 0;
             _spanCount = 0;
             _carryCount = 0;
+            _stopCount = 0;
             _waypoint = null;
             TestCase++;
             IsActive = true;
@@ -241,6 +249,22 @@ namespace GalaxyCheck.Gens.Parameters
             }
 
             _carries[_carryCount++] = _length - 1;
+        }
+
+        /// <summary>
+        /// Marks the last recorded choice as the choice that ends a collection. The shrinker may move the elements of a
+        /// later collection before the end of an empty one.
+        /// </summary>
+        internal void MarkStop()
+        {
+            if (_length == 0) return;
+
+            if (_stopCount == _stops.Length)
+            {
+                Array.Resize(ref _stops, _stops.Length * 2);
+            }
+
+            _stops[_stopCount++] = _length - 1;
         }
 
         internal int BeginSpan() => _length;
