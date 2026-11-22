@@ -27,6 +27,9 @@ namespace GalaxyCheck.Gens.Parameters
         private int[] _spans = new int[8];
         private int _spanCount;
 
+        private int[] _carries = new int[4];
+        private int _carryCount;
+
         internal GenSource(ulong seed, int size, int capacity = 64)
         {
             _rng = seed;
@@ -62,6 +65,10 @@ namespace GalaxyCheck.Gens.Parameters
 
         internal int[] Spans => _spans;
 
+        internal int CarryCount => _carryCount;
+
+        internal int[] Carries => _carries;
+
         internal ulong RngState => _rng;
 
         internal void BeginRandom(int size)
@@ -84,6 +91,7 @@ namespace GalaxyCheck.Gens.Parameters
             Size = size;
             _length = 0;
             _spanCount = 0;
+            _carryCount = 0;
             _waypoint = null;
             TestCase++;
             IsActive = true;
@@ -142,6 +150,22 @@ namespace GalaxyCheck.Gens.Parameters
 
             Array.Resize(ref _choices, _choices.Length * 2);
             Array.Resize(ref _frozen, _frozen.Length * 2);
+        }
+
+        /// <summary>
+        /// Marks the last recorded choice as the high part of a number whose low part is the next choice. The
+        /// shrinker may lower the high part by one and raise the low part to its maximum.
+        /// </summary>
+        internal void MarkCarry()
+        {
+            if (_length == 0) return;
+
+            if (_carryCount == _carries.Length)
+            {
+                Array.Resize(ref _carries, _carries.Length * 2);
+            }
+
+            _carries[_carryCount++] = _length - 1;
         }
 
         internal int BeginSpan() => _length;

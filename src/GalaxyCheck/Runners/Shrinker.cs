@@ -18,6 +18,8 @@ namespace GalaxyCheck.Runners
         private int _bestLength;
         private int[] _bestSpans;
         private int _bestSpanCount;
+        private int[] _bestCarries;
+        private int _bestCarryCount;
 
         private ulong[] _candidate;
         private int _candidateLength;
@@ -30,6 +32,7 @@ namespace GalaxyCheck.Runners
             _best = new ulong[Math.Max(source.Length, 4)];
             _bestFrozen = new byte[_best.Length];
             _bestSpans = new int[Math.Max(source.SpanCount * 2, 2)];
+            _bestCarries = new int[Math.Max(source.CarryCount, 2)];
             _candidate = new ulong[_best.Length];
             Copy(source);
         }
@@ -96,6 +99,24 @@ namespace GalaxyCheck.Runners
 
             Array.Copy(source.Spans, _bestSpans, spanInts);
             _bestSpanCount = source.SpanCount;
+
+            if (_bestCarries.Length < source.CarryCount)
+            {
+                _bestCarries = new int[Math.Max(source.CarryCount, _bestCarries.Length * 2)];
+            }
+
+            Array.Copy(source.Carries, _bestCarries, source.CarryCount);
+            _bestCarryCount = source.CarryCount;
+        }
+
+        private bool IsCarry(int index)
+        {
+            for (var k = 0; k < _bestCarryCount; k++)
+            {
+                if (_bestCarries[k] == index) return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -177,6 +198,18 @@ namespace GalaxyCheck.Runners
                         {
                             low = mid;
                         }
+                    }
+
+                    // The high part of a number is as small as it can be with the current low part: lower it by one
+                    // and raise the low part to its maximum, so that the low part can then shrink.
+                    if (i + 1 < _bestLength && _best[i] > 0 && _bestFrozen[i + 1] == 0 && IsCarry(i))
+                    {
+                        shrinks = Shrinks;
+                        SetCandidate(i, _best[i] - 1);
+                        _candidate[i + 1] = ulong.MaxValue;
+                        yield return true;
+                        if (++candidates >= MaxCandidates || ReachedShrinkLimit) yield break;
+                        if (Shrinks > shrinks) improved = true;
                     }
                 }
             } while (improved);
