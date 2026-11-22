@@ -50,6 +50,48 @@ namespace GalaxyCheck.Gens
 
         protected override IGen<object[]> Get => CreateGen(_methodInfo, _genFactory, _customGens);
 
+        private GalaxyCheck.Properties.IFiniteGen?[]? _parts;
+
+        /// <summary>
+        /// The generator of each parameter that the run generates. The token is left out: the runner gives it.
+        /// </summary>
+        private GalaxyCheck.Properties.IFiniteGen?[] Parts => _parts ??= CreateParts();
+
+        private GalaxyCheck.Properties.IFiniteGen?[] CreateParts()
+        {
+            var parameters = _methodInfo.GetParameters();
+            if (_customGens.Keys.Any(index => index < 0 || index >= parameters.Length))
+            {
+                return new GalaxyCheck.Properties.IFiniteGen?[] { null };
+            }
+
+            var parts = new List<GalaxyCheck.Properties.IFiniteGen?>();
+            for (var parameterIndex = 0; parameterIndex < parameters.Length; parameterIndex++)
+            {
+                var customGen = _customGens.ContainsKey(parameterIndex) ? _customGens[parameterIndex] : null;
+                if (IsToken(customGen, parameters[parameterIndex])) continue;
+                parts.Add(ResolveGen(_genFactory, customGen, parameters[parameterIndex]).Advanced as GalaxyCheck.Properties.IFiniteGen);
+            }
+
+            return parts.ToArray();
+        }
+
+        /// <summary>
+        /// The parameters are finite when each generated parameter is finite. The count is the product of their
+        /// counts. A method with no generated parameter is not finite.
+        /// </summary>
+        public override long? Count(long limit)
+        {
+            var parts = Parts;
+            return parts.Length == 0 ? null : GalaxyCheck.Properties.Finite.Product(parts, limit);
+        }
+
+        public override void WriteChoices(long index, List<ulong> choices) =>
+            GalaxyCheck.Properties.Finite.WriteProduct(Parts!, index, choices);
+
+        private static bool IsToken(IGen? customGen, ParameterInfo parameterInfo) =>
+            customGen == null && parameterInfo.ParameterType == typeof(System.Threading.CancellationToken);
+
         private static IGen<object[]> CreateGen(
             MethodInfo methodInfo,
             IGenFactory genFactory,
@@ -75,6 +117,12 @@ namespace GalaxyCheck.Gens
 
         private static IGen<object> ResolveGen(IGenFactory genFactory, IGen? customGen, ParameterInfo parameterInfo)
         {
+            if (IsToken(customGen, parameterInfo))
+            {
+                // The token is not generated: the runner gives the token of the test case when it runs the method.
+                return Gen.Constant<object>(System.Threading.CancellationToken.None);
+            }
+
             if (customGen == null)
             {
                 var configuredGenFactory = ConfigureGenFactory(genFactory, parameterInfo);

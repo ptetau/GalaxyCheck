@@ -20,8 +20,13 @@ namespace GalaxyCheck
 
 namespace GalaxyCheck.Gens.Internal
 {
-    internal sealed record CastGen<T>(IGen Source) : BaseGen<T>
+    internal sealed record CastGen<T>(IGen Source) : BaseGen<T>, GalaxyCheck.Properties.IFiniteGen
     {
+        public long? Count(long limit) => GalaxyCheck.Properties.Finite.Of(Source, limit);
+
+        public void WriteChoices(long index, System.Collections.Generic.List<ulong> choices) =>
+            ((GalaxyCheck.Properties.IFiniteGen)Source.Advanced).WriteChoices(index, choices);
+
         public override T Generate(GenSource source)
         {
             var value = Source.Advanced.GenerateObject(source);

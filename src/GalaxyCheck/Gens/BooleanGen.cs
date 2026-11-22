@@ -15,8 +15,12 @@ namespace GalaxyCheck.Gens
     using GalaxyCheck.Gens.Internal;
     using GalaxyCheck.Gens.Parameters;
 
-    internal sealed record BooleanGen : BaseGen<bool>
+    internal sealed record BooleanGen : BaseGen<bool>, GalaxyCheck.Properties.IFiniteGen
     {
+        public long? Count(long limit) => limit >= 2 ? 2 : null;
+
+        public void WriteChoices(long index, System.Collections.Generic.List<ulong> choices) => choices.Add((ulong)index);
+
         public override bool Generate(GenSource source) => IntCore.Index(source, 1, Gen.Bias.WithSize) == 1;
     }
 }

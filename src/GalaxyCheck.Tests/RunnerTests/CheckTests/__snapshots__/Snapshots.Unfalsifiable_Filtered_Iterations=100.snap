@@ -1,6 +1,6 @@
 ﻿{
   "Iterations": 100,
-  "Discards": 96,
+  "Discards": 72,
   "Shrinks": 0,
   "Counterexample": null,
   "Checks": [],
@@ -18,5 +18,5 @@
   },
   "TerminationReason": "ReachedMaximumIterations",
   "Falsified": false,
-  "RandomnessConsumption": 392
+  "RandomnessConsumption": 416
 }

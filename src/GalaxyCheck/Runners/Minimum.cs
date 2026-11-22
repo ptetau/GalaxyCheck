@@ -35,7 +35,8 @@ namespace GalaxyCheck
                 return result == false;
             });
 
-            var result = property.Check<T>(iterations: iterations, seed: seed, size: size, deepCheck: deepMinimum);
+            // The search for a minimum has no exhaustive run and no health checks.
+            var result = CheckRunner.Run(property, iterations, seed, size, null, null, deepMinimum, recordChecks: false);
 
             if (result.Falsified)
             {
