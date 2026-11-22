@@ -139,7 +139,7 @@
 - Layers: generator api, string generators, automatic generator, data
 - Tier: hard
 - Status: review
-- Test rounds: 1
+- Test rounds: 2
 - Review rounds: 1
 
 ## S6: Property features
