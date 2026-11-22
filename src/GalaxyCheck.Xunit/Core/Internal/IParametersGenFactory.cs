@@ -1,10 +1,15 @@
-﻿using GalaxyCheck.Gens;
+using GalaxyCheck.Gens;
 using System.Collections.Generic;
 using System.Reflection;
 
 namespace GalaxyCheck.Internal
 {
-    public interface IParametersGenFactory
+#if GALAXYCHECK_XUNIT2
+    public
+#else
+    internal
+#endif
+    interface IParametersGenFactory
     {
         IGen<object[]> CreateParametersGen(
             MethodInfo methodInfo,

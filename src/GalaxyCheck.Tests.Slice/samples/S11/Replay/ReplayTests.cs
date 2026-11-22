@@ -7,7 +7,7 @@ public class ReplayTests
 {
     // The test replaces __REPLAY__ with the replay string of the counterexample of this property.
     [GalaxyCheck.Replay("__REPLAY__")]
-    [GalaxyCheck.Property]
+    [Test, GalaxyCheck.PropertyTest]
     public Property<int> ReplayedBelow10() =>
         Property.ForAll(Gen.Int32(), x =>
         {

@@ -28,7 +28,14 @@ internal static class S11Metadata
             var members = new HashSet<string>();
             foreach (var p in type.GetProperties())
             {
-                members.Add(md.GetString(md.GetPropertyDefinition(p).Name));
+                var accessors = md.GetPropertyDefinition(p).GetAccessors();
+                var isPublic = new[] { accessors.Getter, accessors.Setter }
+                    .Where(h => !h.IsNil)
+                    .Any(h => (md.GetMethodDefinition(h).Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public);
+                if (isPublic)
+                {
+                    members.Add(md.GetString(md.GetPropertyDefinition(p).Name));
+                }
             }
 
             foreach (var f in type.GetFields())
@@ -147,5 +154,21 @@ public class S11_PackageTests
         // The attributes with a constructor argument: Replay(replay) and MemberGen(memberName).
         tunit["GalaxyCheck.ReplayAttribute"].ConstructorParameterCounts.Should().Contain(1);
         tunit["GalaxyCheck.MemberGenAttribute"].ConstructorParameterCounts.Should().Contain(1);
+    }
+
+    [Fact]
+    public void test_001_S8_R22_tunit_has_property_test_attribute_and_property_arguments_attribute()
+    {
+        var tunit = TUnitTypes();
+        tunit.Should().ContainKey("GalaxyCheck.PropertyAttribute");
+        tunit.Should().ContainKey("GalaxyCheck.PropertyTestAttribute");
+        tunit.Should().ContainKey("GalaxyCheck.PropertyArgumentsAttribute");
+
+        var options = new[] { "Iterations", "ShrinkLimit", "Seed", "Size", "TimeoutMilliseconds", "Exhaustive" };
+        tunit["GalaxyCheck.PropertyTestAttribute"].Members.Should().Contain(options);
+        tunit["GalaxyCheck.PropertyTestAttribute"].Members.Should().Contain(tunit["GalaxyCheck.PropertyAttribute"].Members.Where(m => options.Contains(m)));
+
+        // params object?[] values: one constructor parameter.
+        tunit["GalaxyCheck.PropertyArgumentsAttribute"].ConstructorParameterCounts.Should().Contain(1);
     }
 }

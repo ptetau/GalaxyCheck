@@ -1,12 +1,11 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
-using Xunit.Abstractions;
 
 namespace GalaxyCheck.Internal
 {
     internal class PropertyAssertRunner : IPropertyRunner
     {
-        public Task Run(PropertyRunParameters parameters, ITestOutputHelper testOutputHelper) =>
+        public Task Run(PropertyRunParameters parameters) =>
             parameters.Property.AssertAsync(
                 replay: parameters.Replay,
                 seed: parameters.Seed,

@@ -39,12 +39,12 @@ public class MainTests
     public Property Property_Falsified() => Property.ForAll(Gen.Int32(), x => x < 10);
 
     [Property]
-    public IGen<Property.Test> Gen_Holds() =>
-        Property.ForAll(Gen.Int32(), x => true).Select(t => (Property.Test)t);
+    public IGen<Property.Test<int>> Gen_Holds() =>
+        Property.ForAll(Gen.Int32(), x => true);
 
     [Property]
-    public IGen<Property.Test> Gen_Falsified() =>
-        Property.ForAll(Gen.Int32(), x => x < 10).Select(t => (Property.Test)t);
+    public IGen<Property.Test<int>> Gen_Falsified() =>
+        Property.ForAll(Gen.Int32(), x => x < 10);
 
     [Property]
     public async Task AsyncVoid_Holds(int x)
@@ -82,14 +82,12 @@ public class MainTests
         Property.ForAllAsync(Gen.Int32(), async x => { await Task.Yield(); return x < 10; });
 
     [Property]
-    public IGen<Property.AsyncTest> AsyncGen_Holds() =>
-        Property.ForAllAsync(Gen.Int32(), async x => { await Task.Yield(); return true; })
-            .Select(t => (Property.AsyncTest)t);
+    public IGen<Property.AsyncTest<int>> AsyncGen_Holds() =>
+        Property.ForAllAsync(Gen.Int32(), async x => { await Task.Yield(); return true; });
 
     [Property]
-    public IGen<Property.AsyncTest> AsyncGen_Falsified() =>
-        Property.ForAllAsync(Gen.Int32(), async x => { await Task.Yield(); return x < 10; })
-            .Select(t => (Property.AsyncTest)t);
+    public IGen<Property.AsyncTest<int>> AsyncGen_Falsified() =>
+        Property.ForAllAsync(Gen.Int32(), async x => { await Task.Yield(); return x < 10; });
 
     // R25: the parameter takes its generator from a member.
     public static IGen<int> FiveGen => Gen.Int32().Between(5, 5);
@@ -102,8 +100,12 @@ public class MainTests
     }
 
     // R26: a sample test fails and lists the sampled values.
+    public static IGen<int> SampleGen => Gen.Int32().Between(7777, 7777);
+
     [Sample]
-    public IGen<int> Sampled() => Gen.Int32().Between(7777, 7777);
+    public void Sampled([MemberGen(nameof(SampleGen))] int x)
+    {
+    }
 
     // R28: data rows give the first parameter, the generator gives the second.
     [Property(Iterations = 5)]

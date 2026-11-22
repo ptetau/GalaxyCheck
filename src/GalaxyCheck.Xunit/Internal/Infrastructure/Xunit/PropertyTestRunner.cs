@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -84,7 +84,7 @@ namespace GalaxyCheck.Internal.Infrastructure.Xunit
 
             try
             {
-                await propertyInitResult.Runner.Run(propertyInitResult.Parameters, testOutputHelper);
+                await propertyInitResult.Runner.Run(propertyInitResult.Parameters);
                 return Pass();
             }
             catch (Exception propertyFailedException)

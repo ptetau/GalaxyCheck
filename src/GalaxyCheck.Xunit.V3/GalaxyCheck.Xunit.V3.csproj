@@ -9,6 +9,8 @@
     <IsTestProject>false</IsTestProject>
     <PackageId>GalaxyCheck.Xunit.V3</PackageId>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <!-- Keep the dependencies beside the assembly in bin, so that a tool can load the built assembly. -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +19,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GalaxyCheck\GalaxyCheck.csproj" />
+  </ItemGroup>
+
+  <!-- The shared framework core: attributes, configuration, and the property, sample, and snapshot logic. -->
+  <ItemGroup>
+    <Compile Include="..\GalaxyCheck.Xunit\Core\**\*.cs" LinkBase="Core" />
   </ItemGroup>
 
 </Project>

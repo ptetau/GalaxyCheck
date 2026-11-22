@@ -2,7 +2,7 @@ namespace S13Sample;
 
 public class PlainTests
 {
-    [GalaxyCheck.Property]
+    [Test, GalaxyCheck.PropertyTest]
     public bool PlainDisabled(int x)
     {
         Probe.Log("PlainDisabled", x);
@@ -11,7 +11,7 @@ public class PlainTests
 
     [GalaxyCheck.Example(1, 2)]
     [GalaxyCheck.Example(3, 4)]
-    [GalaxyCheck.Property(Iterations = 10)]
+    [Test, GalaxyCheck.PropertyTest(Iterations = 10)]
     public bool ExOrder(int first, int second)
     {
         Probe.Log("ExOrder", first + "," + second);
@@ -19,7 +19,7 @@ public class PlainTests
     }
 
     [GalaxyCheck.Example(3, 4)]
-    [GalaxyCheck.Property]
+    [Test, GalaxyCheck.PropertyTest]
     public bool ExFails(int first, int second)
     {
         Probe.Log("ExFails", first + "," + second);
@@ -27,7 +27,7 @@ public class PlainTests
     }
 
     [GalaxyCheck.Example(1)]
-    [GalaxyCheck.Property]
+    [Test, GalaxyCheck.PropertyTest]
     public bool ExMissing(int first, int second)
     {
         Probe.Log("ExMissing", first + "," + second);
@@ -35,7 +35,7 @@ public class PlainTests
     }
 
     [GalaxyCheck.Example("a")]
-    [GalaxyCheck.Property]
+    [Test, GalaxyCheck.PropertyTest]
     public bool ExWrongType(int number)
     {
         Probe.Log("ExWrongType", number);

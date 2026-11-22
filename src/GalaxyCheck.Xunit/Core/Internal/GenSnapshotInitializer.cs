@@ -1,4 +1,4 @@
-﻿using GalaxyCheck.Configuration;
+using GalaxyCheck.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace GalaxyCheck.Internal
 {
     internal record GenSnapshotInitializationResult(
-        object TestClassInstance,
+        object? TestClassInstance,
         string TestFileName,
         Func<ISnapshot, Task> AssertSnapshotMatches,
         IGen<object[]> ParametersGen,
@@ -28,6 +28,28 @@ namespace GalaxyCheck.Internal
             MethodInfo testMethodInfo,
             object[] constructorArguments,
             IParametersGenFactory parametersGenFactory,
+            IGlobalGenSnapshotConfiguration config) =>
+                Initialize(
+                    testClassType,
+                    testMethodInfo,
+                    () => Activator.CreateInstance(testClassType, constructorArguments)!,
+                    parametersGenFactory,
+                    config);
+
+        /// <summary>Checks a snapshot test method, and uses an instance of its class that the framework made.</summary>
+        public static GenSnapshotInitializationResult InitializeWithInstance(
+            Type testClassType,
+            MethodInfo testMethodInfo,
+            object? testClassInstance,
+            IParametersGenFactory parametersGenFactory,
+            IGlobalGenSnapshotConfiguration config) =>
+                Initialize(testClassType, testMethodInfo, () => testClassInstance, parametersGenFactory, config);
+
+        private static GenSnapshotInitializationResult Initialize(
+            Type testClassType,
+            MethodInfo testMethodInfo,
+            Func<object?> createTestClassInstance,
+            IParametersGenFactory parametersGenFactory,
             IGlobalGenSnapshotConfiguration config)
         {
             var assertSnapshotMatches = config.AssertSnapshotMatches;
@@ -42,7 +64,7 @@ namespace GalaxyCheck.Internal
                 throw new Exception("Test method must return a value for snapshotting, or a task containing a value");
             }
 
-            var testClassInstance = Activator.CreateInstance(testClassType, constructorArguments)!;
+            var testClassInstance = createTestClassInstance();
             var genSnapshotAttribute = testMethodInfo.GetCustomAttributes<GenSnapshotAttribute>(inherit: true).Single();
 
             var testFileName = genSnapshotAttribute.TestFileName;
@@ -53,7 +75,7 @@ namespace GalaxyCheck.Internal
             }
 
             var genFactory = ReflectionHelpers.TryResolveGenFactory(testClassType, testMethodInfo);
-            var customGens = ReflectionHelpers.ResolveCustomGens(testClassInstance, testMethodInfo);
+            var customGens = ReflectionHelpers.ResolveCustomGens(testClassType, testClassInstance, testMethodInfo);
             var parametersGen = parametersGenFactory.CreateParametersGen(testMethodInfo, genFactory, customGens);
 
             var iterations = genSnapshotAttribute.NullableIterations ?? config.DefaultIterations;
@@ -68,7 +90,7 @@ namespace GalaxyCheck.Internal
                 parametersGen,
                 seeds,
                 size,
-                genSnapshotAttribute.Skip?.Length > 0 ? genSnapshotAttribute.Skip : null);
+                genSnapshotAttribute.SkipReason);
         }
     }
 }

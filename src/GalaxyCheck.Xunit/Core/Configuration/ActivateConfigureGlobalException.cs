@@ -1,8 +1,13 @@
-﻿using System;
+using System;
 
 namespace GalaxyCheck.Configuration
 {
-    public class ActivateConfigureGlobalException : Exception
+#if GALAXYCHECK_XUNIT2
+    public
+#else
+    internal
+#endif
+    class ActivateConfigureGlobalException : Exception
     {
         public ActivateConfigureGlobalException(Type type, Exception ex)
             : base(BuildMessage(type, ex), ex)
