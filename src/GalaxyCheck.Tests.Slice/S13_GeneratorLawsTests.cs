@@ -206,6 +206,13 @@ public class S13_GeneratorLawsTests
         ["Decimal64"] = s => Laws(Gen.Decimal64(), x => !(double.CreateTruncating(x) > 1.5), s),
         ["Decimal128"] = s => Laws(Gen.Decimal128(), x => !(double.CreateTruncating(x) > 1.5), s),
         ["BFloat16"] = s => Laws(Gen.BFloat16(), x => !(double.CreateTruncating(x) > 1.5), s),
+        // Memory compares by reference, so the laws run on the array that each value holds.
+        ["Create Memory"] = s => Laws(Gen.Create<Memory<int>>().Select(m => m.ToArray()), q => q.Length % 2 == 0, s),
+        ["Create ReadOnlyMemory"] = s => Laws(Gen.Create<ReadOnlyMemory<int>>().Select(m => m.ToArray()), q => q.Length % 2 == 0, s),
+        ["ComplexOf"] = s => Laws(
+            Gen.ComplexOf(Gen.Double().WithoutSpecialValues(), Gen.Double().WithoutSpecialValues()),
+            z => !(z.Real > 1.5),
+            s),
     };
 
     public static IEnumerable<object[]> CaseNames() => Cases.Keys.Select(k => new object[] { k });
