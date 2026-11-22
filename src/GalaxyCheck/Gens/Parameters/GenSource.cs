@@ -1,3 +1,4 @@
+using GalaxyCheck.Gens.Internal;
 using System;
 using System.Runtime.CompilerServices;
 
@@ -52,6 +53,56 @@ namespace GalaxyCheck.Gens.Parameters
         internal bool IsActive { get; private set; }
 
         internal int Discards { get; set; }
+
+        /// <summary>The values that a filter kept. With the discards, it gives the share that the filters discard.</summary>
+        internal int Kept { get; set; }
+
+        /// <summary>
+        /// True when the user fixed the size. A filter then retries at that size, and leaves it only when it cannot pass
+        /// at that size.
+        /// </summary>
+        internal bool SizeFixed { get; set; }
+
+        private System.Collections.Generic.Dictionary<object, int>? _goodSizes;
+
+        /// <summary>
+        /// The retries of a filter at a fixed size before the filter searches other sizes. Only a filter that cannot
+        /// pass at the fixed size, such as a filter of non-zero integers at size 0, leaves that size.
+        /// </summary>
+        private const int FixedSizeRetries = 50;
+
+        /// <summary>
+        /// The size of a retry of a filter after a discard. The size is a frozen choice, so that a replay reads the
+        /// size of each retry from the recorded choices.
+        /// </summary>
+        internal int RetrySize(object filter, int baseSize, int retry)
+        {
+            if (IsReplaying)
+            {
+                var replayed = (int)Read(100);
+                FreezeLast();
+                return replayed;
+            }
+
+            var size =
+                !SizeFixed ? SizeSearch.Next(baseSize, retry, GoodSize(filter)) :
+                retry < FixedSizeRetries ? baseSize :
+                SizeSearch.Next(baseSize, retry - FixedSizeRetries + 1, GoodSize(filter));
+            Record((ulong)size);
+            FreezeLast();
+            return size;
+        }
+
+        /// <summary>Remembers the size of a retry where a filter kept a value, for the retries of later discards.</summary>
+        internal void RememberGoodSize(object filter, int size)
+        {
+            if (IsReplaying) return;
+            _goodSizes ??= new System.Collections.Generic.Dictionary<object, int>(System.Collections.Generic.ReferenceEqualityComparer.Instance);
+            _goodSizes[filter] = SizeSearch.Learn(GoodSize(filter), size);
+        }
+
+        private int GoodSize(object filter) =>
+            _goodSizes != null && _goodSizes.TryGetValue(filter, out var size) ? size : SizeSearch.NoGoodSize;
 
         internal long Consumption { get; private set; }
 

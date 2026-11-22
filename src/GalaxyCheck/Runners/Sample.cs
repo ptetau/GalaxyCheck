@@ -64,6 +64,7 @@ namespace GalaxyCheck.Runners.Sample
             var resolvedIterations = iterations ?? CheckRunner.DefaultIterations;
             var resolvedSeed = CheckRunner.CreateSeed(seed);
             var source = GenSource.Create(resolvedSeed, 0);
+            source.SizeFixed = size != null;
             var values = new List<T>(Math.Max(0, resolvedIterations));
 
             for (var i = 0; i < resolvedIterations; i++)

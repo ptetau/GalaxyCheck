@@ -23,8 +23,13 @@ namespace GalaxyCheck.Gens.Internal
     internal sealed record WhereGen<T>(IGen<T> Source, Func<T, bool> Predicate) : BaseGen<T>
     {
         private const int MaxConsecutiveDiscards = 100;
-        private const int DiscardsBeforeResize = 5;
 
+        /// <summary>
+        /// Generates values until one passes the predicate. The first attempt uses the size of the source, so a value
+        /// that passes at once is the same as without the filter. Each retry first records its size as a frozen
+        /// choice (see <see cref="GenSource.RetrySize"/>). The span of a discarded attempt holds that choice too, so
+        /// the shrinker can delete the attempt and the later attempts keep their sizes.
+        /// </summary>
         public override T Generate(GenSource source)
         {
             var gen = Source.Advanced;
@@ -32,24 +37,23 @@ namespace GalaxyCheck.Gens.Internal
 
             try
             {
+                var start = source.BeginSpan();
                 for (var attempt = 0; attempt < MaxConsecutiveDiscards; attempt++)
                 {
-                    var start = source.BeginSpan();
                     var value = gen.Generate(source);
-                    source.EndSpan(start);
 
                     if (Predicate(value))
                     {
+                        source.EndSpan(start);
+                        source.Kept++;
+                        if (attempt > 0) source.RememberGoodSize(this, source.Size);
                         return value;
                     }
 
                     source.Discards++;
-
-                    if ((attempt + 1) % DiscardsBeforeResize == 0 && !source.IsReplaying)
-                    {
-                        // A bigger size may hold more values that pass the predicate.
-                        source.Size = Math.Min(100, source.Size + 5);
-                    }
+                    source.Size = source.RetrySize(this, size, attempt + 1);
+                    source.EndSpan(start);
+                    start = source.BeginSpan();
                 }
             }
             finally

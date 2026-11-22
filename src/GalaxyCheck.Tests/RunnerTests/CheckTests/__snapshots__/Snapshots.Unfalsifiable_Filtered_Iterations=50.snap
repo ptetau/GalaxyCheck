@@ -18,5 +18,5 @@
   },
   "TerminationReason": "ReachedMaximumIterations",
   "Falsified": false,
-  "RandomnessConsumption": 234
+  "RandomnessConsumption": 301
 }

@@ -390,7 +390,8 @@ namespace GalaxyCheck.Runners
         private int _iteration;
         private long _finiteIndex;
         private int _preDiscards;
-        private int _sizeShift;
+        private int _retry;
+        private int _goodSize = SizeSearch.NoGoodSize;
         private bool _replayStarted;
         private int _currentSize;
         private TestCaseOutcome<T> _counterexample;
@@ -459,6 +460,7 @@ namespace GalaxyCheck.Runners
 
             _currentSize = _size ?? CheckRunner.SizeOf(0, _iterations, null);
             Source = GenSource.Create(_seed, _currentSize);
+            Source.SizeFixed = _size != null;
         }
 
         public GenSource Source { get; }
@@ -504,11 +506,11 @@ namespace GalaxyCheck.Runners
             if (_iteration >= _iterations) return false;
 
             _currentSize = CheckRunner.SizeOf(_iteration, _iterations, _size);
-            if (_sizeShift != 0 && _size == null)
+            if (_retry != 0 && _size == null)
             {
-                // Each discard moves the size one step round the cycle 0 to 100, without a direction, so that a
-                // precondition passes whether it keeps small or large values. The plan continues from the new place.
-                _currentSize = (_currentSize + _sizeShift) % 101;
+                // A test case after a discarded one retries the same place of the plan at another size, as a filter
+                // in a generator does. The replay string records the size of the test case.
+                _currentSize = SizeSearch.Next(_currentSize, _retry, _goodSize);
             }
 
             Source.BeginRandom(_currentSize);
@@ -530,12 +532,18 @@ namespace GalaxyCheck.Runners
             if (outcome.Discarded)
             {
                 _preDiscards++;
-                if (++_sizeShift == 101) _sizeShift = 0;
+                _retry++;
                 if (_watchDiscards) CheckHealth(false);
                 return false;
             }
 
             _iteration++;
+
+            if (_retry != 0)
+            {
+                _goodSize = SizeSearch.Learn(_goodSize, _currentSize);
+                _retry = 0;
+            }
 
             if (_replay != null && !ReplayFits())
             {
@@ -597,12 +605,12 @@ namespace GalaxyCheck.Runners
         /// <summary>
         /// Checks the discards. In the middle of the run, a run in which no test case reached the test function stops
         /// early, and so does a run that discarded more than 98% of at least 1000 values. Else the share of discards is
-        /// judged at the end, over the whole run.
+        /// judged at the end, over the whole run. The filters of the generators and the preconditions each have their
+        /// own share: a filter discards a generated value, and a precondition discards a test case.
         /// </summary>
         private void CheckHealth(bool final)
         {
             long tests = _iteration;
-            long discards = (long)Source.Discards + _preDiscards;
 
             if (tests == 0 && _preDiscards > 0)
             {
@@ -616,18 +624,25 @@ namespace GalaxyCheck.Runners
                 return;
             }
 
-            if (discards > 0 && _options.Watches(HealthCheck.TooManyDiscards))
+            if (_options.Watches(HealthCheck.TooManyDiscards))
             {
-                var total = tests + discards;
-                var tooMany = final
-                    ? total >= 20 && discards * 10 > total * 9
-                    : total >= EarlyDiscardTotal && discards * 50 > total * 49;
-                if (tooMany)
-                {
-                    throw HealthMessages.Exception(
-                        HealthCheck.TooManyDiscards,
-                        $"the run discarded {discards} of {total} generated values, which is more than 90%.");
-                }
+                CheckShare(final, Source.Discards, Source.Discards + (long)Source.Kept);
+                CheckShare(final, _preDiscards, _preDiscards + tests);
+            }
+        }
+
+        private static void CheckShare(bool final, long discards, long total)
+        {
+            if (discards == 0) return;
+
+            var tooMany = final
+                ? total >= 20 && discards * 10 > total * 9
+                : total >= EarlyDiscardTotal && discards * 50 > total * 49;
+            if (tooMany)
+            {
+                throw HealthMessages.Exception(
+                    HealthCheck.TooManyDiscards,
+                    $"the run discarded {discards} of {total} generated values, which is more than 90%.");
             }
         }
 
