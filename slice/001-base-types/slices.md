@@ -114,7 +114,7 @@
 - Layers: generator api, generator core, collection generators, automatic generator, xunit v2 package, build, runner
 - Tier: standard
 - Status: review
-- Test rounds: 1
+- Test rounds: 2
 - Review rounds: 1
 
 ## S5: Text, realistic data, and recursive generators
