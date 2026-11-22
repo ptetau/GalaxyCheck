@@ -93,10 +93,13 @@ public class S13_ReplayAndOperatorLawsTests
         var used = 0;
         foreach (var seed in S13.Seeds)
         {
-            var first = S13.Within(Limit, () => Failing().Check(iterations: 100, seed: seed));
-            if (!first.Falsified || first.Counterexample is null || first.Shrinks < 2)
+            // The replay of a list of ints holds several choices that a boolean generator cannot read.
+            var source = Property.ForAll(
+                Gen.Int32().Between(0, 1000).ListOf().WithCountGreaterThanEqual(3),
+                xs => xs.Sum() < 10);
+            var first = S13.Within(Limit, () => source.Check(iterations: 100, seed: seed));
+            if (!first.Falsified || first.Counterexample is null)
             {
-                // A replay with fewer than two shrinks can be a valid path in the other generator too.
                 continue;
             }
 
@@ -107,7 +110,7 @@ public class S13_ReplayAndOperatorLawsTests
             if (problem != null) problems.Add(problem);
         }
 
-        Assert.True(used >= 10, $"the setup needs at least 10 seeds whose counterexample made two shrinks; {used} did");
+        Assert.True(used >= 10, $"the setup needs at least 10 seeds whose property fails; {used} did");
         Assert.True(problems.Count == 0, S13.Problems(problems));
     }
 
