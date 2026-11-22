@@ -28,10 +28,11 @@ namespace GalaxyCheck.Gens.Internal
             var seed = source.DrawUniform(ulong.MaxValue);
             source.FreezeLast();
 
-            var inner = new GenSource(seed, source.Size, capacity: 4);
+            var inner = new GenSource(seed, source.Size, capacity: 4) { SizeFixed = source.SizeFixed };
             inner.BeginRandom(source.Size);
             var value = Source.Advanced.Generate(inner);
             source.Discards += inner.Discards;
+            source.Kept += inner.Kept;
             return value;
         }
     }

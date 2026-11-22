@@ -1,3 +1,4 @@
+using GalaxyCheck.Properties;
 using GalaxyCheck.Runners;
 using GalaxyCheck.Runners.Check;
 using System;
@@ -57,7 +58,8 @@ namespace GalaxyCheck
                     checkResult.Iterations,
                     checkResult.Shrinks,
                     formatReproduction,
-                    formatMessage);
+                    formatMessage,
+                    ReportBuilder.LabelLines(checkResult.LabelShares));
             }
         }
 
@@ -86,12 +88,30 @@ namespace GalaxyCheck.Runners
             int shrinks,
             Func<string, string>? formatReproduction,
             Func<string, string>? formatMessage)
-            : base(FormatMessage(formatMessage, BuildMessage(counterexample, iterations, shrinks, formatReproduction)))
+            : this(counterexample, iterations, shrinks, formatReproduction, formatMessage, null)
+        {
+        }
+
+        internal PropertyFailedException(
+            Counterexample<object?> counterexample,
+            int iterations,
+            int shrinks,
+            Func<string, string>? formatReproduction,
+            Func<string, string>? formatMessage,
+            IReadOnlyList<string>? labelLines)
+            : base(FormatMessage(formatMessage, BuildMessage(counterexample, iterations, shrinks, formatReproduction, labelLines)))
         {
             _counterexample = counterexample;
         }
 
         public override string StackTrace => _counterexample.Exception?.StackTrace ?? base.StackTrace!;
+
+        internal static string BuildReport(
+            Counterexample<object?> counterexample,
+            int iterations,
+            int shrinks,
+            IReadOnlyList<string>? labelLines) =>
+                BuildMessage(counterexample, iterations, shrinks, null, labelLines);
 
         private static string FormatMessage(Func<string, string>? formatMessage, string message) =>
             formatMessage == null
@@ -102,31 +122,82 @@ namespace GalaxyCheck.Runners
             Counterexample<object?> counterexample,
             int iterations,
             int shrinks,
-            Func<string, string>? formatReproduction) =>
-                string.Join(Environment.NewLine, BuildLines(counterexample, iterations, shrinks, formatReproduction));
+            Func<string, string>? formatReproduction,
+            IReadOnlyList<string>? labelLines) =>
+                string.Join(Environment.NewLine, BuildLines(counterexample, iterations, shrinks, formatReproduction, labelLines));
 
         private static IEnumerable<string> BuildLines(
             Counterexample<object?> counterexample,
             int iterations,
             int shrinks,
-            Func<string, string>? formatReproduction)
+            Func<string, string>? formatReproduction,
+            IReadOnlyList<string>? labelLines)
         {
             const string LineBreak = "";
 
-            yield return FalsifiedAfterLine(iterations, shrinks);
-            yield return ReproductionLine(counterexample, formatReproduction);
-            yield return CounterexampleValueLine(counterexample);
-
-            yield return LineBreak;
-
-            if (counterexample.Exception == null)
+            if (counterexample.Exception is CoverNotMetException coverNotMet)
             {
-                yield return "Property function returned false";
+                yield return $"Falsified after {IterationsTrivia(iterations)}";
+                yield return LineBreak;
+                yield return $"---- {coverNotMet.Message}";
             }
             else
             {
-                yield return ExceptionLine(counterexample.Exception);
+                yield return FalsifiedAfterLine(iterations, shrinks);
+                yield return ReproductionLine(counterexample, formatReproduction);
+                yield return CounterexampleValueLine(counterexample);
+
+                foreach (var line in CounterexampleAsCSharpLines(counterexample))
+                {
+                    yield return line;
+                }
+
+                yield return LineBreak;
+
+                if (counterexample.Exception == null)
+                {
+                    yield return "Property function returned false";
+                }
+                else
+                {
+                    yield return ExceptionLine(counterexample.Exception);
+                }
             }
+
+            if (labelLines != null && labelLines.Count > 0)
+            {
+                yield return LineBreak;
+                yield return "Labels:";
+                foreach (var line in labelLines)
+                {
+                    yield return $"    {line}";
+                }
+            }
+        }
+
+        /// <summary>
+        /// The section with the C# expression of each value. A value with no expression has the text of the
+        /// counterexample line.
+        /// </summary>
+        private static IEnumerable<string> CounterexampleAsCSharpLines(Counterexample<object?> counterexample)
+        {
+            var values = counterexample.PresentedInput;
+            if (values.Count == 0) return Array.Empty<string>();
+
+            var lines = new List<string> { "Counterexample as C#:" };
+            foreach (var value in values)
+            {
+                if (CSharpExpression.TryFormat(value, out var expression))
+                {
+                    lines.Add($"    {expression}");
+                }
+                else
+                {
+                    lines.AddRange(ExampleRenderer.Render(new[] { value }).Select(l => $"    {l}"));
+                }
+            }
+
+            return lines;
         }
 
         private static string FalsifiedAfterLine(int iterations, int shrinks) =>

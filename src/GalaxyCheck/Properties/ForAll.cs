@@ -77,9 +77,11 @@ namespace GalaxyCheck.Properties
     {
         /// <summary>
         /// Generates the input and runs the test function on it. An exception of the generator is thrown; an
-        /// exception of the test function is a failure.
+        /// exception of the test function is a failure. A false precondition gives no failure and the exception
+        /// <see cref="PreconditionFailedException"/>, and the runner discards the test case. When trackTime is set,
+        /// generatedAt is the tick count after the generation.
         /// </summary>
-        T Run(GenSource source, out bool failed, out Exception? exception);
+        T Run(GenSource source, bool trackTime, out long generatedAt, out bool failed, out Exception? exception);
 
         IReadOnlyList<object?> Present(object? input);
     }
@@ -87,21 +89,32 @@ namespace GalaxyCheck.Properties
     internal sealed record ForAllGen<T>(
         IGen<T> Input,
         Func<T, bool> Func,
-        Func<T, IReadOnlyList<object?>> Presenter) : Gens.Internal.BaseGen<Property.Test<T>>, IFastProperty<T>
+        Func<T, IReadOnlyList<object?>> Presenter) : Gens.Internal.BaseGen<Property.Test<T>>, IFastProperty<T>, IFiniteGen
     {
+        public long? Count(long limit) => Finite.Of(Input, limit);
+
+        public void WriteChoices(long index, List<ulong> choices) =>
+            ((IFiniteGen)Input.Advanced).WriteChoices(index, choices);
+
         public override Property.Test<T> Generate(GenSource source)
         {
             var input = Input.Advanced.Generate(source);
             return TestFactory.Create(input, () => Func(input), Presenter(input));
         }
 
-        public T Run(GenSource source, out bool failed, out Exception? exception)
+        public T Run(GenSource source, bool trackTime, out long generatedAt, out bool failed, out Exception? exception)
         {
             var input = Input.Advanced.Generate(source);
+            generatedAt = trackTime ? Environment.TickCount64 : 0;
             try
             {
                 failed = !Func(input);
                 exception = null;
+            }
+            catch (PreconditionFailedException)
+            {
+                failed = false;
+                exception = PreconditionFailedException.Instance;
             }
             catch (Exception ex)
             {

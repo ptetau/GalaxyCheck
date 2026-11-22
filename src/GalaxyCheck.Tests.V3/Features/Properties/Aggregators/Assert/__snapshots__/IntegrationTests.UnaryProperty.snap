@@ -1,5 +1,7 @@
 ﻿Falsified after 36 tests (5 shrinks)
 Reproduction: AgAjAgDoBw==
 Counterexample: 1000
+Counterexample as C#:
+    1000
 
 Property function returned false

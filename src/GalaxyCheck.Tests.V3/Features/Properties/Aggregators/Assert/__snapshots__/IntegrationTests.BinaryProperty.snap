@@ -3,5 +3,7 @@ Reproduction: AgAhAwDoBwA=
 Counterexample:
     [0] = 1000
     [1] = 1001
+Counterexample as C#:
+    (1000, 1001)
 
 Property function returned false

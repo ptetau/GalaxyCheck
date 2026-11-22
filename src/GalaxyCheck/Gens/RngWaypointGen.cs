@@ -23,8 +23,13 @@ namespace GalaxyCheck
 
 namespace GalaxyCheck.Gens.Internal
 {
-    internal sealed record SetRngWaypointGen<T>(IGenAdvanced<T> Source) : BaseGen<T>
+    internal sealed record SetRngWaypointGen<T>(IGenAdvanced<T> Source) : BaseGen<T>, GalaxyCheck.Properties.IFiniteGen
     {
+        public long? Count(long limit) => (Source as GalaxyCheck.Properties.IFiniteGen)?.Count(limit);
+
+        public void WriteChoices(long index, System.Collections.Generic.List<ulong> choices) =>
+            ((GalaxyCheck.Properties.IFiniteGen)Source).WriteChoices(index, choices);
+
         public override T Generate(GenSource source)
         {
             var previous = source.SetWaypoint();
@@ -39,8 +44,13 @@ namespace GalaxyCheck.Gens.Internal
         }
     }
 
-    internal sealed record ReferenceRngWaypointGen<T>(IGenAdvanced<T> Source, int Influence) : BaseGen<T>
+    internal sealed record ReferenceRngWaypointGen<T>(IGenAdvanced<T> Source, int Influence) : BaseGen<T>, GalaxyCheck.Properties.IFiniteGen
     {
+        public long? Count(long limit) => (Source as GalaxyCheck.Properties.IFiniteGen)?.Count(limit);
+
+        public void WriteChoices(long index, System.Collections.Generic.List<ulong> choices) =>
+            ((GalaxyCheck.Properties.IFiniteGen)Source).WriteChoices(index, choices);
+
         public override T Generate(GenSource source)
         {
             var saved = source.EnterWaypoint(Influence);

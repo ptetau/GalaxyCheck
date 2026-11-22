@@ -20,7 +20,7 @@ namespace Tests.V2.RunnerTests.CheckTests
                     return true;
                 });
 
-                property.Check(iterations: iterations, seed: seed);
+                property.Check(iterations: iterations, seed: seed, exhaustive: false);
 
                 numberOfCalls.Should().Be(iterations);
             }));
@@ -34,7 +34,7 @@ namespace Tests.V2.RunnerTests.CheckTests
              {
                  var property = gen.ForAll((_) => true);
 
-                 var result = property.Check(iterations: iterations, seed: seed);
+                 var result = property.Check(iterations: iterations, seed: seed, exhaustive: false);
 
                  result.Iterations.Should().Be(iterations);
              }));

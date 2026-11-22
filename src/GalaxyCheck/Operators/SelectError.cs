@@ -13,8 +13,13 @@ namespace GalaxyCheck
 
 namespace GalaxyCheck.Gens.Internal
 {
-    internal sealed record SelectErrorGen<T>(IGen<T> Source, Func<string, string> ErrorSelector) : BaseGen<T>
+    internal sealed record SelectErrorGen<T>(IGen<T> Source, Func<string, string> ErrorSelector) : BaseGen<T>, GalaxyCheck.Properties.IFiniteGen
     {
+        public long? Count(long limit) => GalaxyCheck.Properties.Finite.Of(Source, limit);
+
+        public void WriteChoices(long index, System.Collections.Generic.List<ulong> choices) =>
+            ((GalaxyCheck.Properties.IFiniteGen)Source.Advanced).WriteChoices(index, choices);
+
         public override T Generate(GenSource source)
         {
             try
