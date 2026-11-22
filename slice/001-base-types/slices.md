@@ -186,9 +186,9 @@
   - Given that failure, when a test reads the report, then the report lists the 4 commands in order with the inputs of each, and names the fourth command as the command that failed. (R45)
 - Layers: stateful api, generator core, runner, shrinking, report
 - Tier: hard
-- Status: building
+- Status: review
 - Test rounds: 1
-- Review rounds: 0
+- Review rounds: 1
 
 ## S8: The xunit v3 and TUnit packages
 
