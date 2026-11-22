@@ -361,6 +361,7 @@ namespace GalaxyCheck.Runners
     internal sealed class CheckRun<T>
     {
         private const long SlowGeneratorMs = 1000;
+        private const long EarlyDiscardTotal = 1000;
 
         private readonly int _iterations;
         private readonly int _seed;
@@ -389,7 +390,7 @@ namespace GalaxyCheck.Runners
         private int _iteration;
         private long _finiteIndex;
         private int _preDiscards;
-        private int _sizeBoost;
+        private int _sizeShift;
         private bool _replayStarted;
         private int _currentSize;
         private TestCaseOutcome<T> _counterexample;
@@ -503,11 +504,11 @@ namespace GalaxyCheck.Runners
             if (_iteration >= _iterations) return false;
 
             _currentSize = CheckRunner.SizeOf(_iteration, _iterations, _size);
-            if (_sizeBoost != 0)
+            if (_sizeShift != 0 && _size == null)
             {
-                // Each discard grows the size, as the Where operator does, so that the generator leaves the values
-                // near its origin. Each test case that reaches the test function takes one step back.
-                _currentSize = Math.Min(100, _currentSize + _sizeBoost);
+                // Each discard moves the size one step round the cycle 0 to 100, without a direction, so that a
+                // precondition passes whether it keeps small or large values. The plan continues from the new place.
+                _currentSize = (_currentSize + _sizeShift) % 101;
             }
 
             Source.BeginRandom(_currentSize);
@@ -529,13 +530,12 @@ namespace GalaxyCheck.Runners
             if (outcome.Discarded)
             {
                 _preDiscards++;
-                if (_sizeBoost < 100) _sizeBoost++;
+                if (++_sizeShift == 101) _sizeShift = 0;
                 if (_watchDiscards) CheckHealth(false);
                 return false;
             }
 
             _iteration++;
-            if (_sizeBoost != 0) _sizeBoost--;
 
             if (_replay != null && !ReplayFits())
             {
@@ -595,8 +595,9 @@ namespace GalaxyCheck.Runners
         }
 
         /// <summary>
-        /// Checks the discards. In the middle of the run, only a run in which no test case reached the test function
-        /// stops early. The share of discards is judged at the end, over the whole run.
+        /// Checks the discards. In the middle of the run, a run in which no test case reached the test function stops
+        /// early, and so does a run that discarded more than 98% of at least 1000 values. Else the share of discards is
+        /// judged at the end, over the whole run.
         /// </summary>
         private void CheckHealth(bool final)
         {
@@ -615,10 +616,13 @@ namespace GalaxyCheck.Runners
                 return;
             }
 
-            if (final && discards > 0 && _options.Watches(HealthCheck.TooManyDiscards))
+            if (discards > 0 && _options.Watches(HealthCheck.TooManyDiscards))
             {
                 var total = tests + discards;
-                if (total >= 20 && discards * 10 > total * 9)
+                var tooMany = final
+                    ? total >= 20 && discards * 10 > total * 9
+                    : total >= EarlyDiscardTotal && discards * 50 > total * 49;
+                if (tooMany)
                 {
                     throw HealthMessages.Exception(
                         HealthCheck.TooManyDiscards,
