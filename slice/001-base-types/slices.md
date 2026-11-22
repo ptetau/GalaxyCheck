@@ -170,7 +170,7 @@
 - Tier: standard
 - Status: review
 - Test rounds: 2
-- Review rounds: 1
+- Review rounds: 2
 
 ## S7: Stateful testing
 
