@@ -52,6 +52,9 @@ namespace GalaxyCheck.Gens.Parameters
 
         internal bool IsActive { get; private set; }
 
+        /// <summary>True in a replay that has read each recorded choice. Each later choice is zero.</summary>
+        internal bool ReplayExhausted => IsReplaying && _replayPosition >= _replayLength;
+
         internal int Discards { get; set; }
 
         /// <summary>The values that a filter kept. With the discards, it gives the share that the filters discard.</summary>
@@ -93,11 +96,14 @@ namespace GalaxyCheck.Gens.Parameters
             return size;
         }
 
-        /// <summary>Remembers the size of a retry where a filter kept a value, for the retries of later discards.</summary>
+        /// <summary>
+        /// Remembers the size of a retry where a filter kept a value, for the retries of later discards. The key is the
+        /// same for each object of one filter, for example the method of its predicate, and it holds no closure.
+        /// </summary>
         internal void RememberGoodSize(object filter, int size)
         {
             if (IsReplaying) return;
-            _goodSizes ??= new System.Collections.Generic.Dictionary<object, int>(System.Collections.Generic.ReferenceEqualityComparer.Instance);
+            _goodSizes ??= new System.Collections.Generic.Dictionary<object, int>();
             _goodSizes[filter] = SizeSearch.Learn(GoodSize(filter), size);
         }
 
