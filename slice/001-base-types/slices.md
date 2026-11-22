@@ -140,7 +140,7 @@
 - Tier: hard
 - Status: review
 - Test rounds: 3
-- Review rounds: 2
+- Review rounds: 3
 
 ## S6: Property features
 
