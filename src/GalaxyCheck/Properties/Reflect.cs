@@ -113,33 +113,30 @@ namespace GalaxyCheck
 
         private static ReflectedPropertyHandler ToVoidProperty => (methodInfo, target, genFactory, customGens, controlData) =>
         {
-            return new Property(Gen
-                .Parameters(methodInfo, genFactory, customGens)
-                .ForAll(parameters =>
+            return new Property(ForAllParameters(methodInfo, Gen.Parameters(methodInfo, genFactory, customGens), parameters =>
+            {
+                SafeInvoke(() =>
                 {
-                    SafeInvoke(() =>
-                    {
-                        methodInfo.Invoke(target, parameters);
-                        return 0;
-                    });
-                }));
+                    methodInfo.Invoke(target, parameters);
+                    return 0;
+                });
+                return true;
+            }));
         };
 
         private static ReflectedPropertyHandler ToBooleanProperty => (methodInfo, target, genFactory, customGens, controlData) =>
         {
-            return new Property(Gen
-                .Parameters(methodInfo, genFactory, customGens)
-                .ForAll(parameters =>
+            return new Property(ForAllParameters(methodInfo, Gen.Parameters(methodInfo, genFactory, customGens), parameters =>
+            {
+                try
                 {
-                    try
-                    {
-                        return (bool)methodInfo.Invoke(target, parameters)!;
-                    }
-                    catch (TargetInvocationException ex)
-                    {
-                        throw ex.InnerException!;
-                    }
-                }));
+                    return (bool)methodInfo.Invoke(target, parameters)!;
+                }
+                catch (TargetInvocationException ex)
+                {
+                    throw ex.InnerException!;
+                }
+            }));
         };
 
         private static ReflectedPropertyHandler ToReturnedProperty => (methodInfo, target, genFactory, customGens, controlData) =>
@@ -162,36 +159,34 @@ namespace GalaxyCheck
 
         private static AsyncReflectedPropertyHandler ToTaskProperty => (methodInfo, target, genFactory, customGens, controlData) =>
         {
-            return new AsyncProperty(Gen
-                .Parameters(methodInfo, genFactory, customGens)
-                .ForAllAsync(parameters =>
+            Func<object[], Task> func = parameters =>
+            {
+                try
                 {
-                    try
-                    {
-                        return (Task)methodInfo.Invoke(target, WithToken(methodInfo, parameters))!;
-                    }
-                    catch (TargetInvocationException ex)
-                    {
-                        throw ex.InnerException!;
-                    }
-                }));
+                    return (Task)methodInfo.Invoke(target, WithToken(methodInfo, parameters))!;
+                }
+                catch (TargetInvocationException ex)
+                {
+                    throw ex.InnerException!;
+                }
+            };
+
+            return new AsyncProperty(ForAllParametersAsync(methodInfo, Gen.Parameters(methodInfo, genFactory, customGens), Properties.ActionExtensions.AsTrueFunc(func)));
         };
 
         private static AsyncReflectedPropertyHandler ToTaskBooleanProperty => (methodInfo, target, genFactory, customGens, controlData) =>
         {
-            return new AsyncProperty(Gen
-                .Parameters(methodInfo, genFactory, customGens)
-                .ForAllAsync(parameters =>
+            return new AsyncProperty(ForAllParametersAsync(methodInfo, Gen.Parameters(methodInfo, genFactory, customGens), parameters =>
+            {
+                try
                 {
-                    try
-                    {
-                        return (Task<bool>)methodInfo.Invoke(target, WithToken(methodInfo, parameters))!;
-                    }
-                    catch (TargetInvocationException ex)
-                    {
-                        throw ex.InnerException!;
-                    }
-                }));
+                    return (Task<bool>)methodInfo.Invoke(target, WithToken(methodInfo, parameters))!;
+                }
+                catch (TargetInvocationException ex)
+                {
+                    throw ex.InnerException!;
+                }
+            }));
         };
 
         private static AsyncReflectedPropertyHandler ToReturnedAsyncProperty => (methodInfo, target, genFactory, customGens, controlData) =>
@@ -211,6 +206,33 @@ namespace GalaxyCheck
                 throw ex.InnerException!;
             }
         };
+
+        private static Property<object[]> ForAllParameters(MethodInfo methodInfo, IGen<object[]> gen, Func<object[], bool> func) =>
+            new Property<object[]>(new Properties.ForAllGen<object[]>(gen, func, Presenter(methodInfo)));
+
+        private static AsyncProperty<object[]> ForAllParametersAsync(MethodInfo methodInfo, IGen<object[]> gen, Func<object[], Task<bool>> func)
+        {
+            var present = Presenter(methodInfo);
+            return new AsyncProperty<object[]>(gen.Select(parameters => Properties.TestFactory.Create<object[]>(
+                parameters,
+                () => new ValueTask<bool>(func(parameters)),
+                present(parameters))));
+        }
+
+        /// <summary>
+        /// The counterexample lists each parameter as its own value. A token parameter is not generated, so it is
+        /// left out.
+        /// </summary>
+        private static Func<object[], IReadOnlyList<object?>> Presenter(MethodInfo methodInfo)
+        {
+            var isToken = methodInfo.GetParameters()
+                .Select(parameter => parameter.ParameterType == typeof(System.Threading.CancellationToken))
+                .ToArray();
+
+            if (!isToken.Any(token => token)) return parameters => parameters;
+
+            return parameters => parameters.Where((_, index) => index >= isToken.Length || !isToken[index]).ToArray();
+        }
 
         /// <summary>Replaces each token parameter with the token of the test case that runs now.</summary>
         private static object[] WithToken(MethodInfo methodInfo, object[] parameters)

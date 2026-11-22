@@ -14,8 +14,8 @@ namespace GalaxyCheck
         }
     }
 
-    /// <summary>Suppresses the named health checks of a property.</summary>
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    /// <summary>Suppresses the named health checks of a property, or of each property of a class.</summary>
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = false)]
     public class SuppressHealthCheckAttribute : Attribute
     {
         public HealthCheck[] Checks { get; }

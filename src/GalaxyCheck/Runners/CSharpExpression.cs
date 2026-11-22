@@ -122,6 +122,15 @@ namespace GalaxyCheck
                 case TimeOnly v:
                     b.Append("new global::System.TimeOnly(").Append(v.Ticks.ToString(CultureInfo.InvariantCulture)).Append("L)");
                     return true;
+                case Half v:
+                    WriteHalf(b, v);
+                    return true;
+                case IntPtr v:
+                    WriteNative(b, "nint", (long)v, v >= int.MinValue && v <= int.MaxValue, "L");
+                    return true;
+                case UIntPtr v:
+                    WriteNative(b, "nuint", (long)(ulong)v, v <= uint.MaxValue, "UL", (ulong)v);
+                    return true;
                 case System.Text.Rune v:
                     b.Append("new global::System.Text.Rune(").Append(v.Value.ToString(CultureInfo.InvariantCulture)).Append(')');
                     return true;
@@ -138,6 +147,16 @@ namespace GalaxyCheck
 
             if (value is ITuple tuple && IsValueTuple(type))
             {
+                if (tuple.Length == 1)
+                {
+                    // "(x)" is the value x, not a tuple of one element.
+                    if (!IsNameable(type)) return false;
+                    b.Append("new ").Append(TypeName(type)).Append('(');
+                    if (!Write(b, tuple[0], depth + 1)) return false;
+                    b.Append(')');
+                    return true;
+                }
+
                 b.Append('(');
                 for (var i = 0; i < tuple.Length; i++)
                 {
@@ -188,7 +207,7 @@ namespace GalaxyCheck
             var name = TypeName(type);
             if (Enum.IsDefined(type, value))
             {
-                b.Append(name).Append('.').Append(Enum.GetName(type, value));
+                b.Append(name).Append('.').Append(Identifier(Enum.GetName(type, value)!));
                 return true;
             }
 
@@ -298,7 +317,48 @@ namespace GalaxyCheck
                 return true;
             }
 
-            return false;
+            return WriteInitializer(b, value, type, depth);
+        }
+
+        /// <summary>
+        /// Formats an object with a public parameterless constructor (or a struct) whose readable public members
+        /// are all settable, as an object initializer. It runs no code of the type.
+        /// </summary>
+        private static bool WriteInitializer(StringBuilder b, object value, Type type, int depth)
+        {
+            if (!type.IsValueType && type.GetConstructor(BindingFlags.Public | BindingFlags.Instance, Type.EmptyTypes) == null)
+            {
+                return false;
+            }
+
+            var members = new List<(string Name, object? Value)>();
+            foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                if (property.GetIndexParameters().Length != 0 || !property.CanRead) continue;
+                if (property.SetMethod == null || !property.SetMethod.IsPublic) return false;
+                members.Add((property.Name, property.GetValue(value)));
+            }
+
+            foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.Instance))
+            {
+                if (field.IsInitOnly) return false;
+                members.Add((field.Name, field.GetValue(value)));
+            }
+
+            if (members.Count == 0) return false;
+
+            var inner = new StringBuilder();
+            inner.Append("new ").Append(TypeName(type)).Append(" { ");
+            for (var i = 0; i < members.Count; i++)
+            {
+                if (i > 0) inner.Append(", ");
+                inner.Append(Identifier(members[i].Name)).Append(" = ");
+                if (!Write(inner, members[i].Value, depth + 1)) return false;
+            }
+
+            inner.Append(" }");
+            b.Append(inner);
+            return true;
         }
 
         private static bool TryRead(object value, Type type, ParameterInfo parameter, out object? result)
@@ -328,7 +388,10 @@ namespace GalaxyCheck
             return false;
         }
 
-        /// <summary>True when the constructor makes an object with the same public members as the value.</summary>
+        /// <summary>
+        /// True when the constructor makes an object with the same public members as the value. It calls the public
+        /// constructor of the type, so a constructor with side effects runs while the report is formatted.
+        /// </summary>
         private static bool Rebuilds(ConstructorInfo constructor, object?[] arguments, object value, Type type)
         {
             object rebuilt;
@@ -381,14 +444,6 @@ namespace GalaxyCheck
         {
             if (type.IsArray) return TypeName(type.GetElementType()!) + "[]";
 
-            if (type.IsGenericType)
-            {
-                var definition = type.GetGenericTypeDefinition();
-                var name = definition.FullName!.Replace('+', '.');
-                name = name.Substring(0, name.IndexOf('`'));
-                return "global::" + name + "<" + string.Join(", ", type.GetGenericArguments().Select(TypeName)) + ">";
-            }
-
             if (type == typeof(int)) return "int";
             if (type == typeof(long)) return "long";
             if (type == typeof(short)) return "short";
@@ -404,8 +459,90 @@ namespace GalaxyCheck
             if (type == typeof(float)) return "float";
             if (type == typeof(decimal)) return "decimal";
             if (type == typeof(object)) return "object";
+            if (type == typeof(IntPtr)) return "nint";
+            if (type == typeof(UIntPtr)) return "nuint";
 
-            return "global::" + (type.FullName ?? type.Name).Replace('+', '.');
+            // Each level of a nested type takes its own generic arguments: Outer<int>.Inner.E.
+            var definition = type.IsGenericType ? type.GetGenericTypeDefinition() : type;
+            var arguments = type.IsGenericType ? type.GetGenericArguments() : Type.EmptyTypes;
+            var chain = new List<Type>();
+            for (var level = definition; level != null; level = level.DeclaringType)
+            {
+                chain.Insert(0, level);
+            }
+
+            var name = new StringBuilder("global::");
+            if (!string.IsNullOrEmpty(chain[0].Namespace))
+            {
+                foreach (var segment in chain[0].Namespace!.Split('.'))
+                {
+                    name.Append(Identifier(segment)).Append('.');
+                }
+            }
+
+            var used = 0;
+            for (var i = 0; i < chain.Count; i++)
+            {
+                if (i > 0) name.Append('.');
+                var levelName = chain[i].Name;
+                var tick = levelName.IndexOf('`');
+                var count = 0;
+                if (tick >= 0)
+                {
+                    count = int.Parse(levelName.Substring(tick + 1), CultureInfo.InvariantCulture);
+                    levelName = levelName.Substring(0, tick);
+                }
+
+                name.Append(Identifier(levelName));
+                if (count > 0)
+                {
+                    if (used + count > arguments.Length) throw new InvalidOperationException("The type has no name.");
+                    name.Append('<').Append(string.Join(", ", arguments.Skip(used).Take(count).Select(TypeName))).Append('>');
+                    used += count;
+                }
+            }
+
+            if (used != arguments.Length) throw new InvalidOperationException("The type has no name.");
+            return name.ToString();
+        }
+
+        private static readonly HashSet<string> Keywords = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char", "checked", "class", "const",
+            "continue", "decimal", "default", "delegate", "do", "double", "else", "enum", "event", "explicit",
+            "extern", "false", "finally", "fixed", "float", "for", "foreach", "goto", "if", "implicit", "in", "int",
+            "interface", "internal", "is", "lock", "long", "namespace", "new", "null", "object", "operator", "out",
+            "override", "params", "private", "protected", "public", "readonly", "ref", "return", "sbyte", "sealed",
+            "short", "sizeof", "stackalloc", "static", "string", "struct", "switch", "this", "throw", "true", "try",
+            "typeof", "uint", "ulong", "unchecked", "unsafe", "ushort", "using", "virtual", "void", "volatile", "while"
+        };
+
+        /// <summary>A name as C# code: a keyword gets the prefix "@".</summary>
+        private static string Identifier(string name) => Keywords.Contains(name) ? "@" + name : name;
+
+        private static void WriteHalf(StringBuilder b, Half v)
+        {
+            if (Half.IsNaN(v)) b.Append("global::System.Half.NaN");
+            else if (Half.IsPositiveInfinity(v)) b.Append("global::System.Half.PositiveInfinity");
+            else if (Half.IsNegativeInfinity(v)) b.Append("global::System.Half.NegativeInfinity");
+            else
+            {
+                // Each Half converts to a double exactly, and the double converts back to the same Half.
+                b.Append("(global::System.Half)(");
+                WriteDouble(b, (double)v);
+                b.Append(')');
+            }
+        }
+
+        private static void WriteNative(StringBuilder b, string keyword, long signed, bool fits32, string suffix, ulong? unsigned = null)
+        {
+            var digits = unsigned != null
+                ? unsigned.Value.ToString(CultureInfo.InvariantCulture)
+                : signed.ToString(CultureInfo.InvariantCulture);
+
+            // A constant that needs 64 bits converts to a native int only in an unchecked context.
+            if (fits32) b.Append('(').Append(keyword).Append(")(").Append(digits).Append(')');
+            else b.Append("unchecked((").Append(keyword).Append(")(").Append(digits).Append(suffix).Append("))");
         }
 
         private static void WriteDouble(StringBuilder b, double v)

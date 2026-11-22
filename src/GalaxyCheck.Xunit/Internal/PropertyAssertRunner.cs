@@ -15,6 +15,7 @@ namespace GalaxyCheck.Internal
                 shrinkLimit: parameters.ShrinkLimit,
                 timeout: parameters.Timeout,
                 exhaustive: parameters.Exhaustive,
+                suppressHealthChecks: parameters.SuppressHealthChecks,
                 formatReproduction: (newReplay) => $"{Environment.NewLine}    [Replay(\"{newReplay}\")]",
                 formatMessage: (x) => Environment.NewLine + Environment.NewLine + x);
     }

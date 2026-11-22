@@ -13,7 +13,8 @@ namespace GalaxyCheck.Internal
         int? Seed,
         int? Size,
         TimeSpan? Timeout = null,
-        bool Exhaustive = true);
+        bool Exhaustive = true,
+        HealthCheck[]? SuppressHealthChecks = null);
 
     internal interface IPropertyRunner
     {

@@ -41,12 +41,25 @@ namespace GalaxyCheck.Internal
                 Timeout: propertyAttribute.NullableTimeoutMilliseconds is > 0 and var timeoutMs
                     ? TimeSpan.FromMilliseconds(timeoutMs)
                     : null,
-                Exhaustive: propertyAttribute.NullableExhaustive ?? true);
+                Exhaustive: propertyAttribute.NullableExhaustive ?? true,
+                SuppressHealthChecks: SuppressedHealthChecks(testClassType, testMethodInfo));
 
             return new PropertyInitializationResult(
                 propertyAttribute.Runner,
                 propertyRunParameters,
                 propertyAttribute.Skip?.Length > 0 ? propertyAttribute.Skip : null);
+        }
+
+        /// <summary>The health checks that the method or its class suppresses, or null when none does.</summary>
+        private static HealthCheck[]? SuppressedHealthChecks(Type testClassType, MethodInfo testMethodInfo)
+        {
+            var checks = testMethodInfo.GetCustomAttributes<SuppressHealthCheckAttribute>(inherit: true)
+                .Concat(testClassType.GetCustomAttributes<SuppressHealthCheckAttribute>(inherit: true))
+                .SelectMany(attribute => attribute.Checks)
+                .Distinct()
+                .ToArray();
+
+            return checks.Length == 0 ? null : checks;
         }
     }
 }

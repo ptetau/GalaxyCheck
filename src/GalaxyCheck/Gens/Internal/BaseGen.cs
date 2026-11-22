@@ -20,7 +20,7 @@ namespace GalaxyCheck.Gens.Internal
     /// <summary>
     /// A generator that is defined by another generator. The other generator is built once, on the first use.
     /// </summary>
-    internal abstract record GenProvider<T> : IGen<T>, IGenAdvanced<T>
+    internal abstract record GenProvider<T> : IGen<T>, IGenAdvanced<T>, GalaxyCheck.Properties.IFiniteGen
     {
         // A record copy (with) copies these fields, so the owner reference tells whether the cache belongs to this
         // instance.
@@ -48,6 +48,12 @@ namespace GalaxyCheck.Gens.Internal
         public T Generate(GenSource source) => Resolve().Generate(source);
 
         object? IGenAdvanced.GenerateObject(GenSource source) => Generate(source);
+
+        /// <summary>The generator is finite when the generator that defines it is finite.</summary>
+        public virtual long? Count(long limit) => (Resolve() as GalaxyCheck.Properties.IFiniteGen)?.Count(limit);
+
+        public virtual void WriteChoices(long index, System.Collections.Generic.List<ulong> choices) =>
+            ((GalaxyCheck.Properties.IFiniteGen)Resolve()).WriteChoices(index, choices);
 
         private IGenAdvanced<T> Resolve()
         {

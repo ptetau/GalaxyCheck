@@ -28,8 +28,16 @@ namespace GalaxyCheck
 
 namespace GalaxyCheck.Gens.Internal
 {
-    internal sealed record ZipManyGen<T>(IGenAdvanced<T>[] Gens) : BaseGen<IEnumerable<T>>
+    internal sealed record ZipManyGen<T>(IGenAdvanced<T>[] Gens) : BaseGen<IEnumerable<T>>, GalaxyCheck.Properties.IFiniteGen
     {
+        private GalaxyCheck.Properties.IFiniteGen?[] Parts =>
+            System.Array.ConvertAll(Gens, g => g as GalaxyCheck.Properties.IFiniteGen);
+
+        public long? Count(long limit) => GalaxyCheck.Properties.Finite.Product(Parts, limit);
+
+        public void WriteChoices(long index, List<ulong> choices) =>
+            GalaxyCheck.Properties.Finite.WriteProduct(Parts!, index, choices);
+
         public override IEnumerable<T> Generate(GenSource source)
         {
             var values = new T[Gens.Length];

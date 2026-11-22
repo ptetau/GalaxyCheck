@@ -118,6 +118,12 @@ namespace GalaxyCheck.Runners
             HealthCheck.TooManyDiscards,
             "the generator could not make a value, because it discarded too many values in a row.");
 
+        /// <summary>
+        /// The outcome of a test case whose generator could not make a value while the discard check is suppressed:
+        /// the test case is discarded.
+        /// </summary>
+        private static TestCaseOutcome<T> Exhausted<T>() => new TestCaseOutcome<T> { Discarded = true };
+
         public static CheckResult<T> Run<T>(
             IGen<Property.Test<T>> property,
             int? iterations,
@@ -192,6 +198,10 @@ namespace GalaxyCheck.Runners
                 catch (Exceptions.GenExhaustionException) when (options.Watches(HealthCheck.TooManyDiscards))
                 {
                     throw ExhaustionHealthCheck();
+                }
+                catch (Exceptions.GenExhaustionException) when (options.HealthChecks)
+                {
+                    outcome = Exhausted<T>();
                 }
                 catch (Exception ex) when (!IsPassedOn(ex))
                 {
@@ -297,6 +307,10 @@ namespace GalaxyCheck.Runners
                 {
                     throw ExhaustionHealthCheck();
                 }
+                catch (Exceptions.GenExhaustionException) when (options.HealthChecks)
+                {
+                    outcome = Exhausted<T>();
+                }
                 catch (Exception ex) when (!IsPassedOn(ex))
                 {
                     throw GenError(ex, run.Parameters);
@@ -373,7 +387,9 @@ namespace GalaxyCheck.Runners
         private ulong[] _finiteBuffer = Array.Empty<ulong>();
 
         private int _iteration;
+        private long _finiteIndex;
         private int _preDiscards;
+        private int _sizeBoost;
         private bool _replayStarted;
         private int _currentSize;
         private TestCaseOutcome<T> _counterexample;
@@ -467,11 +483,13 @@ namespace GalaxyCheck.Runners
 
             if (_finite != null)
             {
-                if (_iteration >= _finiteCount) return false;
+                // The walk advances on each test case, discarded or not, so each value of the domain runs one time.
+                if (_finiteIndex >= _finiteCount) return false;
 
-                _currentSize = CheckRunner.SizeOf(_iteration, _iterations, _size);
+                _currentSize = CheckRunner.SizeOf((int)_finiteIndex, _iterations, _size);
                 _finiteChoices!.Clear();
-                _finite.WriteChoices(_iteration, _finiteChoices);
+                _finite.WriteChoices(_finiteIndex, _finiteChoices);
+                _finiteIndex++;
                 if (_finiteBuffer.Length < _finiteChoices.Count)
                 {
                     _finiteBuffer = new ulong[Math.Max(8, _finiteChoices.Count)];
@@ -485,6 +503,13 @@ namespace GalaxyCheck.Runners
             if (_iteration >= _iterations) return false;
 
             _currentSize = CheckRunner.SizeOf(_iteration, _iterations, _size);
+            if (_sizeBoost != 0)
+            {
+                // Each discard grows the size, as the Where operator does, so that the generator leaves the values
+                // near its origin. Each test case that reaches the test function takes one step back.
+                _currentSize = Math.Min(100, _currentSize + _sizeBoost);
+            }
+
             Source.BeginRandom(_currentSize);
             return true;
         }
@@ -504,11 +529,13 @@ namespace GalaxyCheck.Runners
             if (outcome.Discarded)
             {
                 _preDiscards++;
+                if (_sizeBoost < 100) _sizeBoost++;
                 if (_watchDiscards) CheckHealth(false);
                 return false;
             }
 
             _iteration++;
+            if (_sizeBoost != 0) _sizeBoost--;
 
             if (_replay != null && !ReplayFits())
             {
@@ -531,8 +558,6 @@ namespace GalaxyCheck.Runners
             {
                 CountLabels(outcome);
             }
-
-            if (_watchDiscards && Source.Discards != 0) CheckHealth(false);
 
             if (!outcome.Failed) return false;
 
@@ -569,6 +594,10 @@ namespace GalaxyCheck.Runners
             if (_watchDiscards) CheckHealth(true);
         }
 
+        /// <summary>
+        /// Checks the discards. In the middle of the run, only a run in which no test case reached the test function
+        /// stops early. The share of discards is judged at the end, over the whole run.
+        /// </summary>
         private void CheckHealth(bool final)
         {
             long tests = _iteration;
@@ -586,10 +615,10 @@ namespace GalaxyCheck.Runners
                 return;
             }
 
-            if (discards > 0 && _options.Watches(HealthCheck.TooManyDiscards))
+            if (final && discards > 0 && _options.Watches(HealthCheck.TooManyDiscards))
             {
                 var total = tests + discards;
-                if ((total >= 100 || (final && total >= 20)) && discards * 10 > total * 9)
+                if (total >= 20 && discards * 10 > total * 9)
                 {
                     throw HealthMessages.Exception(
                         HealthCheck.TooManyDiscards,
@@ -658,7 +687,8 @@ namespace GalaxyCheck.Runners
                     {
                         RandomnessConsumption = (int)Math.Min(int.MaxValue, Source.Consumption),
                         LabelShares = shares,
-                        IsExhaustive = _finite != null
+                        IsExhaustive = _finite != null,
+                        ExhaustiveCount = _finite != null ? _finiteCount : 0
                     };
                 }
 
@@ -674,7 +704,8 @@ namespace GalaxyCheck.Runners
                 {
                     RandomnessConsumption = (int)Math.Min(int.MaxValue, Source.Consumption),
                     LabelShares = shares,
-                    IsExhaustive = _finite != null
+                    IsExhaustive = _finite != null,
+                    ExhaustiveCount = _finite != null ? _finiteCount : 0
                 };
             }
 
@@ -706,7 +737,8 @@ namespace GalaxyCheck.Runners
             {
                 RandomnessConsumption = (int)Math.Min(int.MaxValue, Source.Consumption),
                 LabelShares = shares,
-                IsExhaustive = _finite != null
+                IsExhaustive = _finite != null,
+                ExhaustiveCount = _finite != null ? _finiteCount : 0
             };
         }
 

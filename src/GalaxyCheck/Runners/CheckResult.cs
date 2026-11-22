@@ -36,6 +36,9 @@ namespace GalaxyCheck.Runners.Check
 
         internal bool IsExhaustive { get; init; }
 
+        /// <summary>The count of the values of the input space of an exhaustive run.</summary>
+        internal long ExhaustiveCount { get; init; }
+
         protected virtual bool PrintMembers(System.Text.StringBuilder builder)
         {
             builder.Append("Iterations = ").Append(Iterations).Append(", Falsified = ").Append(Falsified);
@@ -122,7 +125,7 @@ namespace GalaxyCheck.Runners
 
             if (result.IsExhaustive)
             {
-                lines.Add($"Exhaustive: the run was exhaustive, and each of the {result.Iterations} possible inputs ran one time");
+                lines.Add($"Exhaustive: the run was exhaustive, and each of the {result.ExhaustiveCount} possible inputs ran one time");
             }
 
             if (labelLines.Count > 0)
