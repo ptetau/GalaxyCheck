@@ -10,9 +10,10 @@ namespace GalaxyCheck.Gens.Internal
     internal static class IntCore
     {
         /// <summary>
-        /// Generates an integer from min to max. The caller checks that min &lt;= origin &lt;= max.
+        /// Generates an integer from min to max. The caller checks that min &lt;= origin &lt;= max. With
+        /// boundsAreExtremes, a biased value is min or max more often even when one of them is the origin.
         /// </summary>
-        public static long Int64(GenSource source, long min, long max, long origin, Gen.Bias bias)
+        public static long Int64(GenSource source, long min, long max, long origin, Gen.Bias bias, bool boundsAreExtremes = false)
         {
             var up = unchecked((ulong)max - (ulong)origin);
             var down = unchecked((ulong)origin - (ulong)min);
@@ -31,7 +32,7 @@ namespace GalaxyCheck.Gens.Internal
             {
                 (isDown, distance) = bias == Gen.Bias.None
                     ? Uniform(source, up, down)
-                    : Biased(source, up, down);
+                    : Biased(source, up, down, boundsAreExtremes);
 
                 if (up != 0 && down != 0)
                 {
@@ -63,7 +64,7 @@ namespace GalaxyCheck.Gens.Internal
             if (max <= min) return min;
             var (_, distance) = bias == Gen.Bias.None
                 ? Uniform(source, (ulong)(max - min), 0)
-                : Biased(source, (ulong)(max - min), 0);
+                : Biased(source, (ulong)(max - min), 0, false);
             return min + (int)distance;
         }
 
@@ -73,7 +74,7 @@ namespace GalaxyCheck.Gens.Internal
             return value < down ? (true, down - value) : (false, value - down);
         }
 
-        private static (bool, ulong) Biased(GenSource source, ulong up, ulong down)
+        private static (bool, ulong) Biased(GenSource source, ulong up, ulong down, bool boundsAreExtremes)
         {
             var size = source.Size;
 
@@ -92,12 +93,12 @@ namespace GalaxyCheck.Gens.Internal
                 var pick = source.NextBounded((ulong)(normalWeight * 2 + 1));
                 if (pick == 0)
                 {
-                    return down != 0 ? (true, down) : (false, up);
+                    return down != 0 || boundsAreExtremes ? (true, down) : (false, up);
                 }
 
                 if (pick == 1)
                 {
-                    return up != 0 ? (false, up) : (true, down);
+                    return up != 0 || boundsAreExtremes ? (false, up) : (true, down);
                 }
             }
 
