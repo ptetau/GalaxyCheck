@@ -26,25 +26,29 @@ namespace GalaxyCheck.Internal
             object[] constructorArguments,
             object?[]? testMethodArguments,
             IPropertyFactory propertyFactory,
-            IGlobalPropertyConfiguration config) =>
+            IGlobalPropertyConfiguration config,
+            IGlobalFailureMemoryConfiguration? failureMemory = null) =>
                 InitializeWithInstance(
                     testClassType,
                     testMethodInfo,
                     Activator.CreateInstance(testClassType, constructorArguments)!,
                     testMethodArguments,
                     propertyFactory,
-                    config);
+                    config,
+                    failureMemory);
 
         /// <summary>Builds the property of a test method on an instance of its class that the framework made.</summary>
         /// <param name="testClassInstance">The instance of the test class, or null for a static test method.</param>
         /// <param name="testMethodArguments">The values of a data row for the first parameters, or null.</param>
+        /// <param name="failureMemory">The failure memory of the test assembly, or null for no failure memory.</param>
         public static PropertyInitializationResult InitializeWithInstance(
             Type testClassType,
             MethodInfo testMethodInfo,
             object? testClassInstance,
             object?[]? testMethodArguments,
             IPropertyFactory propertyFactory,
-            IGlobalPropertyConfiguration config)
+            IGlobalPropertyConfiguration config,
+            IGlobalFailureMemoryConfiguration? failureMemory = null)
         {
             var propertyAttribute = testMethodInfo.GetCustomAttributes<PropertyAttribute>(inherit: true).Single();
 
@@ -55,6 +59,17 @@ namespace GalaxyCheck.Internal
                 testMethodArguments);
             var property = propertyFactory.CreateProperty(testMethodInfo, testClassInstance, genFactory, customGens, testMethodArguments);
             var replay = testMethodInfo.GetCustomAttributes<ReplayAttribute>().SingleOrDefault()?.Replay;
+            var examples = PropertyExamples.Create(
+                testMethodInfo,
+                testClassInstance,
+                testMethodArguments,
+                propertyFactory,
+                genFactory);
+
+            // A [Replay] attribute takes precedence over a saved failure.
+            var savedFailure = replay == null && failureMemory != null
+                ? SavedFailure.For(testClassType, testMethodInfo, testMethodArguments, failureMemory)
+                : null;
 
             var propertyRunParameters = new PropertyRunParameters(
                 Property: property,
@@ -67,7 +82,9 @@ namespace GalaxyCheck.Internal
                     ? TimeSpan.FromMilliseconds(timeoutMs)
                     : null,
                 Exhaustive: propertyAttribute.NullableExhaustive ?? true,
-                SuppressHealthChecks: SuppressedHealthChecks(testClassType, testMethodInfo));
+                SuppressHealthChecks: SuppressedHealthChecks(testClassType, testMethodInfo),
+                Examples: examples,
+                SavedFailure: savedFailure);
 
             return new PropertyInitializationResult(
                 propertyAttribute.Runner,

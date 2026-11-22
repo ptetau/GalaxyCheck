@@ -19,4 +19,9 @@
     <ProjectReference Include="..\GalaxyCheck\GalaxyCheck.csproj" />
   </ItemGroup>
 
+  <!-- The shared framework core: attributes, configuration, and the property, sample, and snapshot logic. -->
+  <ItemGroup>
+    <Compile Include="..\GalaxyCheck.Xunit\Core\**\*.cs" LinkBase="Core" />
+  </ItemGroup>
+
 </Project>
