@@ -198,8 +198,9 @@ namespace GalaxyCheck.Tests.Slice
 
         // R56: health checks
 
+        // The generator has no bias, so the filter keeps 5% of the values at every size.
         private static Property<int> DiscardingProperty() =>
-            Property.ForAll(Gen.Int32().Between(0, 999).Where(x => x < 50), x => true);
+            Property.ForAll(Gen.Int32().Between(0, 999).WithBias(Gen.Bias.None).Where(x => x < 50), x => true);
 
         private static Property<int> SlowProperty() =>
             Property.ForAll(Gen.Int32().Select(x =>
