@@ -12,16 +12,20 @@ namespace GalaxyCheck
         /// <summary>The time limit of one test case, in milliseconds.</summary>
         public int TimeoutMilliseconds
         {
-            get => throw new System.NotImplementedException("not implemented");
-            set => throw new System.NotImplementedException("not implemented");
+            get => NullableTimeoutMilliseconds ?? 0;
+            set => NullableTimeoutMilliseconds = value;
         }
+
+        internal int? NullableTimeoutMilliseconds { get; private set; }
 
         /// <summary>False switches off the exhaustive run of a small input space.</summary>
         public bool Exhaustive
         {
-            get => throw new System.NotImplementedException("not implemented");
-            set => throw new System.NotImplementedException("not implemented");
+            get => NullableExhaustive ?? true;
+            set => NullableExhaustive = value;
         }
+
+        internal bool? NullableExhaustive { get; private set; }
 
         public int Iterations
         {

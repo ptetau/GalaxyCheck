@@ -18,15 +18,23 @@ namespace GalaxyCheck.Runners.Check
 
         /// <summary>The share of test cases with each label, as a percentage.</summary>
         [System.Runtime.Serialization.IgnoreDataMember]
-        public System.Collections.Generic.IReadOnlyDictionary<string, double> Labels => throw new System.NotImplementedException("not implemented");
+        public System.Collections.Generic.IReadOnlyDictionary<string, double> Labels =>
+            LabelShares ?? EmptyLabels;
 
         /// <summary>True when the run tried each value of the input space one time.</summary>
         [System.Runtime.Serialization.IgnoreDataMember]
-        public bool Exhaustive => throw new System.NotImplementedException("not implemented");
+        public bool Exhaustive => IsExhaustive;
 
         /// <summary>The text of the run.</summary>
         [System.Runtime.Serialization.IgnoreDataMember]
-        public string Report => throw new System.NotImplementedException("not implemented");
+        public string Report => ReportBuilder.Build(this);
+
+        private static readonly System.Collections.Generic.IReadOnlyDictionary<string, double> EmptyLabels =
+            new System.Collections.Generic.Dictionary<string, double>();
+
+        internal System.Collections.Generic.IReadOnlyDictionary<string, double>? LabelShares { get; init; }
+
+        internal bool IsExhaustive { get; init; }
 
         protected virtual bool PrintMembers(System.Text.StringBuilder builder)
         {
@@ -64,5 +72,69 @@ namespace GalaxyCheck.Runners.Check
         FoundPragmaticSmallestCounterexample = 6,
         FoundError = 7,
         ReachedShrinkLimit = 8
+    }
+}
+
+namespace GalaxyCheck.Runners
+{
+    using GalaxyCheck.Runners.Check;
+
+    internal static class ReportBuilder
+    {
+        /// <summary>The lines that list each label with its share.</summary>
+        public static System.Collections.Generic.IReadOnlyList<string> LabelLines(
+            System.Collections.Generic.IReadOnlyDictionary<string, double>? shares)
+        {
+            var lines = new System.Collections.Generic.List<string>();
+            if (shares == null) return lines;
+
+            foreach (var pair in System.Linq.Enumerable.OrderByDescending(shares, p => p.Value))
+            {
+                lines.Add($"{PercentFormat.Format(pair.Value)} {pair.Key}");
+            }
+
+            return lines;
+        }
+
+        public static string Build<T>(CheckResult<T> result)
+        {
+            var labelLines = LabelLines(result.LabelShares);
+
+            if (result.Counterexample != null)
+            {
+                var counterexample = result.Counterexample;
+                return PropertyFailedException.BuildReport(
+                    new Counterexample<object?>(
+                        counterexample.Value,
+                        counterexample.ReplayParameters,
+                        counterexample.Replay,
+                        counterexample.Exception,
+                        counterexample.PresentedInput),
+                    result.Iterations,
+                    result.Shrinks,
+                    labelLines);
+            }
+
+            var lines = new System.Collections.Generic.List<string>
+            {
+                result.Iterations == 1 ? "Passed after 1 test" : $"Passed after {result.Iterations} tests"
+            };
+
+            if (result.IsExhaustive)
+            {
+                lines.Add($"Exhaustive: the run was exhaustive, and each of the {result.Iterations} possible inputs ran one time");
+            }
+
+            if (labelLines.Count > 0)
+            {
+                lines.Add("Labels:");
+                foreach (var line in labelLines)
+                {
+                    lines.Add("    " + line);
+                }
+            }
+
+            return string.Join(System.Environment.NewLine, lines);
+        }
     }
 }

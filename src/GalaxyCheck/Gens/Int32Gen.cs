@@ -79,8 +79,27 @@ namespace GalaxyCheck.Gens
         int? Min = null,
         int? Max = null,
         int? Origin = null,
-        Gen.Bias? Bias = null) : BaseGen<int>, IIntGen<int>
+        Gen.Bias? Bias = null) : BaseGen<int>, IIntGen<int>, GalaxyCheck.Properties.IFiniteGen
     {
+        private (long Min, long Max, long Origin) Bounds()
+        {
+            long min = Min ?? int.MinValue;
+            long max = Max ?? int.MaxValue;
+            return (min, max, Origin ?? IntCore.InferOrigin(min, max));
+        }
+
+        public long? Count(long limit)
+        {
+            var (min, max, origin) = Bounds();
+            return GalaxyCheck.Properties.Finite.CountInt(min, max, origin, limit);
+        }
+
+        public void WriteChoices(long index, System.Collections.Generic.List<ulong> choices)
+        {
+            var (min, max, origin) = Bounds();
+            GalaxyCheck.Properties.Finite.WriteInt(min, max, origin, index, choices);
+        }
+
         public IIntGen<int> GreaterThanEqual(int min) => this with { Min = min };
 
         public IIntGen<int> LessThanEqual(int max) => this with { Max = max };

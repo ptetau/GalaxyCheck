@@ -168,7 +168,7 @@ namespace GalaxyCheck
                 {
                     try
                     {
-                        return (Task)methodInfo.Invoke(target, parameters)!;
+                        return (Task)methodInfo.Invoke(target, WithToken(methodInfo, parameters))!;
                     }
                     catch (TargetInvocationException ex)
                     {
@@ -185,7 +185,7 @@ namespace GalaxyCheck
                 {
                     try
                     {
-                        return (Task<bool>)methodInfo.Invoke(target, parameters)!;
+                        return (Task<bool>)methodInfo.Invoke(target, WithToken(methodInfo, parameters))!;
                     }
                     catch (TargetInvocationException ex)
                     {
@@ -211,6 +211,23 @@ namespace GalaxyCheck
                 throw ex.InnerException!;
             }
         };
+
+        /// <summary>Replaces each token parameter with the token of the test case that runs now.</summary>
+        private static object[] WithToken(MethodInfo methodInfo, object[] parameters)
+        {
+            var parameterInfos = methodInfo.GetParameters();
+            object[]? copy = null;
+            for (var i = 0; i < parameterInfos.Length && i < parameters.Length; i++)
+            {
+                if (parameterInfos[i].ParameterType == typeof(System.Threading.CancellationToken))
+                {
+                    copy ??= (object[])parameters.Clone();
+                    copy[i] = Properties.TestContext.Token;
+                }
+            }
+
+            return copy ?? parameters;
+        }
 
         private static T SafeInvoke<T>(Func<T> invoke)
         {

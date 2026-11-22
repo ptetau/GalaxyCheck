@@ -30,8 +30,15 @@ namespace GalaxyCheck.Gens
     using GalaxyCheck.Gens.Internal;
     using GalaxyCheck.Gens.Parameters;
 
-    internal sealed record ElementGen<T>(List<T> Elements) : BaseGen<T>
+    internal sealed record ElementGen<T>(List<T> Elements) : BaseGen<T>, GalaxyCheck.Properties.IFiniteGen
     {
+        public long? Count(long limit) => Elements.Count <= limit ? Elements.Count : null;
+
+        public void WriteChoices(long index, List<ulong> choices)
+        {
+            if (Elements.Count > 1) choices.Add((ulong)index);
+        }
+
         public override T Generate(GenSource source) =>
             Elements[IntCore.Index(source, Elements.Count - 1, Gen.Bias.WithSize)];
     }

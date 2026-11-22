@@ -1,4 +1,5 @@
 ﻿using GalaxyCheck.Gens;
+using System;
 using System.Threading.Tasks;
 using Xunit.Abstractions;
 
@@ -10,7 +11,9 @@ namespace GalaxyCheck.Internal
         int ShrinkLimit,
         string? Replay,
         int? Seed,
-        int? Size);
+        int? Size,
+        TimeSpan? Timeout = null,
+        bool Exhaustive = true);
 
     internal interface IPropertyRunner
     {

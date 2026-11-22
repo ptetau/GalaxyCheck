@@ -22,7 +22,7 @@ namespace Tests.V2.RunnerTests.AssertTests
 
                         Action test = () => property.Assert(seed: seed, size: size, deepCheck: false);
 
-                        test.Should().Throw<GalaxyCheck.Exceptions.GenExhaustionException>();
+                        test.Should().Throw<GalaxyCheck.HealthCheckException>().Where(ex => ex.Check == GalaxyCheck.HealthCheck.TooManyDiscards);
                     },
                     TimeSpan.FromSeconds(60));
             }
@@ -40,7 +40,7 @@ namespace Tests.V2.RunnerTests.AssertTests
 
                         Func<Task> test = () => property.AssertAsync(seed: seed, size: size, deepCheck: false);
 
-                        await test.Should().ThrowAsync<GalaxyCheck.Exceptions.GenExhaustionException>();
+                        (await test.Should().ThrowAsync<GalaxyCheck.HealthCheckException>()).Where(ex => ex.Check == GalaxyCheck.HealthCheck.TooManyDiscards);
                     },
                     TimeSpan.FromSeconds(60));
             }

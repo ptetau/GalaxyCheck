@@ -22,7 +22,7 @@ namespace Tests.V2.RunnerTests.CheckTests
 
                         Action test = () => property.Check(seed: seed, size: size);
 
-                        test.Should().Throw<GalaxyCheck.Exceptions.GenExhaustionException>();
+                        test.Should().Throw<GalaxyCheck.HealthCheckException>().Where(ex => ex.Check == GalaxyCheck.HealthCheck.TooManyDiscards);
 
                     },
                     TimeSpan.FromSeconds(60));
@@ -41,7 +41,7 @@ namespace Tests.V2.RunnerTests.CheckTests
 
                         Func<Task> test = () => property.CheckAsync(seed: seed, size: size);
 
-                        await test.Should().ThrowAsync<GalaxyCheck.Exceptions.GenExhaustionException>();
+                        (await test.Should().ThrowAsync<GalaxyCheck.HealthCheckException>()).Where(ex => ex.Check == GalaxyCheck.HealthCheck.TooManyDiscards);
 
                     },
                     TimeSpan.FromSeconds(60));

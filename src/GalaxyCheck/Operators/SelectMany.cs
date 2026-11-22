@@ -28,8 +28,13 @@ namespace GalaxyCheck
 
 namespace GalaxyCheck.Gens.Internal
 {
-    internal sealed record SelectManyGen<T, TResult>(IGen<T> Source, Func<T, IGen<TResult>> Selector) : BaseGen<TResult>
+    internal sealed record SelectManyGen<T, TResult>(IGen<T> Source, Func<T, IGen<TResult>> Selector) : BaseGen<TResult>, GalaxyCheck.Properties.IFiniteGen
     {
+        public long? Count(long limit) => GalaxyCheck.Properties.FiniteBind.Count(Source, x => Selector((T)x!), limit);
+
+        public void WriteChoices(long index, System.Collections.Generic.List<ulong> choices) =>
+            GalaxyCheck.Properties.FiniteBind.WriteChoices(Source, x => Selector((T)x!), index, choices);
+
         public override TResult Generate(GenSource source)
         {
             var value = Source.Advanced.Generate(source);
@@ -40,8 +45,13 @@ namespace GalaxyCheck.Gens.Internal
     internal sealed record SelectManyGen<T, TResultGen, TResult>(
         IGen<T> Source,
         Func<T, IGen<TResultGen>> GenSelector,
-        Func<T, TResultGen, TResult> ValueSelector) : BaseGen<TResult>
+        Func<T, TResultGen, TResult> ValueSelector) : BaseGen<TResult>, GalaxyCheck.Properties.IFiniteGen
     {
+        public long? Count(long limit) => GalaxyCheck.Properties.FiniteBind.Count(Source, x => GenSelector((T)x!), limit);
+
+        public void WriteChoices(long index, System.Collections.Generic.List<ulong> choices) =>
+            GalaxyCheck.Properties.FiniteBind.WriteChoices(Source, x => GenSelector((T)x!), index, choices);
+
         public override TResult Generate(GenSource source)
         {
             var value = Source.Advanced.Generate(source);

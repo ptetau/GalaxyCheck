@@ -137,9 +137,27 @@ namespace GalaxyCheck.Gens
         T? Min = null,
         T? Max = null,
         T? Origin = null,
-        Gen.Bias? Bias = null) : BaseGen<T>, IIntGen<T>
+        Gen.Bias? Bias = null) : BaseGen<T>, IIntGen<T>, GalaxyCheck.Properties.IFiniteGen
         where T : struct, IBinaryInteger<T>
     {
+        private (long Min, long Max, long Origin)? Bounds()
+        {
+            if (IsWide) return null;
+            var min = Min ?? DefaultMin;
+            var max = Max ?? DefaultMax;
+            if (min > max) return null;
+            var origin = Origin ?? (min > T.Zero ? min : max < T.Zero ? max : T.Zero);
+            return (ToInt64(min), ToInt64(max), ToInt64(origin));
+        }
+
+        public long? Count(long limit) =>
+            Bounds() is { } b ? GalaxyCheck.Properties.Finite.CountInt(b.Min, b.Max, b.Origin, limit) : null;
+
+        public void WriteChoices(long index, System.Collections.Generic.List<ulong> choices)
+        {
+            if (Bounds() is { } b) GalaxyCheck.Properties.Finite.WriteInt(b.Min, b.Max, b.Origin, index, choices);
+        }
+
         private const ulong SignBit = 0x8000000000000000UL;
 
         private static readonly bool IsWide =

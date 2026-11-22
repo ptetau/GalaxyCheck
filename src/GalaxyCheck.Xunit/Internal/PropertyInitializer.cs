@@ -37,7 +37,11 @@ namespace GalaxyCheck.Internal
                 ShrinkLimit: propertyAttribute.NullableShrinkLimit ?? config.DefaultShrinkLimit,
                 Replay: replay,
                 Seed: replay == null ? propertyAttribute.NullableSeed ?? config.Seed : null,
-                Size: replay == null ? propertyAttribute.NullableSize : null);
+                Size: replay == null ? propertyAttribute.NullableSize : null,
+                Timeout: propertyAttribute.NullableTimeoutMilliseconds is > 0 and var timeoutMs
+                    ? TimeSpan.FromMilliseconds(timeoutMs)
+                    : null,
+                Exhaustive: propertyAttribute.NullableExhaustive ?? true);
 
             return new PropertyInitializationResult(
                 propertyAttribute.Runner,

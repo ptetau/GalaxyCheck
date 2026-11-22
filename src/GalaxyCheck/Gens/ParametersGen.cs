@@ -75,6 +75,12 @@ namespace GalaxyCheck.Gens
 
         private static IGen<object> ResolveGen(IGenFactory genFactory, IGen? customGen, ParameterInfo parameterInfo)
         {
+            if (customGen == null && parameterInfo.ParameterType == typeof(System.Threading.CancellationToken))
+            {
+                // The token is not generated: the runner gives the token of the test case when it runs the method.
+                return Gen.Constant<object>(System.Threading.CancellationToken.None);
+            }
+
             if (customGen == null)
             {
                 var configuredGenFactory = ConfigureGenFactory(genFactory, parameterInfo);
