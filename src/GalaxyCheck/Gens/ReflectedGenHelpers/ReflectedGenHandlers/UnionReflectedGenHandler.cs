@@ -34,7 +34,7 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
                 })
                 .ToArray();
 
-            return new OneOfGen<object>(caseGens);
+            return OneOf.Create(type, caseGens);
         }
 
         private sealed record CaseGen(Func<Parameters.GenSource, object> Func) : Internal.BaseGen<object>

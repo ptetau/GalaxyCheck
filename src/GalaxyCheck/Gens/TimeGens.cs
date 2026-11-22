@@ -139,16 +139,19 @@ namespace GalaxyCheck.Gens.Internal
                 OriginTicks);
 
             // The local ticks (UTC ticks plus the offset) must stay from 0 to DateTime.MaxValue.Ticks.
+            // The choice has a fixed range, so its meaning does not depend on the ticks. The clamp comes after.
             var lowMinutes = Math.Max(-MaxOffsetMinutes, -(utcTicks / TimeSpan.TicksPerMinute));
             var highMinutes = Math.Min(MaxOffsetMinutes, (DateTime.MaxValue.Ticks - utcTicks) / TimeSpan.TicksPerMinute);
 
-            var minutes = IntCore.Int64(
+            var drawn = IntCore.Int64(
                 source,
-                lowMinutes,
-                highMinutes,
-                Math.Clamp(0, lowMinutes, highMinutes),
+                -MaxOffsetMinutes,
+                MaxOffsetMinutes,
+                0,
                 Gen.Bias.WithSize,
                 boundsAreExtremes: true);
+
+            var minutes = Math.Clamp(drawn, lowMinutes, highMinutes);
 
             var offset = TimeSpan.FromMinutes(minutes);
             return new DateTimeOffset(utcTicks + offset.Ticks, offset);

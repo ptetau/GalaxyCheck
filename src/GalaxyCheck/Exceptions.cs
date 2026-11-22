@@ -17,6 +17,13 @@ namespace GalaxyCheck
 
         public class GenExhaustionException : Exception
         {
+            public GenExhaustionException()
+            {
+            }
+
+            public GenExhaustionException(string message) : base(message)
+            {
+            }
         }
 
         public class NoMinimalFoundException : Exception

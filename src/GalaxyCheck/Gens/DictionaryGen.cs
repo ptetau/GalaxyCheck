@@ -111,7 +111,8 @@ namespace GalaxyCheck.Gens.Internal
 
                         if (dictionary.Count < minCount)
                         {
-                            throw new Exceptions.GenExhaustionException();
+                            throw new Exceptions.GenExhaustionException(
+                                $"the key generator gave too few distinct keys: {dictionary.Count} found, but the minimum count is {minCount}");
                         }
 
                         // The key generator has no more distinct values. Stop here, as a "stop" choice would.

@@ -53,14 +53,28 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
                 return context.Error(type, $"could not resolve type '{name}'");
             }
 
+            var isRegistered = _candidateTypesByType.TryGetValue(type, out var r) && !r.IsEmpty;
+
             var gens = candidates
-                .Select(candidate => innerHandler
-                    .CreateGen(candidate, context.Next($"<{candidate.Name}>", candidate, null))
-                    .Advanced)
+                .Select(candidate => innerHandler.CreateGen(candidate, context.Next($"<{candidate.Name}>", candidate, null)))
                 .ToArray();
 
-            return new OneOfGen<object>(gens);
+            if (!isRegistered)
+            {
+                // A found type that cannot be built is left out.
+                gens = gens.Where(g => !IsError(g)).ToArray();
+
+                if (gens.Length == 0)
+                {
+                    return context.Error(type, $"could not resolve type '{name}'");
+                }
+            }
+
+            return OneOf.Create(type, gens.Select(g => g.Advanced).ToArray());
         }
+
+        private static bool IsError(IGen gen) =>
+            gen.GetType() is { IsGenericType: true } t && t.GetGenericTypeDefinition() == typeof(ErrorGen<>);
 
         private static ImmutableArray<Type> FindConcreteTypes(Type type)
         {
@@ -82,6 +96,13 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
                 .OrderBy(t => t.FullName, StringComparer.Ordinal)
                 .ToImmutableArray();
         }
+    }
+
+    internal static class OneOf
+    {
+        /// <summary>Makes a pick generator that is typed to the given type.</summary>
+        public static IGen Create(Type type, IGenAdvanced[] gens) =>
+            (IGen)Activator.CreateInstance(typeof(OneOfGen<>).MakeGenericType(type), new object[] { gens })!;
     }
 
     /// <summary>Picks one of the generators with equal chances. The pick shrinks toward the first generator.</summary>
