@@ -150,7 +150,8 @@ namespace GalaxyCheck.Gens
                 { typeof(Guid), () => Gen.Guid() },
                 { typeof(bool), () => Gen.Boolean() },
                 { typeof(Color), () => Gen.Int32().Select(x => Color.FromArgb(x)) },
-                { typeof(Uri), () => Gen.Constant(new Uri("https://github.com/nth-commit/GalaxyCheck/releases")) }
+                { typeof(Uri), () => Gen.Uri() },
+                { typeof(Version), () => Gen.Version() }
             };
 
         private readonly ImmutableDictionary<Type, Func<IGen>> _registeredGensByType;

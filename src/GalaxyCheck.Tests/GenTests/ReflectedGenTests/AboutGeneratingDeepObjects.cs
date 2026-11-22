@@ -42,7 +42,6 @@ namespace Tests.V2.GenTests.ReflectedGenTests
 
         [Property]
         public Property IfTheClassHasARecursiveProperty_ItErrors() => new Property(
-            from value in DomainGen.Any()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
             select TestProperty.ForThese(() =>
@@ -51,9 +50,35 @@ namespace Tests.V2.GenTests.ReflectedGenTests
 
                 Action action = () => gen.SampleOne(seed: seed, size: size);
 
+                // The property cannot be null, so no finite value of the class exists.
                 action.Should()
                     .Throw<GalaxyCheck.Exceptions.GenErrorException>()
-                    .WithGenErrorMessage("detected circular reference on type '*ClassWithRecursiveProperty' at path '$.Property'");
+                    .WithGenErrorMessage("detected circular reference on type '*ClassWithRecursiveProperty' at path '$.Property.*'");
+            }));
+
+        private class ClassWithNullableRecursiveProperty
+        {
+            public ClassWithNullableRecursiveProperty? Property { get; set; }
+        }
+
+        [Property]
+        public Property IfTheClassHasANullableRecursiveProperty_ItIsNoDeeperThanTheLimit() => new Property(
+            from seed in DomainGen.Seed()
+            from size in DomainGen.Size()
+            select TestProperty.ForThese(() =>
+            {
+                var gen = GalaxyCheck.Gen.Create<ClassWithNullableRecursiveProperty>();
+
+                var instance = gen.SampleOne(seed: seed, size: size);
+
+                var depth = 0;
+                while (instance.Property != null)
+                {
+                    depth++;
+                    instance = instance.Property;
+                }
+
+                depth.Should().BeLessThanOrEqualTo(5);
             }));
     }
 }

@@ -9,7 +9,7 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
     /// <summary>
     /// Handles the dictionary types, <see cref="KeyValuePair{TKey, TValue}"/>, and the tuple types of 1 to 7 elements.
     /// </summary>
-    internal class DictionaryReflectedGenHandler : IReflectedGenHandler
+    internal class DictionaryReflectedGenHandler : IReflectedGenHandler, IEmptyCollectionGenHandler
     {
         private static readonly IReadOnlyDictionary<Type, string> GenMethodByGenericTypeDefinition =
             new Dictionary<Type, string>
@@ -50,19 +50,68 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
                 return (IGen)method.Invoke(null, elementGens)!;
             }
 
+            // A dictionary can be empty, so it can end a recursive type. A key value pair cannot.
+            var inCollection = IsDictionary(type);
+
             // A key is never null, so its generator ignores the nullability of the type argument.
-            var keyGen = innerHandler.CreateGen(arguments[0], context.Next("[key]", arguments[0], null));
+            var keyGen = innerHandler.CreateGen(arguments[0], context.Next("[key]", arguments[0], null, inCollection));
             var valueGen = innerHandler.CreateGen(
                 arguments[1],
-                context.Next("[*]", arguments[1], nullability is { Length: 2 } ? nullability[1] : null));
+                context.Next("[*]", arguments[1], nullability is { Length: 2 } ? nullability[1] : null, inCollection));
 
+            // A dictionary of a type that refers to itself has few entries, so that a tree stays small.
+            int? maxCount = inCollection && arguments.Any(argument => context.CountInHistory(argument) > 0)
+                ? ReflectedGenHandlerContext.MaxRecursiveCollectionCount
+                : null;
+
+            return Build(type, keyGen, valueGen, maxCount);
+        }
+
+        public IGen? CreateEmptyGen(Type type)
+        {
+            if (!IsDictionary(type))
+            {
+                return null;
+            }
+
+            var arguments = type.GetGenericArguments();
+            var placeholderGens = arguments
+                .Select(argument => typeof(DictionaryReflectedGenHandler)
+                    .GetMethod(nameof(CreatePlaceholderGen), BindingFlags.Static | BindingFlags.NonPublic)!
+                    .MakeGenericMethod(argument)
+                    .Invoke(null, Array.Empty<object>())!)
+                .ToArray();
+
+            return Build(type, (IGen)placeholderGens[0], (IGen)placeholderGens[1], 0);
+        }
+
+        private static bool IsDictionary(Type type) =>
+            type.IsGenericType &&
+            type.GetGenericTypeDefinition() != typeof(KeyValuePair<,>) &&
+            GenMethodByGenericTypeDefinition.ContainsKey(type.GetGenericTypeDefinition());
+
+        private static IGen Build(Type type, IGen keyGen, IGen valueGen, int? maxCount)
+        {
             var methodName = GenMethodByGenericTypeDefinition[type.GetGenericTypeDefinition()];
             var genericMethod = typeof(DictionaryReflectedGenHandler)
                 .GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic)!
-                .MakeGenericMethod(arguments);
+                .MakeGenericMethod(type.GetGenericArguments());
 
-            return (IGen)genericMethod.Invoke(null, new object[] { keyGen, valueGen })!;
+            var parameters = genericMethod.GetParameters().Length == 3
+                ? new object?[] { keyGen, valueGen, maxCount }
+                : new object?[] { keyGen, valueGen };
+            return (IGen)genericMethod.Invoke(null, parameters)!;
         }
+
+        // The key or value generator of an empty dictionary, which never runs.
+        private static IGen<T> CreatePlaceholderGen<T>() => Gen.Constant(default(T)!);
+
+        private static IDictionaryGen<TKey, TValue> DictionaryOf<TKey, TValue>(
+            IGen<TKey> keyGen,
+            IGen<TValue> valueGen,
+            int? maxCount)
+            where TKey : notnull =>
+            maxCount is int max ? Gen.Dictionary(keyGen, valueGen).WithCountLessThanEqual(max) : Gen.Dictionary(keyGen, valueGen);
 
         private static bool IsTuple(Type type, out string methodName)
         {
@@ -90,15 +139,17 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
 
         private static IGen<Dictionary<TKey, TValue>> CreateDictionaryGen<TKey, TValue>(
             IGen<TKey> keyGen,
-            IGen<TValue> valueGen)
+            IGen<TValue> valueGen,
+            int? maxCount)
             where TKey : notnull =>
-            Gen.Dictionary(keyGen, valueGen).Select(x => new Dictionary<TKey, TValue>(x));
+            DictionaryOf(keyGen, valueGen, maxCount).Select(x => new Dictionary<TKey, TValue>(x));
 
         private static IGen<ImmutableDictionary<TKey, TValue>> CreateImmutableDictionaryGen<TKey, TValue>(
             IGen<TKey> keyGen,
-            IGen<TValue> valueGen)
+            IGen<TValue> valueGen,
+            int? maxCount)
             where TKey : notnull =>
-            Gen.Dictionary(keyGen, valueGen).Select(x => x.ToImmutableDictionary());
+            DictionaryOf(keyGen, valueGen, maxCount).Select(x => x.ToImmutableDictionary());
 
         private static IGen<KeyValuePair<TKey, TValue>> CreateKeyValuePairGen<TKey, TValue>(
             IGen<TKey> keyGen,
