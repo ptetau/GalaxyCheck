@@ -26,29 +26,34 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        framework: [net10.0, net11.0]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Setup .NET
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 6.0.x
+          dotnet-version: |
+            10.0.x
+            11.0.x
       - name: Restore dependencies
         run: dotnet restore GalaxyCheck.sln
       - name: Build
         run: dotnet build --no-restore GalaxyCheck.sln
       - name: Test
-        run: dotnet test --no-build --verbosity normal GalaxyCheck.sln
+        run: dotnet test --no-build --verbosity normal --framework ${{ matrix.framework }} GalaxyCheck.sln
 
   pack-prerelease:
     needs: build
     if: github.event_name != 'release'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Setup .NET
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 6.0.x
+          dotnet-version: |
+            10.0.x
+            11.0.x
       - name: Make GalaxyCheck.Stable
         run: |
           ls
@@ -79,7 +84,7 @@ jobs:
               src/$project/$project.csproj
           done
       - name: Upload
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: nupkg-prerelease
           path: ./nupkg-prerelease
@@ -90,13 +95,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup .NET
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 6.0.x
+          dotnet-version: |
+            10.0.x
+            11.0.x
       - name: Download
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4
         with:
           name: nupkg-prerelease
+          path: nupkg-prerelease
       - name: Push to MyGet
         run: |
           for f in ./nupkg-prerelease/*.nupkg
@@ -109,11 +117,13 @@ jobs:
     if: github.event_name == 'release'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Setup .NET
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 6.0.x
+          dotnet-version: |
+            10.0.x
+            11.0.x
       - name: Restore
         run: |
           for project in $PACKABLE_PROJECTS; do
@@ -146,7 +156,7 @@ jobs:
               src/$project/$project.csproj
           done
       - name: Upload
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: nupkg-release
           path: ./nupkg-release
@@ -156,13 +166,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup .NET
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 6.0.x
+          dotnet-version: |
+            10.0.x
+            11.0.x
       - name: Download
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4
         with:
           name: nupkg-release
+          path: nupkg-release
       - name: Push to MyGet
         run: |
           for f in ./nupkg-release/*.nupkg

@@ -1,9 +1,6 @@
 ﻿using FluentAssertions;
 using GalaxyCheck;
-using NebulaCheck;
 using System.Linq;
-using Property = NebulaCheck.Property;
-using Test = NebulaCheck.Test;
 
 namespace Tests.V2.GenTests.ReflectedGenTests
 {
@@ -14,18 +11,18 @@ namespace Tests.V2.GenTests.ReflectedGenTests
         }
 
         [Property]
-        public NebulaCheck.IGen<Test> ItCanGenerateAnEmptyStruct() =>
+        public Property ItCanGenerateAnEmptyStruct() => new Property(
             from value in DomainGen.Any()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen.Create<EmptyStruct>();
 
                 var instance = gen.SampleOne(seed: seed, size: size);
 
                 instance.Should().NotBeNull();
-            });
+            }));
 
         private struct StructWithOneProperty
         {
@@ -34,10 +31,10 @@ namespace Tests.V2.GenTests.ReflectedGenTests
         }
 
         [Property]
-        public NebulaCheck.IGen<Test> ItCanGenerateAStructWithOneProperty() =>
+        public Property ItCanGenerateAStructWithOneProperty() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen
                     .Factory()
@@ -48,7 +45,7 @@ namespace Tests.V2.GenTests.ReflectedGenTests
 
                 instance.Should().NotBeNull();
                 instance.Property.Should().NotBe(0);
-            });
+            }));
 
         private struct StructWithTwoProperties
         {
@@ -57,10 +54,10 @@ namespace Tests.V2.GenTests.ReflectedGenTests
         }
 
         [Property]
-        public NebulaCheck.IGen<Test> ItCanGenerateAStructWithTwoProperties() =>
+        public Property ItCanGenerateAStructWithTwoProperties() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen
                     .Factory()
@@ -72,7 +69,7 @@ namespace Tests.V2.GenTests.ReflectedGenTests
                 instance.Should().NotBeNull();
                 instance.Property1.Should().NotBe(0);
                 instance.Property2.Should().NotBe(0);
-            });
+            }));
         
         
         private struct StructWithOneConstructorArgument
@@ -89,10 +86,10 @@ namespace Tests.V2.GenTests.ReflectedGenTests
         }
 
         [Property]
-        public NebulaCheck.IGen<Test> ItCanGenerateAStructWithOneConstructorArgument() =>
+        public Property ItCanGenerateAStructWithOneConstructorArgument() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen
                     .Factory()
@@ -104,6 +101,6 @@ namespace Tests.V2.GenTests.ReflectedGenTests
                 instance.Should().NotBeNull();
                 instance.Property.Should().NotBe(0);
                 instance.UsedConstructor.Should().BeTrue();
-            });
+            }));
     }
 }

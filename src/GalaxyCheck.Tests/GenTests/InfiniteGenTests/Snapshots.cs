@@ -1,4 +1,4 @@
-﻿using GalaxyCheck;
+using GalaxyCheck;
 using Snapshooter;
 using Snapshooter.Xunit;
 using System.Linq;
@@ -22,10 +22,7 @@ namespace Tests.V2.GenTests.InfiniteGenTests
 
             foreach (var seed in seeds)
             {
-                var sample = gen.Advanced
-                    .SampleOneExampleSpace(seed: seed, size: 75)
-                    .Take(500)
-                    .Render(x => JsonSerializer.Serialize(x));
+                var sample = gen.RenderOneTraversal(seed: seed, size: 75, x => JsonSerializer.Serialize(x));
 
                 var nameExtension = string.Join("_", new[]
                 {

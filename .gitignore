@@ -292,3 +292,5 @@ src/GalaxyCheck.Stable.Xunit
 src/GalaxyCheck.Stable.Xunit.CodeAnalysis
 **/__snapshots__/__mismatch__
 nupkg-prerelease/
+# The old prebuilt test packages are kept in the repository
+!packages-local/*.nupkg

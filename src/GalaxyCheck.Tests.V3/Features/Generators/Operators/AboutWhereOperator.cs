@@ -2,10 +2,10 @@
 
 public class AboutWhereOperator
 {
-    [Stable.Property]
-    public Stable.Property ItProducesValuesThatPassThePredicate()
+    [Property]
+    public Property ItProducesValuesThatPassThePredicate()
     {
-        return Stable.Property.ForAll(DomainGen.Seed(), DomainGen.Size(), Test);
+        return Property.ForAll(DomainGen.Seed(), DomainGen.Size(), Test);
 
         static void Test(int seed, int size)
         {
@@ -22,10 +22,10 @@ public class AboutWhereOperator
         }
     }
 
-    [Stable.Property]
-    public Stable.Property ItCanAdaptToPredicatesThatOnlyPassForLargerSizes()
+    [Property]
+    public Property ItCanAdaptToPredicatesThatOnlyPassForLargerSizes()
     {
-        return Stable.Property.ForAll(DomainGen.Seed(), DomainGen.Size(), Test);
+        return Property.ForAll(DomainGen.Seed(), DomainGen.Size(), Test);
 
         static void Test(int seed, int size)
         {

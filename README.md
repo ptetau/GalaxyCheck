@@ -17,9 +17,8 @@ using System.Linq;
 public class AboutSort
 {
     [Property]
-    public IGen<Test> SortIsIdempotent() =>
-        from xs in Gen.Int32().ListOf()
-        select Property.ForThese(() => xs.Sort().SequenceEqual(xs.Sort().Sort()));
+    public Property SortIsIdempotent() =>
+        Gen.Int32().ListOf().ForAll(xs => xs.Order().SequenceEqual(xs.Order().Order()));
 }
 ```
 
@@ -32,11 +31,18 @@ GalaxyCheck does a pretty good job shrinking the counterexamples it finds to the
 For example, given the (intentionally erroneous) property:
 
 ```csharp
-[Property]
-public IGen<Test> MyProperty() =>
-    from x in Gen.Int32().GreaterThanEqual(1)
-    from y in Gen.Int32().GreaterThanEqual(x + 5)
-    select Property.ForThese(() => x < 10 || y < x);
+using GalaxyCheck;
+
+public class AboutShrinking
+{
+    [Property]
+    public Property MyProperty() =>
+        Property.ForAll(
+            from x in Gen.Int32().GreaterThanEqual(1)
+            from y in Gen.Int32().GreaterThanEqual(x + 5)
+            select (x, y),
+            input => input.x < 10 || input.y < input.x);
+}
 ```
 
 `x` is sometimes less than 10, but `y` should never be less than `x`, so this property should fail. The tool can tell us what the minimal counterexample to this property was!
@@ -44,8 +50,8 @@ public IGen<Test> MyProperty() =>
 ```
 GalaxyCheck.Runners.PropertyFailedException :
 
-    Falsified after 31 tests (5 shrinks)
-    Reproduction: [Replay("H4sIAAAAAAAACjM3sDA0NDIysdQzNtAzAQDv8uhODgAAAA==")]
+    Falsified after 11 tests (1 shrink)
+    Reproduction: [Replay("AgEKAgkA")]
     Counterexample:
         [0] = 10
         [1] = 15
@@ -64,19 +70,29 @@ It's really _really_ easy to write custom generators.
 For example, here's generator that produces a point:
 
 ```csharp
-public static IGen<(int x, int y)> Point =>
-    from x in Gen.Int32()
-    from y in Gen.Int32()
-    select (x, y);
+using GalaxyCheck;
+
+public static class Points
+{
+    public static IGen<(int x, int y)> Point =>
+        from x in Gen.Int32()
+        from y in Gen.Int32()
+        select (x, y);
+}
 ```
 
 But now, what if instead of any point, we're only interested in points that do not lie in the negative space. We can simply constrain the generators using the builder functions provided by the API:
 
 ```csharp
-public static IGen<(int x, int y)> Point =>
-    from x in Gen.Int32().GreaterThanEqual(0)
-    from y in Gen.Int32().GreaterThanEqual(0)
-    select (x, y);
+using GalaxyCheck;
+
+public static class Points
+{
+    public static IGen<(int x, int y)> Point =>
+        from x in Gen.Int32().GreaterThanEqual(0)
+        from y in Gen.Int32().GreaterThanEqual(0)
+        select (x, y);
+}
 ```
 
 Hooooold up. Requirements have changed. We actually now need to generate a range, and the interesting thing about a range is that the minimum and maximum bounds need to be in order.
@@ -84,30 +100,42 @@ Hooooold up. Requirements have changed. We actually now need to generate a range
 This would be a significant structural change in some other frameworks, but using LINQ, it's trivial:
 
 ```csharp
-public static IGen<(int min, int max)> Range =>
-    from min in Gen.Int32().GreaterThanEqual(0)
-    from max in Gen.Int32().GreaterThanEqual(min)
-    select (min, max);
+using GalaxyCheck;
+
+public static class Ranges
+{
+    public static IGen<(int min, int max)> Range =>
+        from min in Gen.Int32().GreaterThanEqual(0)
+        from max in Gen.Int32().GreaterThanEqual(min)
+        select (min, max);
+}
 ```
 
 ### Repeatability
 
-In our shrinking example above, you might have noticed that GalaxyCheck output an interesting little directive when it found a counterexample: `[Replay("H4sIAAAAAAAACjM3sDA0NDIysdQzNtAzAQDv8uhODgAAAA==")]`.
+In our shrinking example above, you might have noticed that GalaxyCheck output an interesting little directive when it found a counterexample: `[Replay("AgEKAgkA")]`.
 
 You can simply augment a property with this attribute, and GalaxyCheck will allow you to reproduce the exact values that caused your test to fail:
 
 ```csharp
-[Property]
-[Replay("H4sIAAAAAAAACjM3sDA0NDIysdQzNtAzAQDv8uhODgAAAA==")]
-public IGen<Test> MyProperty() =>
-    from x in Gen.Int32().GreaterThanEqual(1)
-    from y in Gen.Int32().GreaterThanEqual(x + 5)
-    select Property.ForThese(() => x < 10 || y < x);
+using GalaxyCheck;
+
+public class AboutReplaying
+{
+    [Property]
+    [Replay("AgEKAgkA")]
+    public Property MyProperty() =>
+        Property.ForAll(
+            from x in Gen.Int32().GreaterThanEqual(1)
+            from y in Gen.Int32().GreaterThanEqual(x + 5)
+            select (x, y),
+            input => input.x < 10 || input.y < input.x);
+}
 ```
 
 Other frameworks have similar features, though often only supply you with the original seed. This means that when you want to debug, you'll have to step through numerous examples that weren't counterexamples. Then, if it shrunk, you'll need to step through all the test runs associated with those shrinks too (probably whilst assertions are being thrown as your test fails).
 
-GalaxyCheck encodes the exact iteration and the exact shrink into the replay, which means starting the debugger will take you straight there.
+GalaxyCheck encodes the exact choices of the counterexample into the replay, which means starting the debugger will take you straight there.
 
 ### Transparency
 
@@ -116,11 +144,18 @@ Other frameworks provide sampling functionality, but it can be quite disruptive 
 For example:
 
 ```csharp
-[Sample]
-public IGen<Test> MyProperty() =>
-    from x in Gen.Int32().GreaterThanEqual(1)
-    from y in Gen.Int32().GreaterThanEqual(x + 5)
-    select Property.ForThese(() => x < 10 || y < x);
+using GalaxyCheck;
+
+public class AboutSampling
+{
+    [Sample]
+    public Property MyProperty() =>
+        Property.ForAll(
+            from x in Gen.Int32().GreaterThanEqual(1)
+            from y in Gen.Int32().GreaterThanEqual(x + 5)
+            select (x, y),
+            input => input.x < 10 || input.y < input.x);
+}
 ```
 
 Results in:
@@ -136,21 +171,28 @@ GalaxyCheck.SampleException : Test case failed to prevent false-positives.
 
     Sample[1]:
         [0] = 2
-        [1] = 8
+        [1] = 7
 
     ...
 
     Sample[99]:
-        [0] = 2147483647
-        [1] = -1944670218
+        [0] = 494361148
+        [1] = 2147483647
 ```
 
 Interestingly, sampling those values revealed a bug in our test. If `x` is close to `int.MaxValue`, `x + 5` may overflow. Therefore, we've learnt that for this test, we need to constrain the generator for `x` a bit more:
 
 ```csharp
-[Sample]
-public IGen<Test> MyProperty() =>
-    from x in Gen.Int32().Between(1, int.MaxValue - 5)
-    from y in Gen.Int32().GreaterThanEqual(x + 5)
-    select Property.ForThese(() => x < 10 || x > y);
+using GalaxyCheck;
+
+public class AboutSampling
+{
+    [Sample]
+    public Property MyProperty() =>
+        Property.ForAll(
+            from x in Gen.Int32().Between(1, int.MaxValue - 5)
+            from y in Gen.Int32().GreaterThanEqual(x + 5)
+            select (x, y),
+            input => input.x < 10 || input.x > input.y);
+}
 ```

@@ -1,13 +1,10 @@
 ﻿using FluentAssertions;
-using NebulaCheck;
-using Property = NebulaCheck.Property;
 using System;
 using System.Linq;
 using Xunit;
 using GalaxyCheck;
 using DevGen = GalaxyCheck.Gen;
 using static Tests.V2.DomainGenAttributes;
-using Gen = NebulaCheck.Gen;
 
 namespace Tests.V2.RunnerTests.AssertTests
 {

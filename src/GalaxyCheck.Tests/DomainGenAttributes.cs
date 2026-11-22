@@ -1,4 +1,4 @@
-﻿using NebulaCheck;
+﻿using GalaxyCheck;
 
 namespace Tests.V2
 {

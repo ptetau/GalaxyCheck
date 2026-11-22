@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 using GalaxyCheck;
@@ -61,9 +61,7 @@ namespace Tests.V2.GenTests.Int64GenTests
             {
                 var sample = gen
                     .WithBias(bias)
-                    .Advanced.SampleOneExampleSpace(seed: seed, size: 75)
-                    .Take(500)
-                    .Render(x => x.ToString());
+                    .RenderOneTraversal(seed: seed, size: 75, x => x.ToString());
 
                 var nameExtension = string.Join("_", new[]
                 {

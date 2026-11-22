@@ -1,4 +1,4 @@
-﻿namespace GalaxyCheck
+namespace GalaxyCheck
 {
     using GalaxyCheck.Gens;
 
@@ -50,9 +50,9 @@
 namespace GalaxyCheck.Gens
 {
     using GalaxyCheck.Gens.Internal;
-    using GalaxyCheck.Gens.Iterations.Generic;
     using GalaxyCheck.Gens.Parameters;
     using System;
+    using System.Buffers;
     using System.Collections.Generic;
     using System.Linq;
 
@@ -105,7 +105,7 @@ namespace GalaxyCheck.Gens
         IStringGen WithLengthBias(Gen.Bias lengthBias);
     }
 
-    internal record StringGen : GenProvider<string>, IStringGen
+    internal record StringGen : BaseGen<string>, IStringGen
     {
         private abstract record StringGenCharConfig
         {
@@ -185,19 +185,104 @@ namespace GalaxyCheck.Gens
             return new StringGen(newConfig);
         }
 
-        protected override IGen<string> Get => CreateGen(_config);
+        private Plan? _plan;
 
-        private static IGen<string> CreateGen(StringGenConfig config)
+        private sealed record Plan(char[] Chars, int MinLength, int MaxLength, Gen.Bias Bias);
+
+        public override string Generate(GenSource source)
         {
-            var charGen = CreateCharGen(config.CharConfig);
-            var listGen = CreateListGen(charGen, config.LengthConfig, config.LengthBias);
-            return listGen.Select(chars => new string(chars.ToArray()));
+            var plan = _plan ??= CreatePlan(_config);
+            var minLength = plan.MinLength;
+            var maxLength = plan.MaxLength;
+            var chars = plan.Chars;
+            var maxIndex = chars.Length - 1;
+
+            char[]? rented = null;
+            Span<char> buffer = maxLength <= 256
+                ? stackalloc char[maxLength]
+                : (rented = ArrayPool<char>.Shared.Rent(Math.Min(maxLength, 4096)));
+
+            try
+            {
+                var length = 0;
+                if (!source.IsReplaying)
+                {
+                    var count = IntCore.RandomInt32(source, minLength, maxLength, plan.Bias);
+                    for (; length < count; length++)
+                    {
+                        var start = source.BeginSpan();
+                        if (length >= minLength)
+                        {
+                            source.Record(1);
+                        }
+
+                        if (length == buffer.Length)
+                        {
+                            buffer = Grow(ref rented, buffer, length);
+                        }
+
+                        buffer[length] = chars[IntCore.Index(source, maxIndex, Gen.Bias.WithSize)];
+                        source.EndSpan(start);
+                    }
+
+                    if (count < maxLength)
+                    {
+                        source.Record(0);
+                    }
+                }
+                else
+                {
+                    while (length < maxLength)
+                    {
+                        var start = source.BeginSpan();
+                        if (length >= minLength && source.Read(1) == 0)
+                        {
+                            break;
+                        }
+
+                        if (length == buffer.Length)
+                        {
+                            buffer = Grow(ref rented, buffer, length);
+                        }
+
+                        buffer[length++] = chars[IntCore.Index(source, maxIndex, Gen.Bias.WithSize)];
+                        source.EndSpan(start);
+                    }
+                }
+
+                return new string(buffer.Slice(0, length));
+            }
+            finally
+            {
+                if (rented != null)
+                {
+                    ArrayPool<char>.Shared.Return(rented);
+                }
+            }
         }
 
-        private static IGen<char> CreateCharGen(StringGenCharConfig? charConfig)
+        private static Span<char> Grow(ref char[]? rented, Span<char> buffer, int length)
         {
-            static IGen<char> Error(string message) => Gen.Advanced.Error<char>(message);
+            var bigger = ArrayPool<char>.Shared.Rent(Math.Max(buffer.Length * 2, 16));
+            buffer.Slice(0, length).CopyTo(bigger);
+            if (rented != null)
+            {
+                ArrayPool<char>.Shared.Return(rented);
+            }
 
+            rented = bigger;
+            return bigger;
+        }
+
+        private static Plan CreatePlan(StringGenConfig config)
+        {
+            var chars = CreateChars(config.CharConfig);
+            var (minLength, maxLength) = CreateLengthRange(config.LengthConfig);
+            return new Plan(chars, minLength, maxLength, config.LengthBias ?? Gen.Bias.WithSize);
+        }
+
+        private static char[] CreateChars(StringGenCharConfig? charConfig)
+        {
             charConfig ??= new StringGenCharConfig.FromCharType(Gen.CharType.All);
 
             if (charConfig is StringGenCharConfig.FromCharType charTypeConfig)
@@ -205,21 +290,21 @@ namespace GalaxyCheck.Gens
                 var charType = charTypeConfig.CharType;
                 if (charType <= 0 || charType > Gen.CharType.All)
                 {
-                    return Error("'charType' was not a valid flag value");
+                    throw new GenErrorSignal("'charType' was not a valid flag value");
                 }
 
-                return Gen.Char(charType);
+                return CharGen.CharsOf(charType);
             }
             else if (charConfig is StringGenCharConfig.FromEnumerable enumerableConfig)
             {
-                var charList = enumerableConfig.Chars.ToList();
+                var charList = enumerableConfig.Chars.ToArray();
 
-                if (charList.Any() == false)
+                if (charList.Length == 0)
                 {
-                    return Error("'chars' must not be empty");
+                    throw new GenErrorSignal("'chars' must not be empty");
                 }
 
-                return Gen.Element(charList);
+                return charList;
             }
             else
             {
@@ -227,21 +312,18 @@ namespace GalaxyCheck.Gens
             }
         }
 
-        private static IGen<IReadOnlyList<char>> CreateListGen(IGen<char> charGen, StringGenLengthConfig? lengthConfig, Gen.Bias? lengthBias)
+        private static (int, int) CreateLengthRange(StringGenLengthConfig? lengthConfig)
         {
-            static IGen<IReadOnlyList<char>> Error(string message) =>
-                Gen.Advanced.Error<IReadOnlyList<char>>(message);
-
             lengthConfig ??= new StringGenLengthConfig.Ranged(null, null);
 
             if (lengthConfig is StringGenLengthConfig.Specific specificLengthConfig)
             {
                 if (specificLengthConfig.Length < 0)
                 {
-                    return Error("'length' cannot be negative");
+                    throw new GenErrorSignal("'length' cannot be negative");
                 }
 
-                return charGen.ListOf().WithCount(specificLengthConfig.Length);
+                return CheckLimit(specificLengthConfig.Length, specificLengthConfig.Length);
             }
             else if (lengthConfig is StringGenLengthConfig.Ranged rangedLengthConfig)
             {
@@ -250,27 +332,35 @@ namespace GalaxyCheck.Gens
 
                 if (minLength < 0)
                 {
-                    return Error("'minLength' cannot be negative");
+                    throw new GenErrorSignal("'minLength' cannot be negative");
                 }
 
                 if (maxLength < 0)
                 {
-                    return Error("'maxLength' cannot be negative");
+                    throw new GenErrorSignal("'maxLength' cannot be negative");
                 }
 
                 if (minLength > maxLength)
                 {
-                    return Error("'minLength' cannot be greater than 'maxLength'");
+                    throw new GenErrorSignal("'minLength' cannot be greater than 'maxLength'");
                 }
 
-                return lengthBias == null
-                    ? charGen.ListOf().WithCountBetween(minLength, maxLength)
-                    : charGen.ListOf().WithCountBetween(minLength, maxLength).WithCountBias(lengthBias.Value);
+                return CheckLimit(minLength, maxLength);
             }
             else
             {
                 throw new Exception("Fatal: Unhandled case");
             }
         }
-    }   
+
+        private static (int, int) CheckLimit(int minLength, int maxLength)
+        {
+            if (minLength > CountRange.CountLimit || maxLength > CountRange.CountLimit)
+            {
+                throw new GenErrorSignal($"Count limit exceeded. This is a built-in safety mechanism to prevent hanging tests. If generating a list with over 1000 elements was intended, relax this constraint by calling {nameof(IListGen<object>)}.{nameof(IListGen<object>.DisableCountLimitUnsafe)}().");
+            }
+
+            return (minLength, maxLength);
+        }
+    }
 }

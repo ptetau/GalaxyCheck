@@ -1,7 +1,0 @@
-﻿Falsified after 52 tests (57 shrinks)
-Reproduction: <scrubbed>
-Counterexample:
-    [0] = 1000
-    [1] = 1001
-
-Property function returned false

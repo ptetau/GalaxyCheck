@@ -1,89 +1,82 @@
-﻿using System;
-using GalaxyCheck.Gens.Iterations;
-using GalaxyCheck.Gens.Iterations.Generic;
 using GalaxyCheck.Gens.Parameters;
-using System.Collections.Generic;
-using GalaxyCheck.Gens.Internal.Iterations;
+using System;
 
 namespace GalaxyCheck.Gens.Internal
 {
-    internal abstract record BaseGen<T> : IGen<T>
+    /// <summary>
+    /// The base of each generator that makes its choices directly from the source.
+    /// </summary>
+    internal abstract record BaseGen<T> : IGen<T>, IGenAdvanced<T>
     {
-        public IGenAdvanced<T> Advanced => new GenAdvanced(this);
+        public IGenAdvanced<T> Advanced => this;
 
-        IGenAdvanced IGen.Advanced => Advanced;
+        IGenAdvanced IGen.Advanced => this;
 
-        protected abstract IEnumerable<IGenIteration<T>> Run(GenParameters parameters);
+        public abstract T Generate(GenSource source);
 
-        private class GenAdvanced : IGenAdvanced<T>
+        object? IGenAdvanced.GenerateObject(GenSource source) => Generate(source);
+    }
+
+    /// <summary>
+    /// A generator that is defined by another generator. The other generator is built once, on the first use.
+    /// </summary>
+    internal abstract record GenProvider<T> : IGen<T>, IGenAdvanced<T>
+    {
+        // A record copy (with) copies these fields, so the owner reference tells whether the cache belongs to this
+        // instance.
+        private Cache? _cache;
+
+        private sealed class Cache
         {
-            private readonly BaseGen<T> _gen;
-
-            public GenAdvanced(BaseGen<T> gen)
+            public Cache(object owner, IGenAdvanced<T> gen)
             {
-                _gen = gen;
+                Owner = owner;
+                Gen = gen;
             }
 
-            public IEnumerable<IGenIteration<T>> Run(GenParameters parameters)
+            public object Owner { get; }
+
+            public IGenAdvanced<T> Gen { get; }
+        }
+
+        public IGenAdvanced<T> Advanced => this;
+
+        IGenAdvanced IGen.Advanced => this;
+
+        protected abstract IGen<T> Get { get; }
+
+        public T Generate(GenSource source) => Resolve().Generate(source);
+
+        object? IGenAdvanced.GenerateObject(GenSource source) => Generate(source);
+
+        private IGenAdvanced<T> Resolve()
+        {
+            var cache = _cache;
+            if (cache is null || !ReferenceEquals(cache.Owner, this))
             {
-                using var enumerator = _gen.Run(parameters).GetEnumerator();
-
-                bool hasNext = true;
-                IGenIteration<T>? prev = null;
-
-                while (hasNext)
-                {
-                    Exception? ex = null;
-                    try
-                    {
-                        hasNext = enumerator.MoveNext();
-                    }
-                    catch (Exception e)
-                    {
-                        ex = e;
-                        hasNext = true;
-                    }
-
-                    if (ex is not null)
-                    {
-                        var replayParameters = prev?.ReplayParameters ?? parameters;
-
-                        var message = $@"Exception thrown.
-
-{ex}";
-                        
-                        yield return GenIterationFactory.Error<T>(replayParameters, message);
-                        yield break;
-                    }
-
-                    if (hasNext)
-                    {
-                        prev = enumerator.Current;
-                        yield return prev;
-                    }
-                }
+                cache = new Cache(this, Get.Advanced);
+                _cache = cache;
             }
 
-            IEnumerable<IGenIteration> IGenAdvanced.Run(GenParameters parameters) => Run(parameters);
+            return cache.Gen;
         }
     }
 
-    internal abstract record BaseGen : IGen
+    /// <summary>
+    /// A generator that runs a function on the source.
+    /// </summary>
+    internal sealed record FunctionGen<T>(Func<GenSource, T> Func) : BaseGen<T>
     {
-        IGenAdvanced IGen.Advanced => new GenAdvanced(this);
+        public override T Generate(GenSource source) => Func(source);
+    }
 
-        protected abstract IEnumerable<IGenIteration> Run(GenParameters parameters);
-
-        private class GenAdvanced : IGenAdvanced
+    /// <summary>
+    /// Thrown by a generator to report a generator error. The runner turns it into a GenErrorException.
+    /// </summary>
+    internal sealed class GenErrorSignal : Exception
+    {
+        public GenErrorSignal(string message) : base(message)
         {
-            private readonly BaseGen _gen;
-
-            public GenAdvanced(BaseGen gen)
-            {
-                _gen = gen;
-            }
-
-            IEnumerable<IGenIteration> IGenAdvanced.Run(GenParameters parameters) => _gen.Run(parameters);
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿using System;
+using GalaxyCheck.Gens.Internal;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
@@ -36,23 +38,22 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
                     return innerHandler
                         .CreateGen(parameter.ParameterType, parameterContext)
                         .Cast<object>()
-                        .Advanced.ReferenceRngWaypoint(rngWaypoint => rngWaypoint.Influence(parameterContext.CalculateStableSeed()));
+                        .Advanced.ReferenceRngWaypoint(parameterContext.CalculateStableSeed());
                 });
 
             return Gen
                 .Zip(parameterGens)
-                .SelectMany(parameters =>
+                .Select(parameters =>
                 {
-                    // TODO: Try avoid SelectMany here
                     try
                     {
-                        return Gen.Constant((T)constructor.Invoke(parameters.ToArray()));
+                        return (T)constructor.Invoke(parameters as object[] ?? parameters.ToArray());
                     }
                     catch (TargetInvocationException ex)
                     {
                         var innerEx = ex.InnerException;
                         var message = $"'{innerEx!.GetType()}' was thrown while calling constructor with message '{innerEx.Message}'";
-                        return constructorContext.Error<T>(message);
+                        throw new GenErrorSignal(constructorContext.ErrorMessage(message));
                     }
                 });
         }

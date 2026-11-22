@@ -2,7 +2,6 @@
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
-using Microsoft.CodeAnalysis.Testing.Verifiers;
 using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
@@ -14,16 +13,16 @@ namespace GalaxyCheck.Xunit.CodeAnalysis.Tests.Analyzers
     {
         public static DiagnosticResult Diagnostic(string diagnosticId)
         {
-            return CSharpCodeFixVerifier<TAnalyzer, EmptyCodeFixProvider, XUnitVerifier>.Diagnostic(diagnosticId);
+            return CSharpCodeFixVerifier<TAnalyzer, EmptyCodeFixProvider, DefaultVerifier>.Diagnostic(diagnosticId);
         }
 
         public static Task Verify(
             string[] sources,
             params DiagnosticResult[] diagnostics)
         {
-            var test = new CSharpCodeFixTest<TAnalyzer, EmptyCodeFixProvider, XUnitVerifier>()
+            var test = new CSharpCodeFixTest<TAnalyzer, EmptyCodeFixProvider, DefaultVerifier>()
             {
-                ReferenceAssemblies = ReferenceAssemblies.Net.Net60
+                ReferenceAssemblies = new ReferenceAssemblies(GalaxyCheck.Xunit.CodeAnalysis.Tests.TargetReference.Name, new PackageIdentity("Microsoft.NETCore.App.Ref", GalaxyCheck.Xunit.CodeAnalysis.Tests.TargetReference.Version), System.IO.Path.Combine("ref", GalaxyCheck.Xunit.CodeAnalysis.Tests.TargetReference.Name))
             };
 
             foreach (var source in sources)

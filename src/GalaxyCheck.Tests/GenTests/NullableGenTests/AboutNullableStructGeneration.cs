@@ -1,11 +1,10 @@
-﻿using FluentAssertions;
-using NebulaCheck;
+﻿using GalaxyCheck;
+using FluentAssertions;
 using Snapshooter;
 using Snapshooter.Xunit;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
-using Property = NebulaCheck.Property;
 
 namespace Tests.V2.GenTests.NullableGenTests
 {

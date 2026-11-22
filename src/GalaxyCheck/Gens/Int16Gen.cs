@@ -1,4 +1,4 @@
-﻿namespace GalaxyCheck
+namespace GalaxyCheck
 {
     using GalaxyCheck.Gens;
     using System;
@@ -73,13 +73,13 @@
 namespace GalaxyCheck.Gens
 {
     using GalaxyCheck.Gens.Internal;
-    using GalaxyCheck.Gens.Iterations.Generic;
+    using GalaxyCheck.Gens.Parameters;
 
     internal record Int16Gen(
         short? Min = null,
         short? Max = null,
         short? Origin = null,
-        Gen.Bias? Bias = null) : GenProvider<short>, IIntGen<short>
+        Gen.Bias? Bias = null) : BaseGen<short>, IIntGen<short>
     {
         public IIntGen<short> GreaterThanEqual(short min) => this with { Min = min };
 
@@ -89,29 +89,23 @@ namespace GalaxyCheck.Gens
 
         public IIntGen<short> WithBias(Gen.Bias bias) => this with { Bias = bias };
 
-        protected override IGen<short> Get
+        public override short Generate(GenSource source)
         {
-            get
+            long min = Min ?? short.MinValue;
+            long max = Max ?? short.MaxValue;
+
+            if (min > max)
             {
-                var gen = Gen
-                    .Int32()
-                    .GreaterThanEqual(Min ?? short.MinValue)
-                    .LessThanEqual(Max ?? short.MaxValue);
-
-                if (Origin != null)
-                {
-                    gen = gen.ShrinkTowards(Origin.Value);
-                }
-
-                if (Bias != null)
-                {
-                    gen = gen.WithBias(Bias.Value);
-                }
-
-                return gen
-                    .Select(x => (short)x)
-                    .SelectError(error => new GenErrorData(error.Message));
+                throw new GenErrorSignal("'min' cannot be greater than 'max'");
             }
+
+            if (Origin != null && (Origin < min || Origin > max))
+            {
+                throw new GenErrorSignal("'origin' must be between 'min' and 'max'");
+            }
+
+            var origin = Origin ?? IntCore.InferOrigin(min, max);
+            return (short)IntCore.Int64(source, min, max, origin, Bias ?? Gen.Bias.WithSize);
         }
     }
 }

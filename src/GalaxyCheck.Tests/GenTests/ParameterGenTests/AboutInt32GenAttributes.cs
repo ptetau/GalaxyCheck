@@ -1,9 +1,7 @@
-﻿using System.Reflection;
+using System.Reflection;
 using Xunit;
-using NebulaCheck;
 using GalaxyCheck;
 using GalaxyCheck.Gens.Injection.Int32;
-using Property = NebulaCheck.Property;
 using System.Linq;
 using System.Collections.Generic;
 using FluentAssertions;
@@ -23,7 +21,7 @@ namespace Tests.V2.GenTests.ParameterGenTests
             var property =
                 from seed in DomainGen.Seed()
                 from size in DomainGen.Size()
-                select Property.ForThese(() =>
+                select TestProperty.ForThese(() =>
                 {
                     List<int> SampleTraversal(GalaxyCheck.IGen<int> gen) =>
                         AboutInt32GenAttributes.SampleTraversal(gen, seed: seed, size: size);
@@ -54,7 +52,7 @@ namespace Tests.V2.GenTests.ParameterGenTests
             var property =
                 from seed in DomainGen.Seed()
                 from size in DomainGen.Size()
-                select Property.ForThese(() =>
+                select TestProperty.ForThese(() =>
                 {
                     List<int> SampleTraversal(GalaxyCheck.IGen<int> gen) =>
                         AboutInt32GenAttributes.SampleTraversal(gen, seed: seed, size: size);
@@ -85,7 +83,7 @@ namespace Tests.V2.GenTests.ParameterGenTests
             var property =
                 from seed in DomainGen.Seed()
                 from size in DomainGen.Size()
-                select Property.ForThese(() =>
+                select TestProperty.ForThese(() =>
                 {
                     List<int> SampleTraversal(GalaxyCheck.IGen<int> gen) =>
                         AboutInt32GenAttributes.SampleTraversal(gen, seed: seed, size: size);
@@ -110,9 +108,7 @@ namespace Tests.V2.GenTests.ParameterGenTests
             return typeof(AboutInt32GenAttributes).GetMethod(name, BindingFlags.NonPublic | BindingFlags.Static)!;
         }
 
-        private static List<T> SampleTraversal<T>(GalaxyCheck.IGen<T> gen, int seed, int size) => gen.Advanced
-            .SampleOneExampleSpace(seed: seed, size: size)
-            .Traverse()
+        private static List<T> SampleTraversal<T>(GalaxyCheck.IGen<T> gen, int seed, int size) => gen.SampleOneTraversal(seed: seed, size: size)
             .Take(100)
             .ToList();
     }

@@ -1,10 +1,22 @@
-﻿namespace GalaxyCheck
+namespace GalaxyCheck
 {
     public static partial class Gen
     {
         /// <summary>
-        /// Generates booleans.
+        /// Creates a generator that produces booleans. The value false is simpler than true.
+        /// </summary>
         /// <returns>The new generator.</returns>
-        public static IGen<bool> Boolean() => Int32().Between(0, 1).Select(x => x == 1);
+        public static IGen<bool> Boolean() => new Gens.BooleanGen();
+    }
+}
+
+namespace GalaxyCheck.Gens
+{
+    using GalaxyCheck.Gens.Internal;
+    using GalaxyCheck.Gens.Parameters;
+
+    internal sealed record BooleanGen : BaseGen<bool>
+    {
+        public override bool Generate(GenSource source) => IntCore.Index(source, 1, Gen.Bias.WithSize) == 1;
     }
 }

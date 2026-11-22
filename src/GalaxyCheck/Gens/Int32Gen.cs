@@ -1,4 +1,4 @@
-﻿namespace GalaxyCheck
+namespace GalaxyCheck
 {
     using GalaxyCheck.Gens;
     using System;
@@ -73,13 +73,13 @@
 namespace GalaxyCheck.Gens
 {
     using GalaxyCheck.Gens.Internal;
-    using GalaxyCheck.Gens.Iterations.Generic;
+    using GalaxyCheck.Gens.Parameters;
 
     internal record Int32Gen(
         int? Min = null,
         int? Max = null,
         int? Origin = null,
-        Gen.Bias? Bias = null) : GenProvider<int>, IIntGen<int>
+        Gen.Bias? Bias = null) : BaseGen<int>, IIntGen<int>
     {
         public IIntGen<int> GreaterThanEqual(int min) => this with { Min = min };
 
@@ -89,29 +89,23 @@ namespace GalaxyCheck.Gens
 
         public IIntGen<int> WithBias(Gen.Bias bias) => this with { Bias = bias };
 
-        protected override IGen<int> Get
+        public override int Generate(GenSource source)
         {
-            get
+            long min = Min ?? int.MinValue;
+            long max = Max ?? int.MaxValue;
+
+            if (min > max)
             {
-                var gen = Gen
-                    .Int64()
-                    .GreaterThanEqual(Min ?? int.MinValue)
-                    .LessThanEqual(Max ?? int.MaxValue);
-
-                if (Origin != null)
-                {
-                    gen = gen.ShrinkTowards(Origin.Value);
-                }
-
-                if (Bias != null)
-                {
-                    gen = gen.WithBias(Bias.Value);
-                }
-
-                return gen
-                    .Select(x => (int)x)
-                    .SelectError(error => new GenErrorData(error.Message));
+                throw new GenErrorSignal("'min' cannot be greater than 'max'");
             }
+
+            if (Origin != null && (Origin < min || Origin > max))
+            {
+                throw new GenErrorSignal("'origin' must be between 'min' and 'max'");
+            }
+
+            var origin = Origin ?? IntCore.InferOrigin(min, max);
+            return (int)IntCore.Int64(source, min, max, origin, Bias ?? Gen.Bias.WithSize);
         }
     }
 }

@@ -1,11 +1,7 @@
 ﻿using FluentAssertions;
 using GalaxyCheck;
-using NebulaCheck;
 using System;
 using System.Linq;
-using Test = NebulaCheck.Test;
-using Gen = NebulaCheck.Gen;
-using Property = NebulaCheck.Property;
 using GalaxyCheck.Gens;
 
 namespace Tests.V2.GenTests.ListGenTests
@@ -13,12 +9,12 @@ namespace Tests.V2.GenTests.ListGenTests
     public class AboutValidation
     {
         [Property]
-        public NebulaCheck.IGen<Test> ItErrorsWhenCountIsNegative() =>
+        public Property ItErrorsWhenCountIsNegative() => new Property(
             from elementGen in DomainGen.Gen()
             from count in Gen.Int32().LessThan(0)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen.List(elementGen).WithCount(count);
 
@@ -27,15 +23,15 @@ namespace Tests.V2.GenTests.ListGenTests
                 action.Should()
                     .Throw<GalaxyCheck.Exceptions.GenErrorException>()
                     .WithGenErrorMessage("'count' cannot be negative");
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> ItErrorsWhenMinimumCountIsNegative() =>
+        public Property ItErrorsWhenMinimumCountIsNegative() => new Property(
             from elementGen in DomainGen.Gen()
             from minCount in Gen.Int32().LessThan(0)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen.List(elementGen).WithCountGreaterThanEqual(minCount);
 
@@ -44,15 +40,15 @@ namespace Tests.V2.GenTests.ListGenTests
                 action.Should()
                     .Throw<GalaxyCheck.Exceptions.GenErrorException>()
                     .WithGenErrorMessage("'minCount' cannot be negative");
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> ItErrorsWhenMaximumCountIsNegative() =>
+        public Property ItErrorsWhenMaximumCountIsNegative() => new Property(
             from elementGen in DomainGen.Gen()
             from maxCount in Gen.Int32().LessThan(0)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen.List(elementGen).WithCountLessThanEqual(maxCount);
 
@@ -61,16 +57,16 @@ namespace Tests.V2.GenTests.ListGenTests
                 action.Should()
                     .Throw<GalaxyCheck.Exceptions.GenErrorException>()
                     .WithGenErrorMessage("'maxCount' cannot be negative");
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> ItErrorsWhenMinimumCountIsGreaterThanMaximumCount() =>
+        public Property ItErrorsWhenMinimumCountIsGreaterThanMaximumCount() => new Property(
             from elementGen in DomainGen.Gen()
             from minCount in Gen.Int32().Between(1, 20)
             from maxCount in Gen.Int32().GreaterThanEqual(0).LessThan(minCount)
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 void ShouldError(IListGen<object> gen)
                 {
@@ -83,6 +79,6 @@ namespace Tests.V2.GenTests.ListGenTests
 
                 ShouldError(GalaxyCheck.Gen.List(elementGen).WithCountGreaterThanEqual(minCount).WithCountLessThanEqual(maxCount));
                 ShouldError(GalaxyCheck.Gen.List(elementGen).WithCountLessThanEqual(maxCount).WithCountGreaterThanEqual(minCount));
-            });
+            }));
     }
 }

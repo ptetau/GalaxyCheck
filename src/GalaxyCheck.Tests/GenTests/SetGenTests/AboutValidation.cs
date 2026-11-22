@@ -1,14 +1,10 @@
 ﻿using FluentAssertions;
 using GalaxyCheck;
-using NebulaCheck;
 using System;
 using System.Linq;
-using Test = NebulaCheck.Test;
-using Gen = NebulaCheck.Gen;
-using Property = NebulaCheck.Property;
 using GalaxyCheck.Gens;
 using static Tests.V2.DomainGenAttributes;
-using NebulaCheck.Gens.Injection.Int32;
+using GalaxyCheck.Gens.Injection.Int32;
 
 namespace Tests.V2.GenTests.SetGenTests
 {
@@ -63,13 +59,13 @@ namespace Tests.V2.GenTests.SetGenTests
         }
 
         [Property]
-        public NebulaCheck.IGen<Test> ItErrorsWhenMinimumCountIsGreaterThanMaximumCount() =>
+        public Property ItErrorsWhenMinimumCountIsGreaterThanMaximumCount() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
             from elementGen in DomainGen.Gen()
             from minCount in Gen.Int32().Between(1, 20)
             from maxCount in Gen.Int32().GreaterThanEqual(0).LessThan(minCount)
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 void ShouldError(ISetGen<object> gen)
                 {
@@ -82,6 +78,6 @@ namespace Tests.V2.GenTests.SetGenTests
 
                 ShouldError(GalaxyCheck.Gen.Set(elementGen).WithCountGreaterThanEqual(minCount).WithCountLessThanEqual(maxCount));
                 ShouldError(GalaxyCheck.Gen.Set(elementGen).WithCountLessThanEqual(maxCount).WithCountGreaterThanEqual(minCount));
-            });
+            }));
     }
 }

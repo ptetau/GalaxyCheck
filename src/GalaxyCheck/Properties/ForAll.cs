@@ -1,5 +1,7 @@
-﻿using GalaxyCheck.Properties;
+using GalaxyCheck.Gens.Parameters;
+using GalaxyCheck.Properties;
 using System;
+using System.Collections.Generic;
 
 namespace GalaxyCheck
 {
@@ -12,41 +14,34 @@ namespace GalaxyCheck
                 x)));
 
         public static Property<T0> ForAll<T0>(IGen<T0> gen0, Func<T0, bool> func) =>
-            new Property<T0>(
-                gen0.Select(x => TestFactory.Create(
-                    x,
-                    () => func(x),
-                    new object?[] { x })));
+            new Property<T0>(new ForAllGen<T0>(gen0, func, x => new object?[] { x }));
 
         public static Property<(T0, T1)> ForAll<T0, T1>(
             IGen<T0> gen0,
             IGen<T1> gen1,
-            Func<T0, T1, bool> func) => new Property<(T0, T1)>(
-                Gen.Zip(gen0, gen1).Select(tuple => TestFactory.Create(
-                    tuple,
-                    () => func(tuple.Item1, tuple.Item2),
-                    new object?[] { tuple.Item1, tuple.Item2 })));
+            Func<T0, T1, bool> func) => new Property<(T0, T1)>(new ForAllGen<(T0, T1)>(
+                Gen.Zip(gen0, gen1),
+                tuple => func(tuple.Item1, tuple.Item2),
+                tuple => new object?[] { tuple.Item1, tuple.Item2 }));
 
         public static Property<(T0, T1, T2)> ForAll<T0, T1, T2>(
             IGen<T0> gen0,
             IGen<T1> gen1,
             IGen<T2> gen2,
-            Func<T0, T1, T2, bool> func) => new Property<(T0, T1, T2)>(
-                Gen.Zip(gen0, gen1, gen2).Select(tuple => TestFactory.Create(
-                    tuple,
-                    () => func(tuple.Item1, tuple.Item2, tuple.Item3),
-                    new object?[] { tuple.Item1, tuple.Item2, tuple.Item3 })));
+            Func<T0, T1, T2, bool> func) => new Property<(T0, T1, T2)>(new ForAllGen<(T0, T1, T2)>(
+                Gen.Zip(gen0, gen1, gen2),
+                tuple => func(tuple.Item1, tuple.Item2, tuple.Item3),
+                tuple => new object?[] { tuple.Item1, tuple.Item2, tuple.Item3 }));
 
         public static Property<(T0, T1, T2, T3)> ForAll<T0, T1, T2, T3>(
             IGen<T0> gen0,
             IGen<T1> gen1,
             IGen<T2> gen2,
             IGen<T3> gen3,
-            Func<T0, T1, T2, T3, bool> func) => new Property<(T0, T1, T2, T3)>(
-                Gen.Zip(gen0, gen1, gen2, gen3).Select(tuple => TestFactory.Create(
-                    tuple,
-                    () => func(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4),
-                    new object?[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4 })));
+            Func<T0, T1, T2, T3, bool> func) => new Property<(T0, T1, T2, T3)>(new ForAllGen<(T0, T1, T2, T3)>(
+                Gen.Zip(gen0, gen1, gen2, gen3),
+                tuple => func(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4),
+                tuple => new object?[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4 }));
 
         public static Property Nullary(Action func) => Nullary(func.AsTrueFunc());
 
@@ -70,5 +65,53 @@ namespace GalaxyCheck
             IGen<T2> gen2,
             IGen<T3> gen3,
             Action<T0, T1, T2, T3> action) => ForAll(gen0, gen1, gen2, gen3, action.AsTrueFunc());
+    }
+}
+
+namespace GalaxyCheck.Properties
+{
+    /// <summary>
+    /// A property's test generator that the runner can also run directly, with no test object for each value.
+    /// </summary>
+    internal interface IFastProperty<out T>
+    {
+        /// <summary>
+        /// Generates the input and runs the test function on it. An exception of the generator is thrown; an
+        /// exception of the test function is a failure.
+        /// </summary>
+        T Run(GenSource source, out bool failed, out Exception? exception);
+
+        IReadOnlyList<object?> Present(object? input);
+    }
+
+    internal sealed record ForAllGen<T>(
+        IGen<T> Input,
+        Func<T, bool> Func,
+        Func<T, IReadOnlyList<object?>> Presenter) : Gens.Internal.BaseGen<Property.Test<T>>, IFastProperty<T>
+    {
+        public override Property.Test<T> Generate(GenSource source)
+        {
+            var input = Input.Advanced.Generate(source);
+            return TestFactory.Create(input, () => Func(input), Presenter(input));
+        }
+
+        public T Run(GenSource source, out bool failed, out Exception? exception)
+        {
+            var input = Input.Advanced.Generate(source);
+            try
+            {
+                failed = !Func(input);
+                exception = null;
+            }
+            catch (Exception ex)
+            {
+                failed = true;
+                exception = ex;
+            }
+
+            return input;
+        }
+
+        public IReadOnlyList<object?> Present(object? input) => Presenter((T)input!);
     }
 }

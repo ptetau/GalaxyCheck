@@ -1,25 +1,21 @@
 ﻿using FluentAssertions;
 using GalaxyCheck;
-using NebulaCheck;
 using System.Collections.Generic;
 using System.Linq;
-using Gen = NebulaCheck.Gen;
-using Property = NebulaCheck.Property;
-using Test = NebulaCheck.Test;
 
 namespace Tests.V2.GenTests.Int16GenTests
 {
     public class AboutValueProduction
     {
         [Property]
-        public NebulaCheck.IGen<Test> ItProducesValuesLikeInt32() =>
+        public Property ItProducesValuesLikeInt32() => new Property(
             from min in Gen.Int16()
             from max in Gen.Int16().GreaterThanEqual(min)
             from origin in Gen.Int16().Between(min, max)
             from bias in DomainGen.Bias()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 List<object> SampleTraversal(GalaxyCheck.IGen gen) =>
                     gen.Cast<object>().SampleOneTraversal(seed, size);
@@ -31,34 +27,34 @@ namespace Tests.V2.GenTests.Int16GenTests
                 var sample1 = SampleTraversal(gen1);
 
                 sample0.Should().BeEquivalentTo(sample1);
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> ItProducesValuesGreaterThanOrEqualMinimum() =>
+        public Property ItProducesValuesGreaterThanOrEqualMinimum() => new Property(
             from min in Gen.Int16()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen.Int16().GreaterThanEqual(min);
 
                 var sample = gen.SampleOne(seed: seed, size: size);
 
                 sample.Should().BeGreaterOrEqualTo(min);
-            });
+            }));
 
         [Property]
-        public NebulaCheck.IGen<Test> ItProducesValuesLessThanOrEqualMaximum() =>
+        public Property ItProducesValuesLessThanOrEqualMaximum() => new Property(
             from max in Gen.Int16()
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
-            select Property.ForThese(() =>
+            select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen.Int16().LessThanEqual(max);
 
                 var sample = gen.SampleOne(seed: seed, size: size);
 
                 sample.Should().BeLessOrEqualTo(max);
-            });
+            }));
     }
 }

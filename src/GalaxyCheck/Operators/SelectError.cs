@@ -1,32 +1,30 @@
-﻿using GalaxyCheck.Gens.Internal;
-using GalaxyCheck.Gens.Internal.Iterations;
-using GalaxyCheck.Gens.Iterations;
-using GalaxyCheck.Gens.Iterations.Generic;
+using GalaxyCheck.Gens.Internal;
+using GalaxyCheck.Gens.Parameters;
 using System;
 
 namespace GalaxyCheck
 {
     public static partial class Extensions
     {
-        internal static IGen<T> SelectError<T>(this IGen<T> gen, Func<IGenErrorData, IGenErrorData> errorSelector)
+        internal static IGen<T> SelectError<T>(this IGen<T> gen, Func<string, string> errorSelector) =>
+            new SelectErrorGen<T>(gen, errorSelector);
+    }
+}
+
+namespace GalaxyCheck.Gens.Internal
+{
+    internal sealed record SelectErrorGen<T>(IGen<T> Source, Func<string, string> ErrorSelector) : BaseGen<T>
+    {
+        public override T Generate(GenSource source)
         {
-            IGenIteration<T> SelectError(IGenError<T> error)
+            try
             {
-                var selectedErrorData = errorSelector(error);
-                return GenIterationFactory.Error<T>(
-                    error.ReplayParameters,
-                    selectedErrorData.Message);
+                return Source.Advanced.Generate(source);
             }
-
-            GenIterationTransformation<T, T> transformation = (iteration) =>
+            catch (GenErrorSignal error)
             {
-                return iteration.Match(
-                    onError: error => SelectError(error),
-                    onInstance: instance => instance,
-                    onDiscard: discard => discard);
-            };
-
-            return gen.TransformIterations(transformation);
+                throw new GenErrorSignal(ErrorSelector(error.Message));
+            }
         }
     }
 }
