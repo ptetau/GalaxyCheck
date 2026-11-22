@@ -171,3 +171,13 @@ This design document holds no code.
 - R65: ReferenceEntry, Package
 - R66: AgentMode, Report, PropertyRun.T11
 - R67: Package, Property, FrameworkAdapter, boundary: nuget.org
+- R68: Generator, I2, I3, PropertyRun.T10, PropertyRun.T15
+- R69: Generator, I2, PropertyRun.T15
+- R70: PropertyRun, I2, PropertyRun.T15
+- R71: NumericGenerator, Generator
+- R72: ReplayString, PropertyRun.T1, PropertyRun.T3, PropertyRun.X1
+- R73: Generator, I2, I3
+- R74: Generator, PropertyRun, ReplayString
+- R75: PropertyRun, I3
+- R76: Property, PropertyRun.T6, PropertyRun.T8
+- R77: Property, Generator, Command

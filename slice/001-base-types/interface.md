@@ -214,3 +214,9 @@ The stubs fail with `System.NotImplementedException`. The message holds "not imp
 - Stubs: none
 - Changed: R67
 
+## S13
+
+- Uses: each public generator and operator of the library, `Sample`, `Check`, `CheckAsync`, `Assert`, the `replay` argument, `CheckResult<T>` (`Iterations`, `Shrinks`, `Counterexample`, `Exhaustive`), `Property.Precondition`, a child process for the two-process check, `docs/reference-suite.md`
+- Stubs: none
+- Changed: R68, R69, R70, R71, R72, R73, R74, R75, R76, R77
+

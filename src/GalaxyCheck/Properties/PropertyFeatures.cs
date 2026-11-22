@@ -85,12 +85,11 @@ namespace GalaxyCheck.Properties
             var value = unchecked(min + index);
             var isDown = value < origin;
             var distance = isDown ? unchecked((ulong)origin - (ulong)value) : unchecked((ulong)value - (ulong)origin);
+            choices.Add(distance);
             if (up != 0 && down != 0)
             {
                 choices.Add(isDown ? 1UL : 0UL);
             }
-
-            choices.Add(distance);
         }
 
         public static long? Product(IFiniteGen?[] parts, long limit)

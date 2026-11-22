@@ -187,7 +187,9 @@ namespace GalaxyCheck.Gens
 
         private Plan? _plan;
 
-        private sealed record Plan(char[] Chars, int MinLength, int MaxLength, Gen.Bias Bias);
+        // CharBias picks a character: the bias of Gen.Char for a char type, and uniform for given characters, as
+        // Gen.Element is.
+        private sealed record Plan(char[] Chars, int MinLength, int MaxLength, Gen.Bias Bias, Gen.Bias CharBias);
 
         public override string Generate(GenSource source)
         {
@@ -221,7 +223,7 @@ namespace GalaxyCheck.Gens
                             buffer = Grow(ref rented, buffer, length);
                         }
 
-                        buffer[length] = chars[IntCore.Index(source, maxIndex, Gen.Bias.WithSize)];
+                        buffer[length] = chars[IntCore.Index(source, maxIndex, plan.CharBias)];
                         source.EndSpan(start);
                     }
 
@@ -245,7 +247,7 @@ namespace GalaxyCheck.Gens
                             buffer = Grow(ref rented, buffer, length);
                         }
 
-                        buffer[length++] = chars[IntCore.Index(source, maxIndex, Gen.Bias.WithSize)];
+                        buffer[length++] = chars[IntCore.Index(source, maxIndex, plan.CharBias)];
                         source.EndSpan(start);
                     }
                 }
@@ -278,7 +280,8 @@ namespace GalaxyCheck.Gens
         {
             var chars = CreateChars(config.CharConfig);
             var (minLength, maxLength) = CreateLengthRange(config.LengthConfig);
-            return new Plan(chars, minLength, maxLength, config.LengthBias ?? Gen.Bias.WithSize);
+            var charBias = config.CharConfig is StringGenCharConfig.FromEnumerable ? Gen.Bias.None : Gen.Bias.WithSize;
+            return new Plan(chars, minLength, maxLength, config.LengthBias ?? Gen.Bias.WithSize, charBias);
         }
 
         private static char[] CreateChars(StringGenCharConfig? charConfig)

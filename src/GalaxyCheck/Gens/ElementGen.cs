@@ -30,7 +30,11 @@ namespace GalaxyCheck.Gens
     using GalaxyCheck.Gens.Internal;
     using GalaxyCheck.Gens.Parameters;
 
-    internal sealed record ElementGen<T>(List<T> Elements) : BaseGen<T>, GalaxyCheck.Properties.IFiniteGen
+    /// <summary>
+    /// Picks an element. The elements are uniform by default; the characters of the char generator keep the bias of the
+    /// string generator, so that a string is like a list of its characters.
+    /// </summary>
+    internal sealed record ElementGen<T>(List<T> Elements, Gen.Bias Bias = Gen.Bias.None) : BaseGen<T>, GalaxyCheck.Properties.IFiniteGen
     {
         public long? Count(long limit) => Elements.Count <= limit ? Elements.Count : null;
 
@@ -40,6 +44,6 @@ namespace GalaxyCheck.Gens
         }
 
         public override T Generate(GenSource source) =>
-            Elements[IntCore.Index(source, Elements.Count - 1, Gen.Bias.WithSize)];
+            Elements[IntCore.Index(source, Elements.Count - 1, Bias)];
     }
 }

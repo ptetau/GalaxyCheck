@@ -186,7 +186,7 @@
   - Given that failure, when a test reads the report, then the report lists the 4 commands in order with the inputs of each, and names the fourth command as the command that failed. (R45)
 - Layers: stateful api, generator core, runner, shrinking, report
 - Tier: hard
-- Status: red
+- Status: building
 - Test rounds: 0
 - Review rounds: 0
 
@@ -318,4 +318,28 @@
 - Status: done
 - Test rounds: 1
 - Review rounds: 1
+
+## S13: The reference suite
+
+- Story: As a maintainer, I run the cases that other property-based testing libraries use on themselves, so that the new core is held to the same laws and to the best known shrinks.
+- Requirements: R68 (generator laws), R69 (shrinking challenge), R70 (shrink budget), R71 (distribution), R72 (replay laws), R73 (operator laws), R74 (random programs), R75 (runner equivalence), R76 (exhaustive laws), R77 (bug-finding table)
+- Acceptance:
+  - Given each public generator of this spec and the seeds 0 to 19, when a property of it fails, then the same seed gives the same values, shrinking ends, no accepted shrink repeats, the shrunk value fails, and a run from its replay makes no further shrink. (R68)
+  - Given the challenges reverse, lengthlist, nestedlists, deletion, distinct, coupling, the three difference tests, large union list, and bound5, when each runs on the seeds 0 to 19, then the counterexample is `[0, 1]`, `[900]`, one list of 11 zeros, `([0, 0], 0)`, `[0, 1, -1]` or `[0, 1, 2]`, `[1, 0]`, `[10, 10]`, `[10, 6]`, `[10, 9]`, one list of five distinct ints of the smallest size, and `([-32768], [-1], [], [], [])`. (R69)
+  - Given the challenges binheap and calculator, when each runs on the seeds 0 to 19, then the counterexample has no more nodes than `(0, None, (0, (0, None, None), (1, None, None)))` and no more terms than `0 / (0 + 0)`. (R69)
+  - Given the property "the int is below 10" and a run whose first failing value is 10, when it shrinks, then the test function runs at most 50 more times. (R70)
+  - Given `Gen.Boolean()`, `Gen.Element` of 10 values, and `Gen.Int32().Between(0, 9).WithBias(Gen.Bias.None)`, when each gives 10,000 values, then the chi-squared check at the 0.001 level passes; and given a generator that never gives the value 9, then the same check fails. (R71)
+  - Given each integer generator with no option, when it gives 2,000 values on each of the seeds 0 to 19, then its minimum and its maximum each appear. (R71)
+  - Given a failing property, when it runs with the replay of its counterexample, then it runs one test case and makes no shrink; with the replay of a property that has another generator, then the error says that the replay is no longer valid; with a replay that is cut short, then the result is an error and not a crash. (R72)
+  - Given the seeds 0 to 19, when the functor laws of `Select` and the three monad laws of `SelectMany` are checked on the values and on the shrunk counterexample, then each law holds. (R73)
+  - Given 200 random compositions of the generators and operators of the library, when each runs with a time limit of 5 seconds, then none crashes or passes the limit, and each failure shrinks and replays. (R74)
+  - Given a property and its async form on the seeds 0 to 19, when each runs, then the iterations and the counterexample are equal; and two runs in two processes give the same text. (R75)
+  - Given a domain of 12 values, when an exhaustive run goes through `Select`, through a filter that keeps 6, and through `SelectMany`, then each kept value runs one time; and a domain of 1,000 values with 100 iterations runs 100 random test cases. (R76)
+  - Given the eight buggy binary search trees and the correct tree, when the five kinds of properties run on the seeds 0 to 9, then each bug is found by at least one property, and no property fails on the correct tree. (R77)
+  - Given `docs/reference-suite.md`, when a test reads it, then it names a source for each requirement from R68 to R77. (D19)
+- Layers: tests, generator core, shrinking, runner, docs
+- Tier: hard
+- Status: done
+- Test rounds: 2
+- Review rounds: 3
 

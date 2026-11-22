@@ -31,6 +31,9 @@ namespace GalaxyCheck.Gens.Parameters
         private int[] _carries = new int[4];
         private int _carryCount;
 
+        private int[] _stops = new int[4];
+        private int _stopCount;
+
         internal GenSource(ulong seed, int size, int capacity = 64)
         {
             _rng = seed;
@@ -47,6 +50,18 @@ namespace GalaxyCheck.Gens.Parameters
         public int Size { get; internal set; }
 
         internal bool IsReplaying { get; private set; }
+
+        /// <summary>
+        /// The shrinker of the run, once a test case failed. A candidate whose choices are not simpler than the best
+        /// choices does not run the test function, so that each failing input of the test function is a kept shrink.
+        /// </summary>
+        internal Runners.Shrinker? Shrinker { get; set; }
+
+        /// <summary>True when the test function runs on the value that the source just made.</summary>
+        internal bool ShouldRunTest() => Shrinker == null || Shrinker.IsSimpler(_choices, _length);
+
+        /// <summary>True in an exhaustive run, which replays the choices of each value of a finite domain.</summary>
+        internal bool IsWalking { get; set; }
 
         internal int TestCase { get; private set; }
 
@@ -126,6 +141,10 @@ namespace GalaxyCheck.Gens.Parameters
 
         internal int[] Carries => _carries;
 
+        internal int StopCount => _stopCount;
+
+        internal int[] Stops => _stops;
+
         internal ulong RngState => _rng;
 
         internal void BeginRandom(int size)
@@ -149,6 +168,7 @@ namespace GalaxyCheck.Gens.Parameters
             _length = 0;
             _spanCount = 0;
             _carryCount = 0;
+            _stopCount = 0;
             _waypoint = null;
             TestCase++;
             IsActive = true;
@@ -188,6 +208,12 @@ namespace GalaxyCheck.Gens.Parameters
             return value;
         }
 
+        /// <summary>Replaces a recorded choice, when the value that it made has a simpler choice.</summary>
+        internal void Rewrite(int index, ulong value)
+        {
+            _choices[index] = value;
+        }
+
         /// <summary>Marks the last recorded choice, so that the shrinker does not change it.</summary>
         internal void FreezeLast()
         {
@@ -223,6 +249,22 @@ namespace GalaxyCheck.Gens.Parameters
             }
 
             _carries[_carryCount++] = _length - 1;
+        }
+
+        /// <summary>
+        /// Marks the last recorded choice as the choice that ends a collection. The shrinker may move the elements of a
+        /// later collection before the end of an empty one.
+        /// </summary>
+        internal void MarkStop()
+        {
+            if (_length == 0) return;
+
+            if (_stopCount == _stops.Length)
+            {
+                Array.Resize(ref _stops, _stops.Length * 2);
+            }
+
+            _stops[_stopCount++] = _length - 1;
         }
 
         internal int BeginSpan() => _length;

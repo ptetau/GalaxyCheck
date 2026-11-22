@@ -21,6 +21,6 @@ namespace GalaxyCheck.Gens
 
         public void WriteChoices(long index, System.Collections.Generic.List<ulong> choices) => choices.Add((ulong)index);
 
-        public override bool Generate(GenSource source) => IntCore.Index(source, 1, Gen.Bias.WithSize) == 1;
+        public override bool Generate(GenSource source) => IntCore.Index(source, 1, Gen.Bias.None) == 1;
     }
 }
