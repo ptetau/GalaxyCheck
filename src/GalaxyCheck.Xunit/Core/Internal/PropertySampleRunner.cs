@@ -1,0 +1,22 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace GalaxyCheck.Internal
+{
+    internal class PropertySampleRunner : IPropertyRunner
+    {
+        public async Task Run(PropertyRunParameters parameters)
+        {
+            var log = new List<string>();
+
+            await parameters.Property.PrintAsync(
+                stdout: log.Add,
+                seed: parameters.Seed,
+                size: parameters.Size,
+                iterations: parameters.Iterations);
+
+            throw new SampleException(string.Join(Environment.NewLine, log));
+        }
+    }
+}

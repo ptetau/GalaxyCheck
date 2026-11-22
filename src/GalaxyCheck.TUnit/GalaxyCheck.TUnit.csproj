@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <RootNamespace>GalaxyCheck</RootNamespace>
+    <IsPackable>true</IsPackable>
+    <IsTestProject>false</IsTestProject>
+    <PackageId>GalaxyCheck.TUnit</PackageId>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="TUnit.Core" Version="1.87.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GalaxyCheck\GalaxyCheck.csproj" />
+  </ItemGroup>
+
+  <!-- The shared framework core: attributes, configuration, and the property, sample, and snapshot logic. -->
+  <ItemGroup>
+    <Compile Include="..\GalaxyCheck.Xunit\Core\**\*.cs" LinkBase="Core" />
+  </ItemGroup>
+
+  <!-- The build file that records the folder of the test project for the failure memory. -->
+  <ItemGroup>
+    <None Include="..\build\GalaxyCheck.ProjectFolder.props" Pack="true" PackagePath="buildTransitive\$(PackageId).props" Visible="false" />
+  </ItemGroup>
+
+</Project>

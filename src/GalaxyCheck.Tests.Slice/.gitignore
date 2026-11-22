@@ -4,3 +4,6 @@ samples/**/.galaxycheck/
 samples/**/__snapshots__/__mismatch__/
 *.trx
 samples/**/_run-*/
+samples/**/__snapshots__/
+samples/**/logs/
+samples/S13/*/FixedReplay.cs

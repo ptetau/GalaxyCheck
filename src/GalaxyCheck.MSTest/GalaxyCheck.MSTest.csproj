@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <RootNamespace>GalaxyCheck</RootNamespace>
+    <IsPackable>true</IsPackable>
+    <IsTestProject>false</IsTestProject>
+    <PackageId>GalaxyCheck.MSTest</PackageId>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MSTest.TestFramework" Version="4.5.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GalaxyCheck\GalaxyCheck.csproj" />
+  </ItemGroup>
+
+  <!-- The shared framework core: attributes, configuration, and the property, sample, and snapshot logic. -->
+  <ItemGroup>
+    <Compile Include="..\GalaxyCheck.Xunit\Core\**\*.cs" LinkBase="Core" />
+    <!-- MSTest has no [GenSnapshot] (decision D21). -->
+    <Compile Remove="..\GalaxyCheck.Xunit\Core\Attributes\GenSnapshotAttribute.Options.cs" />
+    <Compile Remove="..\GalaxyCheck.Xunit\Core\Internal\GenSnapshotInitializer.cs" />
+    <Compile Remove="..\GalaxyCheck.Xunit\Core\Internal\GenSnapshotRunner.cs" />
+  </ItemGroup>
+
+  <!-- The build file that records the folder of the test project for the failure memory. -->
+  <ItemGroup>
+    <None Include="..\build\GalaxyCheck.ProjectFolder.props" Pack="true" PackagePath="buildTransitive\$(PackageId).props" Visible="false" />
+  </ItemGroup>
+
+</Project>

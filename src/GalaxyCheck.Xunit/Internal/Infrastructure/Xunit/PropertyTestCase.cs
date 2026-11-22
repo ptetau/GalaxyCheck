@@ -20,9 +20,26 @@ namespace GalaxyCheck.Internal.Infrastructure.Xunit
             TestMethodDisplay defaultMethodDisplay,
             TestMethodDisplayOptions defaultMethodDisplayOptions,
             ITestMethod testMethod,
-            object[]? testMethodArguments)
+            object[]? testMethodArguments,
+            string? rowIndex = null)
             : base(diagnosticMessageSink, defaultMethodDisplay, defaultMethodDisplayOptions, testMethod, testMethodArguments)
         {
+            RowIndex = rowIndex;
+        }
+
+        /// <summary>The index of the data row among the rows of the method, in the declared order, or null.</summary>
+        public string? RowIndex { get; private set; }
+
+        public override void Serialize(IXunitSerializationInfo data)
+        {
+            base.Serialize(data);
+            data.AddValue(nameof(RowIndex), RowIndex);
+        }
+
+        public override void Deserialize(IXunitSerializationInfo data)
+        {
+            base.Deserialize(data);
+            RowIndex = data.GetValue<string?>(nameof(RowIndex));
         }
 
         public override Task<RunSummary> RunAsync(
