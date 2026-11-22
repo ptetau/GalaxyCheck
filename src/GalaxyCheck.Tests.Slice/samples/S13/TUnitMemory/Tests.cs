@@ -2,14 +2,14 @@ namespace S13Sample;
 
 public class MemoryTests
 {
-    [GalaxyCheck.Property]
+    [Test, GalaxyCheck.PropertyTest]
     public bool MemSwitchable(int x)
     {
         Probe.Log("MemSwitchable", x);
         return x < 10 || Probe.Hold;
     }
 
-    [GalaxyCheck.Property]
+    [Test, GalaxyCheck.PropertyTest]
     public bool MemOther(int x)
     {
         Probe.Log("MemOther", x);
@@ -17,7 +17,7 @@ public class MemoryTests
     }
 
     [GalaxyCheck.Replay(FixedReplay.Value)]
-    [GalaxyCheck.Property]
+    [Test, GalaxyCheck.PropertyTest]
     public bool MemReplayOverride(int x)
     {
         Probe.Log("MemReplayOverride", x);
