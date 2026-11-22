@@ -20,7 +20,8 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
         /// <summary>
         /// Builds the generator of the type, and applies the depth limit of a type that refers to itself, for each
         /// handler. Beyond the limit, the nearest member that can end the value (a member that can be null, or a
-        /// collection) gives null or an empty collection. A cycle with no such member gives null at the limit.
+        /// collection) gives null or an empty collection. A cycle with no such member gives an error when the member
+        /// is a non-nullable reference, and null at the limit when its nullability is unknown (an oblivious project).
         /// </summary>
         public IGen CreateGen(IReflectedGenHandler innerHandler, Type type, ReflectedGenHandlerContext context)
         {
@@ -33,7 +34,7 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
                         throw new DepthLimitException(type);
                     }
 
-                    return type.IsValueType
+                    return type.IsValueType || context.IsNonNullableReference()
                         ? context.Error(type, $"detected circular reference on type '{type}'")
                         : CreateNullGen(type);
                 }

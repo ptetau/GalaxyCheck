@@ -41,24 +41,19 @@ namespace Tests.V2.GenTests.ReflectedGenTests
         }
 
         [Property]
-        public Property IfTheClassHasARecursiveProperty_ItEndsAtTheDepthLimit() => new Property(
+        public Property IfTheClassHasARecursiveProperty_ItErrors() => new Property(
             from seed in DomainGen.Seed()
             from size in DomainGen.Size()
             select TestProperty.ForThese(() =>
             {
                 var gen = GalaxyCheck.Gen.Create<ClassWithRecursiveProperty>();
 
-                var instance = gen.SampleOne(seed: seed, size: size);
+                Action action = () => gen.SampleOne(seed: seed, size: size);
 
-                // The property cannot be null, so each value is as deep as the limit of 5, and ends with null.
-                var depth = 0;
-                while (instance.Property != null)
-                {
-                    depth++;
-                    instance = instance.Property;
-                }
-
-                depth.Should().Be(5);
+                // The property cannot be null, so no finite value of the class exists.
+                action.Should()
+                    .Throw<GalaxyCheck.Exceptions.GenErrorException>()
+                    .WithGenErrorMessage("detected circular reference on type '*ClassWithRecursiveProperty' at path '$.Property.*'");
             }));
 
         private class ClassWithNullableRecursiveProperty

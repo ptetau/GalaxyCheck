@@ -57,6 +57,12 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers
         public bool IsNullableReference(Type type) => IsNullable(type, NullabilityInfo);
 
         /// <summary>
+        /// True when the current member is declared as a reference that is never null. False when its nullability
+        /// is unknown, for example in a nullable-oblivious project.
+        /// </summary>
+        public bool IsNonNullableReference() => NullabilityInfo is { ReadState: NullabilityState.NotNull };
+
+        /// <summary>
         /// True when the current type is deeper than the depth limit: it is in the history more often than the root
         /// and <see cref="MaxRecursionDepth"/> levels below it.
         /// </summary>
