@@ -265,7 +265,7 @@ namespace GalaxyCheck.Stateful
                     {
                         // T3: an exception that the command does not expect.
                         throw new StatefulCommandFailedException(
-                            $"Command {i + 1} threw an exception that it does not expect: {ex.GetType().Name}: {ex.Message}",
+                            $"Command {i + 1} threw an exception that it does not expect: {ex.GetType().Name}: {CommandText.Escape(ex.Message)}",
                             commands,
                             i,
                             ex);
@@ -283,7 +283,7 @@ namespace GalaxyCheck.Stateful
                 catch (Exception ex)
                 {
                     throw new StatefulCommandFailedException(
-                        $"The model or the postcondition of command {i + 1} threw: {ex.GetType().Name}: {ex.Message}",
+                        $"The model or the postcondition of command {i + 1} threw: {ex.GetType().Name}: {CommandText.Escape(ex.Message)}",
                         commands,
                         i,
                         ex);
