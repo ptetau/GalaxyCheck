@@ -194,6 +194,7 @@ namespace GalaxyCheck.Gens
                 if (count < maxCount)
                 {
                     source.Record(0);
+                    source.MarkStop();
                 }
 
                 return list;
@@ -209,6 +210,7 @@ namespace GalaxyCheck.Gens
                     var start = source.BeginSpan();
                     if (length >= minCount && source.Read(1) == 0)
                     {
+                        source.MarkStop();
                         break;
                     }
 

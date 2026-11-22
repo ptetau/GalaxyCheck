@@ -20,8 +20,17 @@ namespace GalaxyCheck
 
 namespace GalaxyCheck.Gens.Internal
 {
-    internal sealed record WhereGen<T>(IGen<T> Source, Func<T, bool> Predicate) : BaseGen<T>
+    internal sealed record WhereGen<T>(IGen<T> Source, Func<T, bool> Predicate) : BaseGen<T>, GalaxyCheck.Properties.IFiniteGen
     {
+        /// <summary>
+        /// The count of the values of the source. An exhaustive run walks each of them, and the filter discards the
+        /// values that it does not keep.
+        /// </summary>
+        public long? Count(long limit) => (Source.Advanced as GalaxyCheck.Properties.IFiniteGen)?.Count(limit);
+
+        public void WriteChoices(long index, System.Collections.Generic.List<ulong> choices) =>
+            ((GalaxyCheck.Properties.IFiniteGen)Source.Advanced).WriteChoices(index, choices);
+
         /// <summary>
         /// A guard against a filter that can never pass. The health check judges the share of discards over the whole
         /// run, so the guard is far above the retries that an ordinary filter needs for one value.
@@ -62,6 +71,8 @@ namespace GalaxyCheck.Gens.Internal
                     }
 
                     source.Discards++;
+                    // An exhaustive run gives each value of the domain one time, so the filter does not retry.
+                    if (source.IsWalking) break;
                     if (attempt + 1 >= MaxReplayDiscards && source.ReplayExhausted) break;
                     source.Size = source.RetrySize(Predicate.Method, size, attempt + 1);
                     source.EndSpan(start);

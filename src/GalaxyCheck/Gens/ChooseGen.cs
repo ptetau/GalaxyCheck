@@ -111,6 +111,8 @@ namespace GalaxyCheck.Gens
 
         public override T Generate(GenSource source)
         {
+            // The branch and its value are a span, so that the shrinker can replace a branch by a branch inside it.
+            var start = source.BeginSpan();
             int index;
             if (source.IsReplaying)
             {
@@ -133,7 +135,9 @@ namespace GalaxyCheck.Gens
                 source.Record((ulong)index);
             }
 
-            return Gens[index].Generate(source);
+            var value = Gens[index].Generate(source);
+            source.EndSpan(start);
+            return value;
         }
     }
 }

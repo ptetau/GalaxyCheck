@@ -162,6 +162,11 @@ namespace GalaxyCheck.Runners
                     outcome.Input = test.Input;
                     outcome.PresentedInput = test.PresentedInput;
 
+                    if (!source.ShouldRunTest())
+                    {
+                        return outcome;
+                    }
+
                     if (timeoutMs == 0)
                     {
                         var output = test.Output.Value;
@@ -194,6 +199,11 @@ namespace GalaxyCheck.Runners
                 try
                 {
                     outcome = Evaluate(source);
+                }
+                catch (Exceptions.GenExhaustionException) when (source.IsWalking)
+                {
+                    // A filter discards a value of the walk of an exhaustive run.
+                    outcome = Exhausted<T>();
                 }
                 catch (Exceptions.GenExhaustionException) when (options.Watches(HealthCheck.TooManyDiscards))
                 {
@@ -268,6 +278,11 @@ namespace GalaxyCheck.Runners
                 var test = gen.Generate(source);
                 var generationMs = track ? Environment.TickCount64 - start : 0;
 
+                if (!source.ShouldRunTest())
+                {
+                    return new TestCaseOutcome<T> { Input = test.Input, PresentedInput = test.PresentedInput };
+                }
+
                 Property.TestOutput? output;
                 Exception? error = null;
                 if (timeoutMs == 0)
@@ -302,6 +317,11 @@ namespace GalaxyCheck.Runners
                 try
                 {
                     outcome = await Evaluate(source);
+                }
+                catch (Exceptions.GenExhaustionException) when (source.IsWalking)
+                {
+                    // A filter discards a value of the walk of an exhaustive run.
+                    outcome = Exhausted<T>();
                 }
                 catch (Exceptions.GenExhaustionException) when (options.Watches(HealthCheck.TooManyDiscards))
                 {
@@ -461,6 +481,7 @@ namespace GalaxyCheck.Runners
             _currentSize = _size ?? CheckRunner.SizeOf(0, _iterations, null);
             Source = GenSource.Create(_seed, _currentSize);
             Source.SizeFixed = _size != null;
+            Source.IsWalking = _finite != null;
         }
 
         public GenSource Source { get; }
@@ -576,6 +597,8 @@ namespace GalaxyCheck.Runners
             // A test case over the time limit does not shrink: each candidate could wait for the limit again.
             var limit = _replay != null || outcome.TimedOut ? 0 : _shrinkLimit;
             Shrinker = new Shrinker(Source, limit);
+            Source.IsWalking = false;
+            Source.Shrinker = Shrinker;
 
             return true;
         }

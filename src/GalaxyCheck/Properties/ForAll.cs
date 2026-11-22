@@ -106,6 +106,13 @@ namespace GalaxyCheck.Properties
         {
             var input = Input.Advanced.Generate(source);
             generatedAt = trackTime ? Environment.TickCount64 : 0;
+            if (!source.ShouldRunTest())
+            {
+                failed = false;
+                exception = null;
+                return input;
+            }
+
             try
             {
                 failed = !Func(input);
