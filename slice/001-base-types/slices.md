@@ -339,7 +339,7 @@
   - Given `docs/reference-suite.md`, when a test reads it, then it names a source for each requirement from R68 to R77. (D19)
 - Layers: tests, generator core, shrinking, runner, docs
 - Tier: hard
-- Status: building
+- Status: review
 - Test rounds: 2
-- Review rounds: 0
+- Review rounds: 1
 
