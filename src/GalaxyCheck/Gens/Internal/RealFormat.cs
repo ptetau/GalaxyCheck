@@ -23,6 +23,9 @@ namespace GalaxyCheck.Gens.Internal
         /// <summary>The largest exponent that <see cref="Compose"/> takes. It is at least zero.</summary>
         public abstract int MaxExponent { get; }
 
+        /// <summary>The exponent that gives values from zero to about one with the full mantissa.</summary>
+        public abstract int NearExponent { get; }
+
         /// <summary>The smallest finite value.</summary>
         public abstract T MinValue { get; }
 
@@ -75,6 +78,7 @@ namespace GalaxyCheck.Gens.Internal
             MaxWhole = MaxMantissa;
             MinExponent = minExponent;
             MaxExponent = maxExponent - precision + 1;
+            NearExponent = 1 - precision;
             Specials = new[]
             {
                 T.NaN,
@@ -95,6 +99,8 @@ namespace GalaxyCheck.Gens.Internal
 
         public override int MaxExponent { get; }
 
+        public override int NearExponent { get; }
+
         public override T MinValue => T.MinValue;
 
         public override T MaxValue => T.MaxValue;
@@ -106,6 +112,14 @@ namespace GalaxyCheck.Gens.Internal
         public override T Compose(ulong mantissa, int exponent) => ViaDouble
             ? T.CreateTruncating(double.ScaleB(mantissa, exponent))
             : T.ScaleB(T.CreateTruncating(mantissa), exponent);
+
+        public override bool TryAdd(T x, T y, out T sum)
+        {
+            sum = ViaDouble
+                ? T.CreateTruncating(double.CreateTruncating(x) + double.CreateTruncating(y))
+                : x + y;
+            return T.IsFinite(sum);
+        }
     }
 
     /// <summary>
@@ -132,6 +146,9 @@ namespace GalaxyCheck.Gens.Internal
 
         // ulong.MaxValue * 10^9 is below decimal.MaxValue, so that no composed value overflows.
         public override int MaxExponent => 9;
+
+        // ulong.MaxValue is about 1.8 times 10^19.
+        public override int NearExponent => -19;
 
         public override decimal MinValue => decimal.MinValue;
 

@@ -215,9 +215,10 @@ namespace GalaxyCheck.Gens
             {
                 return gen.GreaterThanEqual(checked(minExclusive + T.One));
             }
-            catch (OverflowException ex)
+            catch (OverflowException)
             {
-                return new FatalIntGen<T>(ex);
+                return new FatalIntGen<T>(new ArgumentException(
+                    "'minExclusive' must be below the maximum of the type"));
             }
         }
 
@@ -228,9 +229,10 @@ namespace GalaxyCheck.Gens
             {
                 return gen.LessThanEqual(checked(maxExclusive - T.One));
             }
-            catch (OverflowException ex)
+            catch (OverflowException)
             {
-                return new FatalIntGen<T>(ex);
+                return new FatalIntGen<T>(new ArgumentException(
+                    "'maxExclusive' must be above the minimum of the type"));
             }
         }
     }

@@ -52,10 +52,13 @@ namespace GalaxyCheck.Gens
     using System.Numerics;
 
     /// <summary>
-    /// A generator of a real number type. A value is four choices: the kind (0 is a whole number, 1 is a mantissa
-    /// times a power of the radix, or a special value), the sign, the exponent, and the mantissa. The smallest
-    /// choices are zero, then the small whole numbers, then the values with a fraction part. A special value is the
-    /// exponent after the largest one, so that a smaller exponent turns it into a finite value.
+    /// A generator of a real number type. A value is four choices: the kind, the sign, the exponent, and the mantissa.
+    /// Kind 0 is a whole number, kind 1 is a mantissa times a power of the radix, and kind 2 is a special value when
+    /// the exponent and the mantissa are at their top, else the same as kind 1. A special value shrinks to kind 1 with
+    /// the largest exponent and mantissa, so that it becomes a large finite value that the shrinker can lower. The
+    /// exponent choice 0 is the exponent that gives values from zero to about one, so that values with a fraction part
+    /// near one are common. A value that the bounds do not hold is the bound, so that a larger choice never gives a
+    /// value closer to the origin.
     /// </summary>
     internal sealed record RealGen<T>(
         RealFormat<T> Format,
@@ -65,9 +68,9 @@ namespace GalaxyCheck.Gens
         bool NoSpecials = false) : BaseGen<T>, IRealGen<T>
         where T : struct, INumber<T>
     {
-        // The random exponents come from this many of the simplest exponents half the time, so that values near one
-        // appear often.
-        private const ulong NearExponents = 64;
+        // A near exponent is at most this far from the exponent of the values near one, and the small distances are
+        // the most common.
+        private const ulong NearSpread = 32;
 
         public IRealGen<T> GreaterThanEqual(T min) => this with { Min = min };
 
@@ -107,46 +110,54 @@ namespace GalaxyCheck.Gens
             }
 
             var origin = Origin ?? (lo > T.Zero ? lo : hi < T.Zero ? hi : T.Zero);
+            var isShifted = Min is not null || Max is not null || !T.IsZero(origin);
             var specialCount = SpecialCount(lo, hi);
-            var exponentChoices = (ulong)(Format.MaxExponent - Format.MinExponent);
-            var specialChoice = exponentChoices + 1;
+            var top = (ulong)(Format.MaxExponent - Format.MinExponent);
 
             ulong kind, sign, exponent, mantissa;
 
             if (source.IsReplaying)
             {
-                kind = source.Read(1);
+                kind = source.Read(2);
                 sign = source.Read(1);
-                if (kind == 0)
-                {
-                    exponent = source.Read(0);
-                    mantissa = source.Read(Format.MaxWhole);
-                }
-                else
-                {
-                    exponent = source.Read(specialCount > 0 ? specialChoice : exponentChoices);
-                    mantissa = source.Read(Format.MaxMantissa);
-                }
+                exponent = source.Read(kind == 0 ? 0 : top);
+                mantissa = source.Read(kind == 0 ? Format.MaxWhole : Format.MaxMantissa);
             }
             else
             {
-                var pick = source.NextBounded(5);
+                var pick = source.NextBounded(7);
                 sign = source.NextBounded(1);
-                if (pick == 0)
+                if (pick >= 6 && specialCount > 0)
                 {
-                    kind = 0;
-                    exponent = 0;
-                    mantissa = source.NextBounded(IntCore.Limit(Format.MaxWhole, source.Size));
+                    var index = source.NextBounded((ulong)specialCount - 1);
+                    var special = Special((int)index, lo, hi);
+                    kind = 2;
+                    sign = special < origin || (special == origin && T.IsNegative(special)) ? 1UL : 0UL;
+                    exponent = top;
+                    mantissa = Format.MaxMantissa - index;
                 }
                 else
                 {
-                    kind = 1;
-                    exponent = pick >= 4 && specialCount > 0
-                        ? specialChoice
-                        : source.NextBounded(source.NextBounded(1) == 0
-                            ? System.Math.Min(NearExponents, exponentChoices)
-                            : exponentChoices);
-                    mantissa = source.NextBounded(Format.MaxMantissa);
+                    var down = IsDown(sign, origin, lo, hi);
+                    var width = Width(down ? origin : hi, down ? lo : origin);
+                    if (pick < 2)
+                    {
+                        kind = 0;
+                        exponent = 0;
+                        mantissa = source.NextBounded(System.Math.Min(
+                            IntCore.Limit(Format.MaxWhole, source.Size),
+                            WholeLimit(width)));
+                    }
+                    else
+                    {
+                        kind = 1;
+                        var maxExponent = MaxExponentWithin(width);
+                        var e = pick == 5
+                            ? Format.MinExponent + (int)source.NextBounded((ulong)(maxExponent - Format.MinExponent))
+                            : NearExponent(source, maxExponent);
+                        exponent = ChoiceOf(e);
+                        mantissa = source.NextBounded(Format.MaxMantissa);
+                    }
                 }
 
                 source.Record(kind);
@@ -155,52 +166,102 @@ namespace GalaxyCheck.Gens
                 source.Record(mantissa);
             }
 
-            if (kind == 1 && exponent == specialChoice)
+            if (kind == 2 && exponent == top && Format.MaxMantissa - mantissa < (ulong)specialCount)
             {
-                return Special((int)(mantissa % (ulong)specialCount), lo, hi);
+                return Special((int)(Format.MaxMantissa - mantissa), lo, hi);
             }
 
             var value = kind == 0 ? Format.Whole(mantissa) : Format.Compose(mantissa, ExponentOf(exponent));
-            if (sign == 1)
+            if (!isShifted)
             {
-                value = -value;
+                return sign == 1 ? -value : value;
             }
 
-            if (Min is null && Max is null && T.IsZero(origin))
-            {
-                return value;
-            }
-
-            if (Format.TryAdd(origin, value, out var shifted) && shifted >= lo && shifted <= hi)
+            var isDown = IsDown(sign, origin, lo, hi);
+            if (Format.TryAdd(origin, isDown ? -value : value, out var shifted) && shifted >= lo && shifted <= hi)
             {
                 return shifted;
             }
 
-            // The value is outside the bounds: move from the origin toward a bound, by the fraction that the mantissa
-            // is of its maximum.
-            var fraction = T.CreateTruncating(mantissa) / T.CreateTruncating(kind == 0 ? Format.MaxWhole : Format.MaxMantissa);
-            var target = sign == 0 ? hi : lo;
-            var between = origin * (T.One - fraction) + target * fraction;
-            return T.Clamp(between, lo, hi);
+            return isDown ? lo : hi;
+        }
+
+        /// <summary>The side of the origin that a sign moves to. A side without values moves to the other side.</summary>
+        private static bool IsDown(ulong sign, T origin, T lo, T hi) => sign == 1 ? origin != lo : origin == hi;
+
+        /// <summary>The distance from y up to x, or the largest value if it overflows.</summary>
+        private T Width(T x, T y) => Format.TryAdd(x, -y, out var width) ? width : Format.MaxValue;
+
+        private ulong WholeLimit(T width) => width >= Format.Whole(Format.MaxWhole)
+            ? Format.MaxWhole
+            : ulong.CreateTruncating(width);
+
+        /// <summary>The largest exponent whose values with any mantissa are at most the width.</summary>
+        private int MaxExponentWithin(T width)
+        {
+            if (width >= Format.MaxValue) return Format.MaxExponent;
+
+            var low = Format.MinExponent;
+            var high = Format.MaxExponent;
+            while (low < high)
+            {
+                var mid = low + (high - low + 1) / 2;
+                if (Format.Compose(Format.MaxMantissa, mid) <= width)
+                {
+                    low = mid;
+                }
+                else
+                {
+                    high = mid - 1;
+                }
+            }
+
+            return low;
+        }
+
+        /// <summary>An exponent near the exponent of the values near one, or near the largest exponent if that is lower.</summary>
+        private int NearExponent(GenSource source, int maxExponent)
+        {
+            var center = System.Math.Min(Format.NearExponent, maxExponent);
+            var distance = (int)source.NextBounded(source.NextBounded(source.NextBounded(NearSpread)));
+            var e = source.NextBounded(1) == 0 ? center + distance : center - distance;
+            return System.Math.Clamp(e, Format.MinExponent, maxExponent);
+        }
+
+        /// <summary>The choice of an exponent: the inverse of <see cref="ExponentOf"/>.</summary>
+        private ulong ChoiceOf(int exponent)
+        {
+            var center = Format.NearExponent;
+            var both = System.Math.Min(center - Format.MinExponent, Format.MaxExponent - center);
+            var distance = System.Math.Abs(exponent - center);
+
+            if (distance <= both)
+            {
+                return exponent > center ? (ulong)(2 * distance - 1) : (ulong)(2 * distance);
+            }
+
+            return (ulong)(2 * both + (distance - both));
         }
 
         /// <summary>
-        /// The exponent of a choice: 0, then 1, -1, 2, -2, and so on, then the rest of the longer side.
+        /// The exponent of a choice, from the exponent of the values near one: 0, then 1, -1, 2, -2, and so on, then
+        /// the rest of the longer side.
         /// </summary>
         private int ExponentOf(ulong choice)
         {
-            var below = -Format.MinExponent;
-            var above = Format.MaxExponent;
+            var center = Format.NearExponent;
+            var below = center - Format.MinExponent;
+            var above = Format.MaxExponent - center;
             var both = (ulong)System.Math.Min(below, above);
 
             if (choice <= both * 2)
             {
                 var step = (int)((choice + 1) / 2);
-                return choice % 2 == 1 ? step : -step;
+                return choice % 2 == 1 ? center + step : center - step;
             }
 
             var rest = (int)(choice - both * 2);
-            return below > above ? -((int)both + rest) : (int)both + rest;
+            return below > above ? center - ((int)both + rest) : center + (int)both + rest;
         }
 
         private bool IsSpecialAllowed(T special, T lo, T hi)
