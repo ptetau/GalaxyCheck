@@ -144,12 +144,13 @@ namespace GalaxyCheck.Runners
             public string Render(object? obj, IExampleRendererHandler renderer, ImmutableList<object?> path) => obj?.ToString() ?? "null";
         }
 
-        /// <summary>Renders a stateful command by its own text, which holds its inputs.</summary>
+        /// <summary>Renders a stateful command by its own text, which holds its inputs, on one line.</summary>
         private class StatefulCommandRendererHandler : IExampleRendererHandler
         {
             public bool CanRender(object? obj) => obj is Stateful.IStatefulCommand;
 
-            public string Render(object? obj, IExampleRendererHandler renderer, ImmutableList<object?> path) => obj!.ToString() ?? "null";
+            public string Render(object? obj, IExampleRendererHandler renderer, ImmutableList<object?> path) =>
+                Stateful.CommandText.Of(obj);
         }
 
         private class EnumerableExampleRendererHandler : IExampleRendererHandler

@@ -4,6 +4,7 @@ using GalaxyCheck.Properties;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace GalaxyCheck.Stateful
@@ -13,18 +14,98 @@ namespace GalaxyCheck.Stateful
     {
     }
 
-    /// <summary>One step of a stateful test, against a real system and a model of it.</summary>
+    /// <summary>
+    /// One step of a stateful test, against a real system and a model of it. The report shows a command by its
+    /// <c>ToString()</c>, on one line (see <see cref="CommandText"/>).
+    /// </summary>
     public abstract class Command<TSystem, TModel> : IStatefulCommand
     {
+        /// <summary>True if the command may run when the model is <paramref name="model"/>. The generator and the
+        /// shrinker never place a command where this is false.</summary>
         public virtual bool Precondition(TModel model) => true;
 
+        /// <summary>Runs the command against the real system.</summary>
         public abstract void Run(TSystem system);
 
+        /// <summary>Returns the model after the command. It returns a new model and does not change its argument,
+        /// because <see cref="Postcondition"/> gets the model before and the model after.</summary>
         public abstract TModel NextModel(TModel model);
 
+        /// <summary>True if the system agrees with the model after the command.</summary>
         public virtual bool Postcondition(TSystem system, TModel modelBefore, TModel modelAfter) => true;
 
+        /// <summary>True if <see cref="Run"/> may throw <paramref name="exception"/>. The run then goes on: the model
+        /// advances with <see cref="NextModel"/> and the postcondition is checked.</summary>
         public virtual bool Expects(Exception exception) => false;
+    }
+
+    /// <summary>
+    /// The text of a command in a report. The rule: the text of <c>ToString()</c> stays on one line. A backslash
+    /// becomes <c>\\</c>; a line feed, a carriage return, and a tab become <c>\n</c>, <c>\r</c>, and <c>\t</c>; each
+    /// other control, format, or line separator character becomes <c>\uXXXX</c>; and the marker <c>&lt;-</c>
+    /// becomes <c>\u003c-</c>, so that only the report writes <c>&lt;- failed</c>. Ordinary text has no change. A
+    /// <c>ToString()</c> that throws gives <c>&lt;ToString() threw TypeName&gt;</c>.
+    /// </summary>
+    internal static class CommandText
+    {
+        public static string Of(object? command)
+        {
+            string? text;
+            try
+            {
+                text = command?.ToString();
+            }
+            catch (Exception ex)
+            {
+                return $"<ToString() threw {ex.GetType().Name}>";
+            }
+
+            return Escape(text ?? "null");
+        }
+
+        public static string Escape(string text)
+        {
+            StringBuilder? builder = null;
+            for (var i = 0; i < text.Length; i++)
+            {
+                var c = text[i];
+                string? escaped = c switch
+                {
+                    '\\' => "\\\\",
+                    '\n' => "\\n",
+                    '\r' => "\\r",
+                    '\t' => "\\t",
+                    '<' when i + 1 < text.Length && text[i + 1] == '-' => "\\u003c",
+                    _ when NeedsEscape(c) => $"\\u{(int)c:x4}",
+                    _ => null,
+                };
+
+                if (escaped == null)
+                {
+                    builder?.Append(c);
+                    continue;
+                }
+
+                builder ??= new StringBuilder(text, 0, i, text.Length + 16);
+                builder.Append(escaped);
+            }
+
+            return builder?.ToString() ?? text;
+        }
+
+        private static bool NeedsEscape(char c)
+        {
+            switch (char.GetUnicodeCategory(c))
+            {
+                case System.Globalization.UnicodeCategory.Control:
+                case System.Globalization.UnicodeCategory.Format:
+                case System.Globalization.UnicodeCategory.LineSeparator:
+                case System.Globalization.UnicodeCategory.ParagraphSeparator:
+                    return true;
+                default:
+                    return false;
+            }
+        }
     }
 
     public static class StatefulGen
@@ -147,7 +228,7 @@ namespace GalaxyCheck.Stateful
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        public override string ToString() => "[" + string.Join(", ", _commands) + "]";
+        public override string ToString() => "[" + string.Join(", ", _commands.Select(CommandText.Of)) + "]";
     }
 
     /// <summary>One run of a sequence against a new system and a new model (the machine StatefulRun).</summary>
@@ -177,18 +258,38 @@ namespace GalaxyCheck.Stateful
                 {
                     command.Run(system);
                 }
-                catch (Exception ex) when (!command.Expects(ex))
+                catch (Exception ex)
                 {
-                    // T3: an exception that the command does not expect.
+                    // An expected exception goes on to T2 below, as a normal return does.
+                    if (!IsExpected(command, ex))
+                    {
+                        // T3: an exception that the command does not expect.
+                        throw new StatefulCommandFailedException(
+                            $"Command {i + 1} threw an exception that it does not expect: {ex.GetType().Name}: {ex.Message}",
+                            commands,
+                            i,
+                            ex);
+                    }
+                }
+
+                // After a normal return or an expected exception: the model advances and the postcondition is checked.
+                TModel next;
+                bool holds;
+                try
+                {
+                    next = command.NextModel(model);
+                    holds = command.Postcondition(system, model, next);
+                }
+                catch (Exception ex)
+                {
                     throw new StatefulCommandFailedException(
-                        $"Command {i + 1} threw an exception that it does not expect: {ex.GetType().Name}: {ex.Message}",
+                        $"The model or the postcondition of command {i + 1} threw: {ex.GetType().Name}: {ex.Message}",
                         commands,
                         i,
                         ex);
                 }
 
-                var next = command.NextModel(model);
-                if (!command.Postcondition(system, model, next))
+                if (!holds)
                 {
                     // T3: a postcondition fails.
                     throw new StatefulCommandFailedException($"The postcondition of command {i + 1} failed", commands, i, null);
@@ -200,6 +301,19 @@ namespace GalaxyCheck.Stateful
 
             // T4: the sequence passed.
             return true;
+        }
+
+        /// <summary>An exception of <c>Expects</c> itself counts as not expected.</summary>
+        private static bool IsExpected<TSystem, TModel>(Command<TSystem, TModel> command, Exception ex)
+        {
+            try
+            {
+                return command.Expects(ex);
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 
@@ -217,7 +331,7 @@ namespace GalaxyCheck.Stateful
             var index = 0;
             foreach (var command in commands)
             {
-                builder.AppendLine().Append(index + 1).Append(". ").Append(command);
+                builder.AppendLine().Append(index + 1).Append(". ").Append(CommandText.Of(command));
                 if (index == failedIndex)
                 {
                     builder.Append(" <- failed");
