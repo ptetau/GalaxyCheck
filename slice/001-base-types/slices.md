@@ -186,7 +186,7 @@
   - Given that failure, when a test reads the report, then the report lists the 4 commands in order with the inputs of each, and names the fourth command as the command that failed. (R45)
 - Layers: stateful api, generator core, runner, shrinking, report
 - Tier: hard
-- Status: review
+- Status: done
 - Test rounds: 3
 - Review rounds: 3
 
