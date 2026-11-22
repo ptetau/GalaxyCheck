@@ -1,4 +1,5 @@
-﻿using GalaxyCheck.Gens;
+using System.Diagnostics.CodeAnalysis;
+using GalaxyCheck.Gens;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -10,6 +11,8 @@ namespace GalaxyCheck
 {
     public partial class Property
     {
+        [RequiresUnreferencedCode(GalaxyCheck.Gens.Generated.ReflectionMessages.Path)]
+        [RequiresDynamicCode(GalaxyCheck.Gens.Generated.ReflectionMessages.Path)]
         public static Property Reflect(
             MethodInfo methodInfo,
             object? target,
@@ -17,12 +20,12 @@ namespace GalaxyCheck
             IReadOnlyDictionary<int, IGen>? customGens = null,
             object?[]? controlData = null)
         {
-            if (MethodPropertyHandlers.TryGetValue(methodInfo.ReturnType, out var handler) == false)
+            if (ReflectedHandlers.MethodPropertyHandlers.TryGetValue(methodInfo.ReturnType, out var handler) == false)
             {
-                var supportedReturnTypesFormatted = FormatSupportReturnTypes(MethodPropertyHandlers.Keys);
+                var supportedReturnTypesFormatted = FormatSupportReturnTypes(ReflectedHandlers.MethodPropertyHandlers.Keys);
 
                 var message = $"Return type is not supported by {nameof(Property)}.{nameof(Reflect)}.";
-                if (AsyncMethodPropertyHandlers.ContainsKey(methodInfo.ReturnType))
+                if (ReflectedHandlers.AsyncMethodPropertyHandlers.ContainsKey(methodInfo.ReturnType))
                 {
                     message +=
                         $" Did you mean to use {nameof(Property)}.{nameof(ReflectAsync)}? Otherwise, please use one of: {supportedReturnTypesFormatted}.";
@@ -40,6 +43,8 @@ namespace GalaxyCheck
             return handler(methodInfo, target, genFactory, customGens, controlData);
         }
 
+        [RequiresUnreferencedCode(GalaxyCheck.Gens.Generated.ReflectionMessages.Path)]
+        [RequiresDynamicCode(GalaxyCheck.Gens.Generated.ReflectionMessages.Path)]
         public static AsyncProperty ReflectAsync(
             MethodInfo methodInfo,
             object? target,
@@ -47,12 +52,12 @@ namespace GalaxyCheck
             IReadOnlyDictionary<int, IGen>? customGens = null,
             object?[]? controlData = null)
         {
-            if (MethodPropertyHandlers.TryGetValue(methodInfo.ReturnType, out var handler) == false)
+            if (ReflectedHandlers.MethodPropertyHandlers.TryGetValue(methodInfo.ReturnType, out var handler) == false)
             {
-                if (AsyncMethodPropertyHandlers.TryGetValue(methodInfo.ReturnType, out var asyncHandler) == false)
+                if (ReflectedHandlers.AsyncMethodPropertyHandlers.TryGetValue(methodInfo.ReturnType, out var asyncHandler) == false)
                 {
                     var supportedReturnTypesFormatted =
-                        FormatSupportReturnTypes(Enumerable.Concat(MethodPropertyHandlers.Keys, AsyncMethodPropertyHandlers.Keys));
+                        FormatSupportReturnTypes(Enumerable.Concat(ReflectedHandlers.MethodPropertyHandlers.Keys, ReflectedHandlers.AsyncMethodPropertyHandlers.Keys));
                     var message =
                         $"Return type is not supported by {nameof(Property)}.{nameof(ReflectAsync)}. Please use one of: {supportedReturnTypesFormatted}. Return type was: {methodInfo.ReturnType}.";
                     throw new Exception(message);
@@ -95,75 +100,66 @@ namespace GalaxyCheck
             };
         }
 
-        private readonly static ImmutableDictionary<Type, ReflectedPropertyHandler> MethodPropertyHandlers =
-            new Dictionary<Type, ReflectedPropertyHandler>
-            {
-                { typeof(void), ToVoidProperty },
-                { typeof(bool), ToBooleanProperty },
-                { typeof(Property), ToReturnedProperty },
-            }.ToImmutableDictionary();
-
-        private readonly static ImmutableDictionary<Type, AsyncReflectedPropertyHandler> AsyncMethodPropertyHandlers =
-            new Dictionary<Type, AsyncReflectedPropertyHandler>
-            {
-                { typeof(Task), ToTaskProperty },
-                { typeof(Task<bool>), ToTaskBooleanProperty },
-                { typeof(AsyncProperty), ToReturnedAsyncProperty },
-            }.ToImmutableDictionary();
-
-        private static ReflectedPropertyHandler ToVoidProperty => (methodInfo, target, genFactory, customGens, controlData) =>
+        /// <summary>The handlers of each return type. They read the parameters of a method by reflection.</summary>
+        [RequiresUnreferencedCode(GalaxyCheck.Gens.Generated.ReflectionMessages.Path)]
+        [RequiresDynamicCode(GalaxyCheck.Gens.Generated.ReflectionMessages.Path)]
+        private static class ReflectedHandlers
         {
-            return new Property(ForAllParameters(methodInfo, Gen.Parameters(methodInfo, genFactory, customGens), parameters =>
-            {
-                SafeInvoke(() =>
+            internal readonly static ImmutableDictionary<Type, ReflectedPropertyHandler> MethodPropertyHandlers =
+                new Dictionary<Type, ReflectedPropertyHandler>
                 {
-                    methodInfo.Invoke(target, parameters);
-                    return 0;
-                });
-                return true;
-            }));
-        };
+                    { typeof(void), ToVoidProperty },
+                    { typeof(bool), ToBooleanProperty },
+                    { typeof(Property), ToReturnedProperty },
+                }.ToImmutableDictionary();
 
-        private static ReflectedPropertyHandler ToBooleanProperty => (methodInfo, target, genFactory, customGens, controlData) =>
-        {
-            return new Property(ForAllParameters(methodInfo, Gen.Parameters(methodInfo, genFactory, customGens), parameters =>
+            internal readonly static ImmutableDictionary<Type, AsyncReflectedPropertyHandler> AsyncMethodPropertyHandlers =
+                new Dictionary<Type, AsyncReflectedPropertyHandler>
+                {
+                    { typeof(Task), ToTaskProperty },
+                    { typeof(Task<bool>), ToTaskBooleanProperty },
+                    { typeof(AsyncProperty), ToReturnedAsyncProperty },
+                }.ToImmutableDictionary();
+
+            private static ReflectedPropertyHandler ToVoidProperty => (methodInfo, target, genFactory, customGens, controlData) =>
             {
+                return new Property(ForAllParameters(methodInfo, Gen.Parameters(methodInfo, genFactory, customGens), parameters =>
+                {
+                    SafeInvoke(() =>
+                    {
+                        methodInfo.Invoke(target, parameters);
+                        return 0;
+                    });
+                    return true;
+                }));
+            };
+
+            private static ReflectedPropertyHandler ToBooleanProperty => (methodInfo, target, genFactory, customGens, controlData) =>
+            {
+                return new Property(ForAllParameters(methodInfo, Gen.Parameters(methodInfo, genFactory, customGens), parameters =>
+                {
+                    try
+                    {
+                        return (bool)methodInfo.Invoke(target, parameters)!;
+                    }
+                    catch (TargetInvocationException ex)
+                    {
+                        throw ex.InnerException!;
+                    }
+                }));
+            };
+
+            private static ReflectedPropertyHandler ToReturnedProperty => (methodInfo, target, genFactory, customGens, controlData) =>
+            {
+                if (methodInfo.GetParameters().Any() && controlData is null)
+                {
+                    throw new Exception(
+                        $"Parameters are not support for methods returning properties, unless control data is injected. Violating signature: \"{methodInfo}\"");
+                }
+
                 try
                 {
-                    return (bool)methodInfo.Invoke(target, parameters)!;
-                }
-                catch (TargetInvocationException ex)
-                {
-                    throw ex.InnerException!;
-                }
-            }));
-        };
-
-        private static ReflectedPropertyHandler ToReturnedProperty => (methodInfo, target, genFactory, customGens, controlData) =>
-        {
-            if (methodInfo.GetParameters().Any() && controlData is null)
-            {
-                throw new Exception(
-                    $"Parameters are not support for methods returning properties, unless control data is injected. Violating signature: \"{methodInfo}\"");
-            }
-
-            try
-            {
-                return (Property)methodInfo.Invoke(target, controlData ?? Array.Empty<object>())!;
-            }
-            catch (TargetInvocationException ex)
-            {
-                throw ex.InnerException!;
-            }
-        };
-
-        private static AsyncReflectedPropertyHandler ToTaskProperty => (methodInfo, target, genFactory, customGens, controlData) =>
-        {
-            Func<object[], Task> func = parameters =>
-            {
-                try
-                {
-                    return (Task)methodInfo.Invoke(target, WithToken(methodInfo, parameters))!;
+                    return (Property)methodInfo.Invoke(target, controlData ?? Array.Empty<object>())!;
                 }
                 catch (TargetInvocationException ex)
                 {
@@ -171,41 +167,56 @@ namespace GalaxyCheck
                 }
             };
 
-            return new AsyncProperty(ForAllParametersAsync(methodInfo, Gen.Parameters(methodInfo, genFactory, customGens), Properties.ActionExtensions.AsTrueFunc(func)));
-        };
-
-        private static AsyncReflectedPropertyHandler ToTaskBooleanProperty => (methodInfo, target, genFactory, customGens, controlData) =>
-        {
-            return new AsyncProperty(ForAllParametersAsync(methodInfo, Gen.Parameters(methodInfo, genFactory, customGens), parameters =>
+            private static AsyncReflectedPropertyHandler ToTaskProperty => (methodInfo, target, genFactory, customGens, controlData) =>
             {
+                Func<object[], Task> func = parameters =>
+                {
+                    try
+                    {
+                        return (Task)methodInfo.Invoke(target, WithToken(methodInfo, parameters))!;
+                    }
+                    catch (TargetInvocationException ex)
+                    {
+                        throw ex.InnerException!;
+                    }
+                };
+
+                return new AsyncProperty(ForAllParametersAsync(methodInfo, Gen.Parameters(methodInfo, genFactory, customGens), Properties.ActionExtensions.AsTrueFunc(func)));
+            };
+
+            private static AsyncReflectedPropertyHandler ToTaskBooleanProperty => (methodInfo, target, genFactory, customGens, controlData) =>
+            {
+                return new AsyncProperty(ForAllParametersAsync(methodInfo, Gen.Parameters(methodInfo, genFactory, customGens), parameters =>
+                {
+                    try
+                    {
+                        return (Task<bool>)methodInfo.Invoke(target, WithToken(methodInfo, parameters))!;
+                    }
+                    catch (TargetInvocationException ex)
+                    {
+                        throw ex.InnerException!;
+                    }
+                }));
+            };
+
+            private static AsyncReflectedPropertyHandler ToReturnedAsyncProperty => (methodInfo, target, genFactory, customGens, controlData) =>
+            {
+                if (methodInfo.GetParameters().Any() && controlData is null)
+                {
+                    throw new Exception(
+                        $"Parameters are not support for methods returning properties, unless control data is injected. Violating signature: \"{methodInfo}\"");
+                }
+
                 try
                 {
-                    return (Task<bool>)methodInfo.Invoke(target, WithToken(methodInfo, parameters))!;
+                    return (AsyncProperty)methodInfo.Invoke(target, controlData ?? Array.Empty<object>())!;
                 }
                 catch (TargetInvocationException ex)
                 {
                     throw ex.InnerException!;
                 }
-            }));
-        };
-
-        private static AsyncReflectedPropertyHandler ToReturnedAsyncProperty => (methodInfo, target, genFactory, customGens, controlData) =>
-        {
-            if (methodInfo.GetParameters().Any() && controlData is null)
-            {
-                throw new Exception(
-                    $"Parameters are not support for methods returning properties, unless control data is injected. Violating signature: \"{methodInfo}\"");
-            }
-
-            try
-            {
-                return (AsyncProperty)methodInfo.Invoke(target, controlData ?? Array.Empty<object>())!;
-            }
-            catch (TargetInvocationException ex)
-            {
-                throw ex.InnerException!;
-            }
-        };
+            };
+        }
 
         private static Property<object[]> ForAllParameters(MethodInfo methodInfo, IGen<object[]> gen, Func<object[], bool> func) =>
             new Property<object[]>(new Properties.ForAllGen<object[]>(gen, func, Presenter(methodInfo)));

@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+using GalaxyCheck.Gens.Generated;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -9,6 +11,8 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
     /// <summary>
     /// Handles the dictionary types, <see cref="KeyValuePair{TKey, TValue}"/>, and the tuple types of 1 to 7 elements.
     /// </summary>
+    [RequiresUnreferencedCode(ReflectionMessages.Path)]
+    [RequiresDynamicCode(ReflectionMessages.Path)]
     internal class DictionaryReflectedGenHandler : IReflectedGenHandler, IEmptyCollectionGenHandler
     {
         private static readonly IReadOnlyDictionary<Type, string> GenMethodByGenericTypeDefinition =

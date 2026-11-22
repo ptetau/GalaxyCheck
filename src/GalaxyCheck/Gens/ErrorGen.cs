@@ -18,6 +18,7 @@ namespace GalaxyCheck
             /// <returns>A new generator that errors when it runs.</returns>
             public static IGen<T> Error<T>(string message) => new ErrorGen<T>(message);
 
+            [System.Diagnostics.CodeAnalysis.RequiresDynamicCode(GalaxyCheck.Gens.Generated.ReflectionMessages.Path)]
             internal static IGen Error(Type type, string message)
             {
                 var genericErrorGen = typeof(Advanced)

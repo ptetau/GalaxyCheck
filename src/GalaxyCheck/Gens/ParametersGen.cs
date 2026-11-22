@@ -18,6 +18,8 @@ namespace GalaxyCheck
         /// <param name="customGens">The generator to use, keyed by the index of the parameter. Generators
         /// supplied through this collection will not be associated with <paramref name="genFactory"/>.</param>
         /// <returns>The new generator.</returns>
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode(GalaxyCheck.Gens.Generated.ReflectionMessages.Path)]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode(GalaxyCheck.Gens.Generated.ReflectionMessages.Path)]
         public static IGen<object[]> Parameters(
             MethodInfo methodInfo,
             IGenFactory? genFactory = null,
@@ -35,6 +37,8 @@ namespace GalaxyCheck.Gens
     using System.Linq;
     using System.Reflection;
 
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode(GalaxyCheck.Gens.Generated.ReflectionMessages.Path)]
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCode(GalaxyCheck.Gens.Generated.ReflectionMessages.Path)]
     internal record ParametersGen : GenProvider<object[]>, IGen<object[]>
     {
         private readonly MethodInfo _methodInfo;

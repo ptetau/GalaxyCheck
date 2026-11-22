@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Reflection;
 
 namespace GalaxyCheck
@@ -22,6 +22,8 @@ namespace GalaxyCheck
         /// Creates an auto-generator for the given type, using the configuration that was specified on this factory.
         /// </summary>
         /// <returns>A generator for the given type.</returns>
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode(Gens.Generated.ReflectionMessages.Path)]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode(Gens.Generated.ReflectionMessages.Path)]
         public static IGen<object> Create(this IGenFactory factory, Type type, NullabilityInfo? nullabilityInfo = null)
         {
             var method = typeof(IGenFactory).GetMethod(nameof(IGenFactory.Create), BindingFlags.Public | BindingFlags.Instance)!;
@@ -33,8 +35,10 @@ namespace GalaxyCheck
 
 namespace GalaxyCheck.Gens
 {
+    using Generated;
     using Internal;
     using ReflectedGenHelpers;
+    using System.Diagnostics.CodeAnalysis;
     using GalaxyCheck.Internal;
     using System;
     using System.Collections.Generic;
@@ -170,7 +174,11 @@ namespace GalaxyCheck.Gens
             DefaultRegisteredGensByType.ToImmutableDictionary(kvp => kvp.Key, kvp => kvp.Value),
             ImmutableDictionary<Type, ImmutableArray<Type>>.Empty)
         {
+            _isDefault = true;
         }
+
+        /// <summary>True for a factory with no registration of its own. Only it uses the generated code.</summary>
+        private readonly bool _isDefault;
 
         IGenFactory IGenFactory.RegisterType(Type type, IGen gen) => RegisterType(type, (_) => gen);
 
@@ -187,7 +195,10 @@ namespace GalaxyCheck.Gens
 
         //// TODO: Cache this call by (this/T)
         IReflectedGen<T> IGenFactory.Create<T>(NullabilityInfo? nullabilityInfo) =>
-            new ReflectedGen<T>(_registeredGensByType, _candidateTypesByType, nullabilityInfo);
+            new ReflectedGen<T>(_registeredGensByType, _candidateTypesByType, nullabilityInfo)
+            {
+                UsesGeneratedCode = _isDefault
+            };
 
         private IGenFactory RegisterType(Type type, Func<IGenFactory, IGen> genFunc) =>
             new GenFactory(_registeredGensByType.SetItem(type, () => genFunc(this)), _candidateTypesByType);
@@ -257,6 +268,12 @@ namespace GalaxyCheck.Gens
                 });
         }
 
+        /// <summary>
+        /// True when the generator may use the code of the source generator: it comes from the default factory, and
+        /// it has no member override and no nullability of its own.
+        /// </summary>
+        public bool UsesGeneratedCode { get; init; }
+
         protected override IGen<T> Get
         {
             get
@@ -266,12 +283,29 @@ namespace GalaxyCheck.Gens
                     return ResolveError(OverrideMemberError);
                 }
 
-                var context = ReflectedGenHandlerContext.Create(typeof(T), NullabilityInfo);
+                if (UsesGeneratedCode && MemberOverrides.IsEmpty && NullabilityInfo == null &&
+                    GeneratedGens.TryGet<T>(out var generatedGen))
+                {
+                    return generatedGen;
+                }
 
-                return ReflectedGenBuilder
-                    .Build(typeof(T), RegisteredGensByType, MemberOverrides, CandidateTypesByType, context)
-                    .Cast<T>();
+                return BuildByReflection();
             }
+        }
+
+        // The source generator reports a diagnostic at compile time for each call that takes this path: GCSG001 for a
+        // Gen.Create<T>() that it cannot write, and GCSG002 for a type parameter, a factory with a registration,
+        // OverrideMember, and a NullabilityInfo argument. So a trimmed or NativeAOT app learns there that a call
+        // takes this path.
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "The source generator reports GCSG001 or GCSG002 for each call that takes the reflection path.")]
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The source generator reports GCSG001 or GCSG002 for each call that takes the reflection path.")]
+        private IGen<T> BuildByReflection()
+        {
+            var context = ReflectedGenHandlerContext.Create(typeof(T), NullabilityInfo);
+
+            return ReflectedGenBuilder
+                .Build(typeof(T), RegisteredGensByType, MemberOverrides, CandidateTypesByType, context)
+                .Cast<T>();
         }
 
         private static IGen<T> ResolveError(OverrideMemberErrorKind overrideMemberError) =>

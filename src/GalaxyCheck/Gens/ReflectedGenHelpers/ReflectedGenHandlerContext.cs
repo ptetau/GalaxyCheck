@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+using GalaxyCheck.Gens.Generated;
 using System;
 using System.Collections.Immutable;
 using System.Linq;
@@ -103,8 +105,11 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers
 
     internal static class ReflectedGenHandlerContextExtensions
     {
-        public static int CalculateStableSeed(this ReflectedGenHandlerContext context) => Encoding.Unicode
-            .GetBytes(context.MemberPath)
+        public static int CalculateStableSeed(this ReflectedGenHandlerContext context) => StableSeed(context.MemberPath);
+
+        /// <summary>The seed of the random state of the member at the path. The generated code uses it too.</summary>
+        public static int StableSeed(string memberPath) => Encoding.Unicode
+            .GetBytes(memberPath)
             .Aggregate(0, (acc, curr) =>
             {
                 unchecked
@@ -125,6 +130,7 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers
             return Gen.Advanced.Error<T>(message + suffix);
         }
 
+        [RequiresDynamicCode(ReflectionMessages.Path)]
         public static IGen Error(this ReflectedGenHandlerContext context, Type type, string message)
         {
             var suffix = context.Members.Count == 1 ? "" : $" at path '{context.MemberPath}'";
