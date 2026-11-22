@@ -222,7 +222,7 @@
 - Layers: xunit v3 package, shared framework core, packaging, tunit package
 - Tier: hard
 - Status: building
-- Test rounds: 0
+- Test rounds: 1
 - Review rounds: 0
 
 ## S9: NUnit, MSTest, failure memory, and explicit examples
