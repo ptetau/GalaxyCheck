@@ -222,7 +222,7 @@
   - Given a global configuration with default iterations of 7, when a `[Property]` with no iterations option runs, then the test function runs 7 times. (R29)
 - Layers: xunit v3 package, shared framework core, packaging, tunit package
 - Tier: hard
-- Status: review
+- Status: done
 - Test rounds: 2
 - Review rounds: 2
 
