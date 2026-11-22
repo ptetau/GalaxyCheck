@@ -187,7 +187,7 @@
 - Layers: stateful api, generator core, runner, shrinking, report
 - Tier: hard
 - Status: building
-- Test rounds: 0
+- Test rounds: 1
 - Review rounds: 0
 
 ## S8: The xunit v3 and TUnit packages
