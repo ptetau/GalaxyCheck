@@ -217,7 +217,8 @@
   - Given a parameter with `[MemberGen]` that names a member which returns `Gen.Int32().Between(5, 5)`, when the project runs, then the parameter is 5 in each test case. (R25)
   - Given a `[Sample]` test, when the project runs, then the test fails and its message lists the sampled values. (R26)
   - Given a `[GenSnapshot]` test with a stored snapshot, when the generator changes its values, then the test fails, and with no change it passes. (R27)
-  - Given a `[Property]` with `[Arguments(1)]` and `[Arguments(2)]` and one more int parameter, when the project runs, then the result holds 2 tests, the first parameter is 1 or 2, and the second is generated. (R28)
+  - Given a `[Test, PropertyTest]` with `[PropertyArguments(1)]` and `[PropertyArguments(2)]` and one more int parameter, when the project runs, then the result holds 2 tests, the first parameter is 1 or 2, and the second is generated. (R28)
+  - Given the TUnit package, when a test reads its public types, then `PropertyTestAttribute` has the options of `PropertyAttribute`, and `PropertyArgumentsAttribute` takes the values of a row. (R22, D20)
   - Given a global configuration with default iterations of 7, when a `[Property]` with no iterations option runs, then the test function runs 7 times. (R29)
 - Layers: xunit v3 package, shared framework core, packaging, tunit package
 - Tier: hard
