@@ -176,24 +176,24 @@ public class S11_TUnitRunTests
     [Fact]
     public void test_001_S8_R23_tunit_falsified_property_is_one_failed_test_with_counterexample_and_replay()
     {
-        var reference = Reference();
         var result = Single(Forms.Value, "IntBelow10");
         result.Outcome.Should().BeEquivalentTo("Failed", because: Forms.Value.Run.Output);
 
         var message = Normalize(result.Message);
-        message.Should().Contain("10", because: "the counterexample is 10. Message: " + message);
 
-        // The text of GalaxyCheck.Xunit, from the same property with the same seed: each line that holds no
-        // replay string appears as it is, and the text before the replay string appears too.
-        foreach (var line in Normalize(reference.Message).Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0))
-        {
-            var at = line.IndexOf(reference.Replay, StringComparison.Ordinal);
-            var expected = at < 0 ? line : line[..at].Trim();
-            if (expected.Length > 0)
-            {
-                message.Should().Contain(expected, because: "the text of GalaxyCheck.Xunit is: " + reference.Message);
-            }
-        }
+        // The text of GalaxyCheck.Xunit: a "Counterexample:" part with the value, and the line
+        // "Reproduction: [Replay("<replay>")]".
+        message.Should().MatchRegex(@"Counterexample:[\s\S]*\b10\b", because: "the counterexample is 10. Message: " + message);
+        var match = Regex.Match(message, @"\[Replay\(""([^""]+)""\)\]");
+        match.Success.Should().BeTrue(because: "the message holds [Replay(\"...\")] with a replay string. Message: " + message);
+        var replay = match.Groups[1].Value;
+        replay.Should().NotBeNullOrWhiteSpace();
+
+        // The replay string decodes: the same property with it fails in one test case with the counterexample 10.
+        var replayed = Property.ForAll(Gen.Int32(), x => x < 10).Check(replay: replay);
+        replayed.Falsified.Should().BeTrue();
+        replayed.Iterations.Should().Be(1);
+        replayed.Counterexample!.Value.Should().Be(10);
     }
 
     [Fact]

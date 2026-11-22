@@ -28,7 +28,14 @@ internal static class S11Metadata
             var members = new HashSet<string>();
             foreach (var p in type.GetProperties())
             {
-                members.Add(md.GetString(md.GetPropertyDefinition(p).Name));
+                var accessors = md.GetPropertyDefinition(p).GetAccessors();
+                var isPublic = new[] { accessors.Getter, accessors.Setter }
+                    .Where(h => !h.IsNil)
+                    .Any(h => (md.GetMethodDefinition(h).Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public);
+                if (isPublic)
+                {
+                    members.Add(md.GetString(md.GetPropertyDefinition(p).Name));
+                }
             }
 
             foreach (var f in type.GetFields())
