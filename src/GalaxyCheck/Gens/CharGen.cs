@@ -49,7 +49,7 @@ namespace GalaxyCheck.Gens
 
             var chars = CharsOf(charType).ToList();
 
-            return new ElementGen<char>(chars);
+            return new ElementGen<char>(chars, Gen.Bias.WithSize);
         }
 
         private static readonly System.Collections.Concurrent.ConcurrentDictionary<Gen.CharType, char[]> CharsByType = new();

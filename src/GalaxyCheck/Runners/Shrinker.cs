@@ -18,7 +18,6 @@ namespace GalaxyCheck.Runners
     internal sealed class Shrinker
     {
         private const int MaxCandidates = 20_000;
-        public static readonly long[] PassCounts = new long[16]; // TEMP
 
         /// <summary>The distance between two choices that the passes on pairs of choices try.</summary>
         private const int PairWindow = 8;
@@ -96,7 +95,8 @@ namespace GalaxyCheck.Runners
             return true;
         }
 
-        private bool IsSimpler(ulong[] choices, int length)
+        /// <summary>True when the choices are simpler than the best choices.</summary>
+        public bool IsSimpler(ulong[] choices, int length)
         {
             if (length != _bestLength) return length < _bestLength;
 
@@ -190,7 +190,6 @@ namespace GalaxyCheck.Runners
                 var shrinks = Shrinks;
                 foreach (var _ in CheapPasses())
                 {
-                    PassCounts[0]++;
                     yield return true;
                     if (Stop()) yield break;
                 }
@@ -203,7 +202,6 @@ namespace GalaxyCheck.Runners
                     shrinks = Shrinks;
                     foreach (var _ in StructuralPass(pass))
                     {
-                        PassCounts[pass + 1]++;
                         yield return true;
                         if (Stop()) yield break;
                     }

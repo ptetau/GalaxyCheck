@@ -162,6 +162,11 @@ namespace GalaxyCheck.Runners
                     outcome.Input = test.Input;
                     outcome.PresentedInput = test.PresentedInput;
 
+                    if (!source.ShouldRunTest())
+                    {
+                        return outcome;
+                    }
+
                     if (timeoutMs == 0)
                     {
                         var output = test.Output.Value;
@@ -247,22 +252,6 @@ namespace GalaxyCheck.Runners
 
                     run.CompleteCandidate(outcome);
                 }
-
-                if (run.BeginFinalReplay())
-                {
-                    try
-                    {
-                        run.CompleteFinalReplay(Evaluate(source));
-                    }
-                    catch (Exception)
-                    {
-                        // The best choices made a value before, so this does not happen; keep the counterexample.
-                    }
-                    finally
-                    {
-                        source.End();
-                    }
-                }
             }
 
             return run.Result(outcome => Present(outcome));
@@ -288,6 +277,11 @@ namespace GalaxyCheck.Runners
                 var start = track ? Environment.TickCount64 : 0;
                 var test = gen.Generate(source);
                 var generationMs = track ? Environment.TickCount64 - start : 0;
+
+                if (!source.ShouldRunTest())
+                {
+                    return new TestCaseOutcome<T> { Input = test.Input, PresentedInput = test.PresentedInput };
+                }
 
                 Property.TestOutput? output;
                 Exception? error = null;
@@ -375,22 +369,6 @@ namespace GalaxyCheck.Runners
 
                     run.CompleteCandidate(outcome);
                 }
-
-                if (run.BeginFinalReplay())
-                {
-                    try
-                    {
-                        run.CompleteFinalReplay(await Evaluate(source));
-                    }
-                    catch (Exception)
-                    {
-                        // The best choices made a value before, so this does not happen; keep the counterexample.
-                    }
-                    finally
-                    {
-                        source.End();
-                    }
-                }
             }
 
             return run.Result(outcome => outcome.PresentedInput!);
@@ -439,7 +417,6 @@ namespace GalaxyCheck.Runners
         private TestCaseOutcome<T> _counterexample;
         private bool _hasCounterexample;
         private int _counterexampleSize;
-        private bool _lastFailureKept = true;
 
         public CheckRun(
             int? iterations,
@@ -621,6 +598,7 @@ namespace GalaxyCheck.Runners
             var limit = _replay != null || outcome.TimedOut ? 0 : _shrinkLimit;
             Shrinker = new Shrinker(Source, limit);
             Source.IsWalking = false;
+            Source.Shrinker = Shrinker;
 
             return true;
         }
@@ -714,35 +692,7 @@ namespace GalaxyCheck.Runners
 
         public void CompleteCandidate(in TestCaseOutcome<T> outcome)
         {
-            if (!outcome.Failed) return;
-
-            if (Shrinker!.TryAccept(Source))
-            {
-                _counterexample = outcome;
-                _lastFailureKept = true;
-            }
-            else
-            {
-                _lastFailureKept = false;
-            }
-        }
-
-        /// <summary>
-        /// Starts a last run of the counterexample when a candidate failed after it and was not kept, so that the last
-        /// failing input of the test function is the counterexample. Returns false when no run is needed.
-        /// </summary>
-        public bool BeginFinalReplay()
-        {
-            if (_lastFailureKept) return false;
-
-            _lastFailureKept = true;
-            Source.BeginReplay(Shrinker!.Best, Shrinker.BestLength, _counterexampleSize);
-            return true;
-        }
-
-        public void CompleteFinalReplay(in TestCaseOutcome<T> outcome)
-        {
-            if (outcome.Failed)
+            if (outcome.Failed && Shrinker!.TryAccept(Source))
             {
                 _counterexample = outcome;
             }

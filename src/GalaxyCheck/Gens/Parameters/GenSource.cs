@@ -48,6 +48,15 @@ namespace GalaxyCheck.Gens.Parameters
 
         internal bool IsReplaying { get; private set; }
 
+        /// <summary>
+        /// The shrinker of the run, once a test case failed. A candidate whose choices are not simpler than the best
+        /// choices does not run the test function, so that each failing input of the test function is a kept shrink.
+        /// </summary>
+        internal Runners.Shrinker? Shrinker { get; set; }
+
+        /// <summary>True when the test function runs on the value that the source just made.</summary>
+        internal bool ShouldRunTest() => Shrinker == null || Shrinker.IsSimpler(_choices, _length);
+
         /// <summary>True in an exhaustive run, which replays the choices of each value of a finite domain.</summary>
         internal bool IsWalking { get; set; }
 
