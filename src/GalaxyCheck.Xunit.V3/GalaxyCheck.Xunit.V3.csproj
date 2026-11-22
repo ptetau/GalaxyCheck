@@ -9,6 +9,8 @@
     <IsTestProject>false</IsTestProject>
     <PackageId>GalaxyCheck.Xunit.V3</PackageId>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <!-- Keep the dependencies beside the assembly in bin, so that a tool can load the built assembly. -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>

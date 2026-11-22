@@ -67,6 +67,49 @@ namespace GalaxyCheck
     /// </summary>
     public sealed class PropertyTestAttribute : PropertyAttribute
     {
+        // Each option is declared again here, so that it shows on this type; the value is stored by the base class.
+
+        /// <inheritdoc cref="PropertyAttribute.Iterations"/>
+        public new int Iterations
+        {
+            get => base.Iterations;
+            set => base.Iterations = value;
+        }
+
+        /// <inheritdoc cref="PropertyAttribute.ShrinkLimit"/>
+        public new int ShrinkLimit
+        {
+            get => base.ShrinkLimit;
+            set => base.ShrinkLimit = value;
+        }
+
+        /// <inheritdoc cref="PropertyAttribute.Seed"/>
+        public new int Seed
+        {
+            get => base.Seed;
+            set => base.Seed = value;
+        }
+
+        /// <inheritdoc cref="PropertyAttribute.Size"/>
+        public new int Size
+        {
+            get => base.Size;
+            set => base.Size = value;
+        }
+
+        /// <inheritdoc cref="PropertyAttribute.TimeoutMilliseconds"/>
+        public new int TimeoutMilliseconds
+        {
+            get => base.TimeoutMilliseconds;
+            set => base.TimeoutMilliseconds = value;
+        }
+
+        /// <inheritdoc cref="PropertyAttribute.Exhaustive"/>
+        public new bool Exhaustive
+        {
+            get => base.Exhaustive;
+            set => base.Exhaustive = value;
+        }
     }
 
     /// <summary>
