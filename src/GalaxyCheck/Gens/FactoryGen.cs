@@ -42,6 +42,8 @@ namespace GalaxyCheck.Gens
     using System.Linq.Expressions;
     using System.Reflection;
     using System.Drawing;
+    using System.Numerics;
+    using System.Text;
 
 
     public interface IReflectedGen<T> : IGen<T>
@@ -106,31 +108,43 @@ namespace GalaxyCheck.Gens
         private static readonly IReadOnlyDictionary<Type, Func<IGen>> DefaultRegisteredGensByType =
             new Dictionary<Type, Func<IGen>>
             {
-                // Integers and complements
-                { typeof(short), () => Gen.Int16() },
-                { typeof(ushort), () => Gen.Int16().Select(x => (ushort)x) },
-                { typeof(int), () => Gen.Int32() },
-                { typeof(uint), () => Gen.Int32().Select(x => (uint)x) },
-                { typeof(long), () => Gen.Int64() },
-                { typeof(ulong), () => Gen.Int64().Select(x => (ulong)x) },
+                // Integers
+                { typeof(sbyte), () => Gen.SByte() },
                 { typeof(byte), () => Gen.Byte() },
-                { typeof(sbyte), () => Gen.Byte().Select(x => (sbyte)x) },
+                { typeof(short), () => Gen.Int16() },
+                { typeof(ushort), () => Gen.UInt16() },
+                { typeof(int), () => Gen.Int32() },
+                { typeof(uint), () => Gen.UInt32() },
+                { typeof(long), () => Gen.Int64() },
+                { typeof(ulong), () => Gen.UInt64() },
+                { typeof(nint), () => Gen.IntPtr() },
+                { typeof(nuint), () => Gen.UIntPtr() },
+                { typeof(Int128), () => Gen.Int128() },
+                { typeof(UInt128), () => Gen.UInt128() },
+                { typeof(BigInteger), () => Gen.BigInteger() },
 
                 // Dates and times
                 { typeof(DateTime), () => Gen.DateTime() },
-                {
-                    typeof(DateTimeOffset),
-                    () => Gen.DateTime().Within(new DateTime(1, 1, 2), new DateTime(9998, 12, 30))
-                        .Select((x => new DateTimeOffset(x)))
-                },
-                { typeof(TimeSpan), () => Gen.Int64().Select(x => new TimeSpan(x)) },
+                { typeof(DateTimeOffset), () => Gen.DateTimeOffset() },
+                { typeof(TimeSpan), () => Gen.TimeSpan() },
+                { typeof(DateOnly), () => Gen.DateOnly() },
+                { typeof(TimeOnly), () => Gen.TimeOnly() },
 
-                // Decimals - not interesting values, but won't halt the generator at least
-                { typeof(float), () => Gen.Int32().Select(x => (float)x) },
-                { typeof(double), () => Gen.Int32().Select(x => (double)x) },
-                { typeof(decimal), () => Gen.Int32().Select(x => (decimal)x) },
+                // Real numbers
+                { typeof(Half), () => Gen.Half() },
+                { typeof(float), () => Gen.Single() },
+                { typeof(double), () => Gen.Double() },
+                { typeof(decimal), () => Gen.Decimal() },
+                { typeof(Complex), () => Gen.Complex() },
+#if NET11_0_OR_GREATER
+                { typeof(Decimal32), () => Gen.Decimal32() },
+                { typeof(Decimal64), () => Gen.Decimal64() },
+                { typeof(Decimal128), () => Gen.Decimal128() },
+                { typeof(BFloat16), () => Gen.BFloat16() },
+#endif
 
                 // Misc...
+                { typeof(Rune), () => Gen.Rune() },
                 { typeof(char), () => Gen.Char() },
                 { typeof(string), () => Gen.String() },
                 { typeof(Guid), () => Gen.Guid() },
@@ -141,21 +155,28 @@ namespace GalaxyCheck.Gens
 
         private readonly ImmutableDictionary<Type, Func<IGen>> _registeredGensByType;
 
-        private GenFactory(ImmutableDictionary<Type, Func<IGen>> registeredGensByType)
+        private readonly ImmutableDictionary<Type, ImmutableArray<Type>> _candidateTypesByType;
+
+        private GenFactory(
+            ImmutableDictionary<Type, Func<IGen>> registeredGensByType,
+            ImmutableDictionary<Type, ImmutableArray<Type>> candidateTypesByType)
         {
             _registeredGensByType = registeredGensByType;
+            _candidateTypesByType = candidateTypesByType;
         }
 
-        public GenFactory() : this(DefaultRegisteredGensByType
-            .ToImmutableDictionary(
-                kvp => kvp.Key,
-                kvp => kvp.Value))
+        public GenFactory() : this(
+            DefaultRegisteredGensByType.ToImmutableDictionary(kvp => kvp.Key, kvp => kvp.Value),
+            ImmutableDictionary<Type, ImmutableArray<Type>>.Empty)
         {
         }
 
         IGenFactory IGenFactory.RegisterType(Type type, IGen gen) => RegisterType(type, (_) => gen);
 
-        IGenFactory IGenFactory.RegisterImplementations<T>(params Type[] candidateTypes) => throw new System.NotImplementedException("not implemented");
+        IGenFactory IGenFactory.RegisterImplementations<T>(params Type[] candidateTypes) =>
+            new GenFactory(
+                _registeredGensByType,
+                _candidateTypesByType.SetItem(typeof(T), candidateTypes.ToImmutableArray()));
 
         IGenFactory IGenFactory.RegisterType<T>(IGen<T> gen) => RegisterType(typeof(T), (_) => gen);
 
@@ -165,16 +186,17 @@ namespace GalaxyCheck.Gens
 
         //// TODO: Cache this call by (this/T)
         IReflectedGen<T> IGenFactory.Create<T>(NullabilityInfo? nullabilityInfo) =>
-            new ReflectedGen<T>(_registeredGensByType, nullabilityInfo);
+            new ReflectedGen<T>(_registeredGensByType, _candidateTypesByType, nullabilityInfo);
 
         private IGenFactory RegisterType(Type type, Func<IGenFactory, IGen> genFunc) =>
-            new GenFactory(_registeredGensByType.SetItem(type, () => genFunc(this)));
+            new GenFactory(_registeredGensByType.SetItem(type, () => genFunc(this)), _candidateTypesByType);
     }
 
     internal record ReflectedGenMemberOverride(string Path, IGen Gen);
 
     internal record ReflectedGen<T>(
         IReadOnlyDictionary<Type, Func<IGen>> RegisteredGensByType,
+        ImmutableDictionary<Type, ImmutableArray<Type>> CandidateTypesByType,
         ImmutableList<ReflectedGenMemberOverride> MemberOverrides,
         ReflectedGen<T>.OverrideMemberErrorKind? OverrideMemberError,
         NullabilityInfo? NullabilityInfo) : GenProvider<T>, IReflectedGen<T>
@@ -195,6 +217,18 @@ namespace GalaxyCheck.Gens
             NullabilityInfo? nullabilityInfo)
             : this(
                 registeredGensByType,
+                ImmutableDictionary<Type, ImmutableArray<Type>>.Empty,
+                nullabilityInfo)
+        {
+        }
+
+        public ReflectedGen(
+            IReadOnlyDictionary<Type, Func<IGen>> registeredGensByType,
+            ImmutableDictionary<Type, ImmutableArray<Type>> candidateTypesByType,
+            NullabilityInfo? nullabilityInfo)
+            : this(
+                registeredGensByType,
+                candidateTypesByType,
                 ImmutableList.Create<ReflectedGenMemberOverride>(),
                 null,
                 nullabilityInfo)
@@ -234,7 +268,7 @@ namespace GalaxyCheck.Gens
                 var context = ReflectedGenHandlerContext.Create(typeof(T), NullabilityInfo);
 
                 return ReflectedGenBuilder
-                    .Build(typeof(T), RegisteredGensByType, MemberOverrides, context)
+                    .Build(typeof(T), RegisteredGensByType, MemberOverrides, CandidateTypesByType, context)
                     .Cast<T>();
             }
         }
