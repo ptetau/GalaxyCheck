@@ -168,7 +168,7 @@
   - Given that property with a time limit of 100 milliseconds and a test function that waits on the token, when the limit passes, then the token is cancelled. (R41)
 - Layers: property api, runner, report, xunit v2 package
 - Tier: standard
-- Status: review
+- Status: building
 - Test rounds: 2
 - Review rounds: 1
 

@@ -64,19 +64,20 @@ namespace GalaxyCheck.Tests.Slice
 
             result.Falsified.Should().BeFalse();
             result.Labels.Should().ContainKey("even");
-            result.Labels["even"].Should().BeInRange(0, 100);
-            result.Report.Should().MatchRegex(EvenShare.ToString());
+            result.Labels["even"].Should().Be(50);
+            result.Report.Should().Contain("50% even");
         }
 
         [Fact]
         public void test_001_S6_R36_failure_report_lists_label_share()
         {
-            var property = Property.ForAll(Gen.Int32().Between(0, 9), x => x < 5)
+            // Each test case that runs is 2, so the share of "even" is exactly 100%.
+            var property = Property.ForAll(Gen.Element(new[] { 2 }), x => false)
                 .Label("even", x => x % 2 == 0);
 
             var message = FailureMessage(() => property.Assert(iterations: 100, seed: 1));
 
-            message.Should().MatchRegex(EvenShare.ToString());
+            message.Should().Contain("100% even");
         }
 
         // R37: cover
@@ -233,7 +234,31 @@ namespace GalaxyCheck.Tests.Slice
             var act = () => DiscardingProperty().Check(
                 iterations: 100, seed: 1, suppressHealthChecks: new[] { HealthCheck.TooManyDiscards });
 
-            act.Should().NotThrow<HealthCheckException>();
+            var result = act.Should().NotThrow().Which;
+            result.Falsified.Should().BeFalse(result.Report);
+        }
+
+        private static Property<int> NeverRunsProperty() =>
+            Property.ForAll(Gen.Int32().Between(0, 999), x => { Property.Precondition(false); });
+
+        [Fact]
+        public void test_001_S6_R56_never_runs_check_names_check()
+        {
+            var act = () => NeverRunsProperty().Check(iterations: 100, seed: 1);
+
+            var thrown = act.Should().Throw<HealthCheckException>().Which;
+            thrown.Check.Should().Be(HealthCheck.TestFunctionNeverRuns);
+            thrown.Message.Should().Contain("TestFunctionNeverRuns").And.Contain("suppressHealthChecks");
+        }
+
+        [Fact]
+        public void test_001_S6_R56_suppressed_never_runs_check_does_not_fail()
+        {
+            var act = () => NeverRunsProperty().Check(
+                iterations: 100, seed: 1, suppressHealthChecks: new[] { HealthCheck.TestFunctionNeverRuns });
+
+            var result = act.Should().NotThrow().Which;
+            result.Falsified.Should().BeFalse(result.Report);
         }
 
         [Fact]
@@ -301,7 +326,7 @@ namespace GalaxyCheck.Tests.Slice
 
             var expression = ExpressionOf(value);
             message.Should().Contain(Section).And.Contain(expression);
-            ((IEnumerable)Evaluate(expression)!).Cast<object>().Select(Convert.ToInt32).Should().Equal(1, 2);
+            Evaluate(expression).Should().BeOfType<List<int>>().Which.Should().Equal(1, 2);
         }
 
         [Fact]
@@ -341,50 +366,87 @@ namespace GalaxyCheck.Tests.Slice
 
         // R40: timeout
 
+        private static readonly int[] TimeoutInputs = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+
         [Fact]
         public void test_001_S6_R40_sync_function_over_limit_fails_fast_with_limit_and_input()
         {
-            var property = Property.ForAll(Gen.Element(new[] { 7 }), x =>
+            // Only the input 7 waits. Each other case takes 30 ms, so the whole run takes more than 100 ms.
+            var property = Property.ForAll(Gen.Element(TimeoutInputs), x =>
             {
-                Thread.Sleep(5000);
+                Thread.Sleep(x == 7 ? 5000 : 30);
                 return true;
             });
 
             var watch = Stopwatch.StartNew();
-            var result = property.Check(iterations: 10, seed: 1, timeout: TimeSpan.FromMilliseconds(100));
+            var result = property.Check(iterations: 100, seed: 1, timeout: TimeSpan.FromMilliseconds(100));
             watch.Stop();
             result.Falsified.Should().BeTrue();
             watch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2));
 
             watch.Restart();
             var message = FailureMessage(() =>
-                property.Assert(iterations: 10, seed: 1, timeout: TimeSpan.FromMilliseconds(100)));
+                property.Assert(iterations: 100, seed: 1, timeout: TimeSpan.FromMilliseconds(100)));
             watch.Stop();
             watch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2));
-            message.Should().Contain("Timed out after 100 ms").And.Contain("7");
+            message.Should().Contain("Timed out after 100 ms").And.Contain("Counterexample: 7");
+        }
+
+        [Fact]
+        public void test_001_S6_R40_sync_cases_under_limit_pass_when_whole_run_is_longer()
+        {
+            var property = Property.ForAll(Gen.Element(TimeoutInputs), x =>
+            {
+                Thread.Sleep(30);
+                return true;
+            });
+
+            var watch = Stopwatch.StartNew();
+            var result = property.Check(iterations: 100, seed: 1, timeout: TimeSpan.FromMilliseconds(100));
+            watch.Stop();
+
+            watch.Elapsed.Should().BeGreaterThan(TimeSpan.FromMilliseconds(100));
+            result.Falsified.Should().BeFalse(result.Report);
         }
 
         [Fact]
         public async Task test_001_S6_R40_async_function_over_limit_fails_fast_with_limit_and_input()
         {
-            var property = Property.ForAllAsync(Gen.Element(new[] { 7 }), async x =>
+            var property = Property.ForAllAsync(Gen.Element(TimeoutInputs), async x =>
             {
-                await Task.Delay(5000);
+                await Task.Delay(x == 7 ? 5000 : 30);
                 return true;
             });
 
             var watch = Stopwatch.StartNew();
-            var result = await property.CheckAsync(iterations: 10, seed: 1, timeout: TimeSpan.FromMilliseconds(100));
+            var result = await property.CheckAsync(iterations: 100, seed: 1, timeout: TimeSpan.FromMilliseconds(100));
             watch.Stop();
             result.Falsified.Should().BeTrue();
             watch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2));
 
             watch.Restart();
             var message = await FailureMessageAsync(() =>
-                property.AssertAsync(iterations: 10, seed: 1, timeout: TimeSpan.FromMilliseconds(100)));
+                property.AssertAsync(iterations: 100, seed: 1, timeout: TimeSpan.FromMilliseconds(100)));
             watch.Stop();
             watch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2));
-            message.Should().Contain("Timed out after 100 ms").And.Contain("7");
+            message.Should().Contain("Timed out after 100 ms").And.Contain("Counterexample: 7");
+        }
+
+        [Fact]
+        public async Task test_001_S6_R40_async_cases_under_limit_pass_when_whole_run_is_longer()
+        {
+            var property = Property.ForAllAsync(Gen.Element(TimeoutInputs), async x =>
+            {
+                await Task.Delay(30);
+                return true;
+            });
+
+            var watch = Stopwatch.StartNew();
+            var result = await property.CheckAsync(iterations: 100, seed: 1, timeout: TimeSpan.FromMilliseconds(100));
+            watch.Stop();
+
+            watch.Elapsed.Should().BeGreaterThan(TimeSpan.FromMilliseconds(100));
+            result.Falsified.Should().BeFalse(result.Report);
         }
 
         private static readonly Lazy<(IReadOnlyList<TrxResult> Results, CliResult Run)> XunitSample = new(() =>
@@ -399,6 +461,7 @@ namespace GalaxyCheck.Tests.Slice
             result.Should().NotBeNull("the sample run must report the test. Output:\n" + run.Output);
             result!.Outcome.Should().Be("Failed", run.Output);
             result.Message.Should().Contain("Timed out after 100 ms", run.Output);
+            result.Message.Should().MatchRegex(@"Counterexample: -?\d+", run.Output);
         }
 
         // R41: cancellation
