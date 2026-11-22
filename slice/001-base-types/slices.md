@@ -340,6 +340,6 @@
 - Layers: tests, generator core, shrinking, runner, docs
 - Tier: hard
 - Status: building
-- Test rounds: 1
+- Test rounds: 2
 - Review rounds: 0
 
