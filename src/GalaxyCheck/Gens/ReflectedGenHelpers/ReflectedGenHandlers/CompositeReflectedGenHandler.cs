@@ -18,7 +18,7 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
 
         public IGen CreateGen(IReflectedGenHandler innerHandler, Type type, ReflectedGenHandlerContext context)
         {
-            if (context.TypeHistory.Skip(1).Any(t => t == type))
+            if (context.IsCircularWithoutCollection(type))
             {
                 return context.Error(type, $"detected circular reference on type '{type}'");
             }

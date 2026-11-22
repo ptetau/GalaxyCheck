@@ -23,6 +23,46 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers
         };
 
         public string MemberPath => string.Join(".", Members);
+
+        /// <summary>The depth limit of a type that refers to itself through a collection.</summary>
+        public const int MaxRecursionDepth = 5;
+
+        /// <summary>The most elements of a collection whose element type refers to itself.</summary>
+        public const int MaxRecursiveCollectionCount = 3;
+
+        /// <summary>
+        /// The number of times that the type is in the history, which is the depth of a value of the type that
+        /// the context would make next.
+        /// </summary>
+        public int CountInHistory(Type type) => TypeHistory.Count(t => t == type);
+
+        /// <summary>
+        /// True when the current type is in the history above it and no collection is between the two. A type can
+        /// only refer to itself through a collection, which can be empty at the depth limit.
+        /// </summary>
+        public bool IsCircularWithoutCollection(Type type)
+        {
+            // The members and the types are in step: the root type has the member "$".
+            var types = TypeHistory.Reverse().ToArray();
+            var last = types.Length - 1;
+            for (var i = last - 1; i >= 0; i--)
+            {
+                if (types[i] == type)
+                {
+                    for (var j = i + 1; j <= last; j++)
+                    {
+                        if (Members[j] == "[*]")
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     internal static class ReflectedGenHandlerContextExtensions
