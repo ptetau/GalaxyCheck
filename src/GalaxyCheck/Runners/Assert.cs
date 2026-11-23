@@ -4,6 +4,7 @@ using GalaxyCheck.Runners.Check;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace GalaxyCheck
@@ -285,7 +286,7 @@ namespace GalaxyCheck.Runners
         /// </summary>
         private static string RenameMarkerLines(string text)
         {
-            var lines = text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+            var (lines, breaks) = SplitLines(text);
             var inInnerBlock = false;
             for (var i = 0; i < lines.Length; i++)
             {
@@ -306,7 +307,51 @@ namespace GalaxyCheck.Runners
                 }
             }
 
-            return string.Join(Environment.NewLine, lines);
+            var result = new StringBuilder(text.Length + 64);
+            for (var i = 0; i < lines.Length; i++)
+            {
+                result.Append(lines[i]);
+                if (i < breaks.Length)
+                {
+                    result.Append(breaks[i]);
+                }
+            }
+
+            return result.ToString();
+        }
+
+        /// <summary>
+        /// Splits the text at each line break that a line reader can see: <c>\r\n</c>, <c>\n</c>, <c>\r</c>,
+        /// <c>\v</c>, <c>\f</c>, U+0085, U+2028, and U+2029. A <c>\r\n</c> or a <c>\n</c> becomes
+        /// <see cref="Environment.NewLine"/>, and each other break stays.
+        /// </summary>
+        private static (string[] Lines, string[] Breaks) SplitLines(string text)
+        {
+            var lines = new List<string>();
+            var breaks = new List<string>();
+            var start = 0;
+            for (var i = 0; i < text.Length; i++)
+            {
+                var c = text[i];
+                if (c is '\n' or '\r' or '\v' or '\f' or '\u0085' or '\u2028' or '\u2029')
+                {
+                    lines.Add(text.Substring(start, i - start));
+                    if (c == '\r' && i + 1 < text.Length && text[i + 1] == '\n')
+                    {
+                        breaks.Add(Environment.NewLine);
+                        i++;
+                    }
+                    else
+                    {
+                        breaks.Add(c == '\n' ? Environment.NewLine : c.ToString());
+                    }
+
+                    start = i + 1;
+                }
+            }
+
+            lines.Add(text.Substring(start));
+            return (lines.ToArray(), breaks.ToArray());
         }
     }
 }

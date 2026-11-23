@@ -12,7 +12,11 @@ namespace GalaxyCheck.Internal.Infrastructure.XunitV3
         Task Run(IXunitTest test, object? testClassInstance, string? rowIndex);
     }
 
-    /// <summary>Runs the property of a [Property] or [Sample] method. A data row gives the first parameters.</summary>
+    /// <summary>
+    /// Runs the property of a [Property] or [Sample] method. A data row gives the first parameters. The rerun command
+    /// selects one row only for a row that discovery saved as a test case: <c>dotnet test</c> does not know a row that
+    /// xunit reads when the test runs, so the command selects the method of such a row.
+    /// </summary>
     internal sealed class PropertyBody : ITestBody
     {
         public static PropertyBody Instance { get; } = new();
@@ -32,7 +36,10 @@ namespace GalaxyCheck.Internal.Infrastructure.XunitV3
                 GlobalConfiguration.GetInstance(testClassType.Assembly).FailureMemory,
                 rowIndex: rowIndex,
                 dotnetTestFilter: FailureMessage.XunitFilter(
-                    testClassType, test.TestMethod.Method, isDataRow: arguments.Length > 0, test.TestDisplayName));
+                    testClassType,
+                    test.TestMethod.Method,
+                    isDataRow: arguments.Length > 0 && test.TestCase is PropertyTestCase,
+                    test.TestCase.TestCaseDisplayName));
 
             await initialization.Runner.Run(initialization.Parameters);
         }

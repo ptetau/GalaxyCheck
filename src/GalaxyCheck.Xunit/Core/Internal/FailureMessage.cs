@@ -91,14 +91,52 @@ namespace GalaxyCheck.Internal
 
         /// <summary>
         /// The filter of a test of xunit or MSTest: an exact match on <c>Namespace.Class.Method</c>. Each row of a
-        /// method has that name, so the filter selects the rows of that method, and no other method. A name that the
-        /// command line cannot carry selects each test of the class.
+        /// method has that name, so the filter selects the rows of that method, and no other method. A name with white
+        /// space at its end gets <see cref="TrimmedMethodFilter"/>. Each other name that the command line cannot carry
+        /// selects each test of the class.
         /// </summary>
         private static string MethodFilter(Type testClassType, MethodInfo testMethodInfo)
         {
             var className = testClassType.FullName ?? testClassType.Name;
             var name = $"{className}.{testMethodInfo.Name}";
-            return CanFilterExactly(name) ? FilterEquals("FullyQualifiedName", name) : ClassFilter(className);
+            return CanFilterExactly(name)
+                ? FilterEquals("FullyQualifiedName", name)
+                : TrimmedMethodFilter(testClassType, className, testMethodInfo.Name) ?? ClassFilter(className);
+        }
+
+        /// <summary>
+        /// The filter for a method name that <c>dotnet test</c> trims: the full name contains the trimmed name, and it
+        /// is not the name of each other method of the class that contains the trimmed name. Null when a filter cannot
+        /// exclude another method, as the name of that method has white space at its end too.
+        /// </summary>
+        private static string? TrimmedMethodFilter(Type testClassType, string className, string methodName)
+        {
+            var core = $"{className}.{methodName}".Trim();
+            if (core.Length == 0 || !CanFilterExactly(core))
+            {
+                return null;
+            }
+
+            const BindingFlags AllMethods =
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+            var terms = new List<string> { $"FullyQualifiedName~{EscapeFilterValue(core, VsTestSpecial)}" };
+            var otherNames = testClassType.GetMethods(AllMethods)
+                .Select(method => method.Name)
+                .Where(name => name != methodName)
+                .Distinct()
+                .Select(name => $"{className}.{name}")
+                .Where(name => name.IndexOf(core, StringComparison.OrdinalIgnoreCase) >= 0);
+            foreach (var other in otherNames)
+            {
+                if (!CanFilterExactly(other))
+                {
+                    return null;
+                }
+
+                terms.Add($"FullyQualifiedName!={EscapeFilterValue(other, VsTestSpecial)}");
+            }
+
+            return string.Join("&", terms);
         }
 
         /// <summary>
@@ -126,11 +164,17 @@ namespace GalaxyCheck.Internal
 
         /// <summary>
         /// True when <c>dotnet test --filter</c> can carry the value in an exact match. The test host reads a
-        /// backslash before a quote as an escape of the quote, so such a value matches no test. Each other value,
-        /// also with a space or a single quote, matches exactly.
+        /// backslash before a quote as an escape of the quote, so such a value matches no test. The test host also
+        /// trims white space from the start and the end of each value. Each other value, also with a space or a
+        /// single quote inside, matches exactly.
         /// </summary>
         public static bool CanFilterExactly(string value)
         {
+            if (value.Length > 0 && (char.IsWhiteSpace(value[0]) || char.IsWhiteSpace(value[value.Length - 1])))
+            {
+                return false;
+            }
+
             for (var i = 1; i < value.Length; i++)
             {
                 if (value[i] == '"' && value[i - 1] == '\\')
