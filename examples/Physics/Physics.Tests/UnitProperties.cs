@@ -61,10 +61,11 @@ public class UnitProperties
 
     public static IGen<double> Fahrenheit => PhysicsGen.Between(-459.67, 1e6);
 
-    // Known edge cases run before the generated values: absolute zero, where rounding can give a value a little below
-    // 0 K, and -40, where both scales meet.
+    // Known edge cases run before the generated values: absolute zero; the double just below it, which a rounding
+    // error can give and which must count as absolute zero; and -40, where both scales meet.
     [Test, PropertyTest]
     [Example(-459.67)]
+    [Example(-459.6700000000001)]
     [Example(-40.0)]
     public bool FahrenheitToCelsiusFollowsTheDefinition([MemberGen(nameof(Fahrenheit))] double fahrenheit)
     {

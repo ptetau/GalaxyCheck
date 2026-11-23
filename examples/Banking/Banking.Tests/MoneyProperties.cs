@@ -9,6 +9,10 @@ public class MoneyProperties
 
     public static IGen<IReadOnlyList<int>> Ratios => BankingGen.Ratios;
 
+    public static IGen<Currency> Currencies => BankingGen.Currency;
+
+    public static IGen<decimal> Fractions => Gen.Decimal().Between(-1_000_000m, 1_000_000m);
+
     // Round trip: the text of an amount parses back to the same amount and currency.
     [Property]
     public bool FormatThenParseGivesTheSameMoney([MemberGen(nameof(AnyMoney))] Money money) =>
@@ -21,15 +25,11 @@ public class MoneyProperties
         return Money.Round(once.Amount, currency) == once;
     }
 
-    public static IGen<Currency> Currencies => BankingGen.Currency;
-
     [Property]
     public bool RoundingMovesAnAmountByAtMostHalfAUnit(
         [MemberGen(nameof(Currencies))] Currency currency,
         [MemberGen(nameof(Fractions))] decimal amount) =>
         Math.Abs(Money.Round(amount, currency).Amount - amount) <= currency.Unit / 2;
-
-    public static IGen<decimal> Fractions => Gen.Decimal().Between(-1_000_000m, 1_000_000m);
 
     // Invariant: allocation never creates or loses a minor unit.
     [Property]

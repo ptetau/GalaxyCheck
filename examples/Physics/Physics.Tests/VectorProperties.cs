@@ -15,8 +15,18 @@ public class VectorProperties
             })
             .Cover("tiny (below 1e-150)", 10, v => v.Length < 1e-150)
             .Cover("huge (above 1e150)", 10, v => v.Length > 1e150)
-            .Cover("everyday (1e-10 to 1e10)", 1, v => v.Length is > 1e-10 and < 1e10)
+            .Label("everyday (1e-10 to 1e10)", v => v.Length is > 1e-10 and < 1e10)
             .Label("has a zero component", v => v.X == 0 || v.Y == 0 || v.Z == 0);
+
+    // Writes the share of each label of the property above. To see the text, run:
+    // dotnet test --project Physics.Tests -- --treenode-filter "/*/*/VectorProperties/ShowTheSpreadOfTheVectors" --output detailed
+    [Test]
+    public void ShowTheSpreadOfTheVectors()
+    {
+        var result = NormalizedVectorHasLengthOne().Check(iterations: 300);
+        Console.WriteLine(result.Report);
+        Expect(!result.Falsified, "the property holds");
+    }
 
     public static IGen<Vector3> AnyScale => PhysicsGen.AnyScaleVector;
 

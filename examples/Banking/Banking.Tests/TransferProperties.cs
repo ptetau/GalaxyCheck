@@ -126,8 +126,11 @@ public class TransferProperties
     public bool InterestHasTheSignOfTheBalance(
         [MemberGen(nameof(Balances))] Money balance,
         [MemberGen(nameof(Rates))] InterestRates rates,
-        [Between(0, 366)] int days) =>
-        Math.Sign(rates.Accrue(balance, days).Amount) is var sign && (sign == 0 || sign == Math.Sign(balance.Amount));
+        [Between(0, 366)] int days)
+    {
+        var sign = Math.Sign(rates.Accrue(balance, days).Amount);
+        return sign == 0 || sign == Math.Sign(balance.Amount);
+    }
 
     // Metamorphic: interest for two periods in a row is the same as for one long period, except for rounding.
     [Property]
