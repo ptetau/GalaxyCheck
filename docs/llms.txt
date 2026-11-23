@@ -1,0 +1,215 @@
+GalaxyCheck: property-based testing for .NET (net10.0 and net11.0). Agent reference.
+Each line names one public API with a one-line C# example. Examples assume `using GalaxyCheck; using GalaxyCheck.Gens;`.
+Packages: GalaxyCheck (core), GalaxyCheck.Xunit (xunit v2), GalaxyCheck.Xunit.V3, GalaxyCheck.TUnit, GalaxyCheck.NUnit, GalaxyCheck.MSTest.
+
+== Quick start ==
+Check a property: Property.ForAll(Gen.Int32(), x => x + 0 == x).Assert();
+Check and read the result: var result = Property.ForAll(Gen.Int32(), x => x < 10).Check(); if (result.Falsified) Console.WriteLine(result.Counterexample!.Value);
+Sample values: List<int> values = Gen.Int32().Between(0, 9).Sample(iterations: 10, seed: 0);
+A test in xunit: [Property] public bool AdditionCommutes(int x, int y) => x + y == y + x;
+Replay a failure: copy the replay string of the message into [Replay("...")] or .Check(replay: "...").
+
+== Generators: Gen ==
+Gen.BFloat16(): BFloat16 values, net11.0 only. Example: Gen.BFloat16().WithoutSpecialValues()
+Gen.BigInteger(): BigInteger values from -(2^127) to 2^127. Example: Gen.BigInteger().GreaterThanEqual(0)
+Gen.Boolean(): true and false. Example: Gen.Boolean()
+Gen.Byte(): byte values. Example: Gen.Byte().LessThanEqual(100)
+Gen.Char(charType): chars of the given types. Example: Gen.Char(Gen.CharType.Alphabetical | Gen.CharType.Numeric)
+Gen.Choose(...): picks one generator, with an optional weight for each. Example: Gen.Choose((Gen.Int32().LessThanEqual(0), 1), (Gen.Int32().GreaterThanEqual(100), 3))
+Gen.Complex(): System.Numerics.Complex values. Example: Gen.Complex().WithoutSpecialValues()
+Gen.ComplexOf(real, imaginary): Complex<T> values, net11.0 only. Example: Gen.ComplexOf(Gen.Double().Between(-1, 1), Gen.Double().Between(-1, 1))
+Gen.Constant(value): always the same value. Example: Gen.Constant("fixed")
+Gen.Create<T>(): a generator for any type, built by reflection or by the source generator. Example: Gen.Create<Order>()
+Gen.DateOnly(): DateOnly values, origin 2000-01-01. Example: Gen.DateOnly().From(new DateOnly(2000, 1, 1))
+Gen.DateTime(): DateTime values. Example: Gen.DateTime().From(new DateTime(2000, 1, 1)).Until(new DateTime(2030, 1, 1))
+Gen.DateTimeOffset(): DateTimeOffset values, origin 2000-01-01T00:00:00+00:00. Example: Gen.DateTimeOffset().From(DateTimeOffset.UnixEpoch)
+Gen.Decimal(): decimal values. Example: Gen.Decimal().Between(0m, 100m)
+Gen.Decimal32(): IEEE decimal32 values, net11.0 only. Example: Gen.Decimal32().WithoutSpecialValues()
+Gen.Decimal64(): IEEE decimal64 values, net11.0 only. Example: Gen.Decimal64().WithoutSpecialValues()
+Gen.Decimal128(): IEEE decimal128 values, net11.0 only. Example: Gen.Decimal128().WithoutSpecialValues()
+Gen.Dictionary(keyGen, valueGen): IReadOnlyDictionary values. Example: Gen.Dictionary(Gen.String(), Gen.Int32()).WithCountLessThanEqual(5)
+Gen.Double(): double values, with NaN and infinities unless excluded. Example: Gen.Double().Between(-1.0, 1.0)
+Gen.Element(values): one value of a list. Example: Gen.Element(new[] { "red", "green", "blue" })
+Gen.Email(): email addresses. Example: Gen.Email()
+Gen.Enum<T>(): the values of an enum. Example: Gen.Enum<DayOfWeek>()
+Gen.Factory(): a factory with registered generators for Create<T>(). Example: Gen.Factory().RegisterType(Gen.Int32().GreaterThanEqual(0)).Create<Order>()
+Gen.Function<T, TResult>(returnGen): pure functions with generated results. Example: Gen.Function<int, bool>(Gen.Boolean())
+Gen.Guid(): Guid values. Example: Gen.Guid()
+Gen.Half(): Half values. Example: Gen.Half().WithoutSpecialValues()
+Gen.Infinite(elementGen): infinite enumerables. Example: Gen.Infinite(Gen.Int32())
+Gen.Int16(): short values. Example: Gen.Int16().GreaterThanEqual(-10).LessThanEqual(10)
+Gen.Int32(): int values. Example: Gen.Int32().GreaterThanEqual(0).LessThanEqual(100)
+Gen.Int64(): long values. Example: Gen.Int64().ShrinkTowards(1)
+Gen.Int128(): Int128 values. Example: Gen.Int128().GreaterThanEqual(0)
+Gen.IntPtr(): nint values. Example: Gen.IntPtr().GreaterThanEqual(0)
+Gen.KeyValuePair(keyGen, valueGen): KeyValuePair values. Example: Gen.KeyValuePair(Gen.String(), Gen.Int32())
+Gen.List(elementGen): IReadOnlyList values. Example: Gen.List(Gen.Int32()).WithCountLessThanEqual(10)
+Gen.Nullable(gen): a reference value or null. Example: Gen.Nullable(Gen.String())
+Gen.NullableStruct(gen): a struct value or null. Example: Gen.NullableStruct(Gen.Int32())
+Gen.Parameters(methodInfo): the arguments of a method. Example: Gen.Parameters(typeof(MyTests).GetMethod("MyProperty")!)
+Gen.Recursive(leafGen, wrap, maxDepth): values that nest up to maxDepth (default 5, a leaf has depth 0). Example: Gen.Recursive(Gen.Constant("leaf"), inner => inner.Select(x => $"({x})"), maxDepth: 3)
+Gen.ReferenceRngWaypoint(gen, influence): an advanced operator that ties the random state of a generator to a reference. Example: Gen.Int32().Advanced.ReferenceRngWaypoint(influence: 1)
+Gen.Rune(): System.Text.Rune values. Example: Gen.Rune()
+Gen.SByte(): sbyte values. Example: Gen.SByte().GreaterThanEqual(0)
+Gen.Set(elementGen): IReadOnlySet values. Example: Gen.Set(Gen.Int32()).WithCountLessThanEqual(5)
+Gen.SetRngWaypoint(gen): an advanced operator that marks a point in the random state. Example: Gen.Int32().Advanced.SetRngWaypoint()
+Gen.Single(): float values. Example: Gen.Single().Between(0f, 1f)
+Gen.String(): string values. Example: Gen.String().WithLengthLessThanEqual(20)
+Gen.StringMatching(pattern): strings that match a regex (no lookaround or backreference). Example: Gen.StringMatching("[a-z]{3}-[0-9]{2}")
+Gen.TimeOnly(): TimeOnly values, origin 00:00. Example: Gen.TimeOnly().Until(new TimeOnly(12, 0))
+Gen.TimeSpan(): TimeSpan values, origin TimeSpan.Zero. Example: Gen.TimeSpan().Within(TimeSpan.Zero, TimeSpan.FromHours(1))
+Gen.Tuple(g1, ..., g7): Tuple values. Example: Gen.Tuple(Gen.Int32(), Gen.String())
+Gen.UInt16(): ushort values. Example: Gen.UInt16().LessThanEqual(1000)
+Gen.UInt32(): uint values. Example: Gen.UInt32().LessThanEqual(1000)
+Gen.UInt64(): ulong values. Example: Gen.UInt64().LessThanEqual(1000)
+Gen.UInt128(): UInt128 values. Example: Gen.UInt128().LessThanEqual(1000)
+Gen.UIntPtr(): nuint values. Example: Gen.UIntPtr().LessThanEqual(1000)
+Gen.Uri(): absolute Uri values. Example: Gen.Uri()
+Gen.ValueTuple(g1, ..., g7): ValueTuple values. Example: Gen.ValueTuple(Gen.Int32(), Gen.Boolean())
+Gen.Version(): System.Version values. Example: Gen.Version()
+Gen.Zip(g1, ..., g4): tuples of the values of several generators. Example: Gen.Zip(Gen.Int32(), Gen.String())
+Gen.Advanced.Error<T>(message): a generator that always fails with a generator error. Example: Gen.Advanced.Error<int>("the range is empty")
+Gen.CharType: flags for Gen.Char and FromCharacters. Example: Gen.CharType.Alphabetical | Gen.CharType.Whitespace
+Gen.Bias: the size bias of a range (None, WithSize). Example: Gen.Int32().WithBias(Gen.Bias.None)
+
+== Generators: Gen.Realistic ==
+Gen.Realistic.City(): city names. Example: Gen.Realistic.City()
+Gen.Realistic.CompanyName(): company names. Example: Gen.Realistic.CompanyName()
+Gen.Realistic.Country(): country names. Example: Gen.Realistic.Country()
+Gen.Realistic.FirstName(): first names from Gen.Realistic.FirstNames. Example: Gen.Realistic.FirstName()
+Gen.Realistic.FullName(): a first and a last name. Example: Gen.Realistic.FullName()
+Gen.Realistic.LastName(): last names from Gen.Realistic.LastNames. Example: Gen.Realistic.LastName()
+Gen.Realistic.PhoneNumber(): phone numbers. Example: Gen.Realistic.PhoneNumber()
+Gen.Realistic.StreetAddress(): street addresses. Example: Gen.Realistic.StreetAddress()
+Gen.Realistic.FirstNames / LastNames: the data lists, IReadOnlyList<string>. Example: Gen.Element(Gen.Realistic.FirstNames)
+
+== Options of integer generators (IIntGen<T>) ==
+GreaterThanEqual(min): inclusive minimum. Example: Gen.Int32().GreaterThanEqual(0)
+LessThanEqual(max): inclusive maximum. Example: Gen.Int32().LessThanEqual(100)
+Between(x, y): both bounds inclusive. Example: Gen.Int32().Between(1, 6)
+GreaterThan(min): exclusive minimum. Example: Gen.UInt16().GreaterThan(0)
+LessThan(max): exclusive maximum. Example: Gen.Int64().LessThan(10)
+ShrinkTowards(origin): the value that shrinking moves to; it must lie in the bounds. Example: Gen.Int32().Between(-5, 5).ShrinkTowards(1)
+WithBias(bias): Gen.Bias.WithSize (default) grows the range with the size; Gen.Bias.None is uniform. Example: Gen.Int32().WithBias(Gen.Bias.None)
+
+== Options of real generators (IRealGen<T>, IComplexGen) ==
+GreaterThanEqual(min): inclusive minimum. Example: Gen.Double().GreaterThanEqual(0.0)
+LessThanEqual(max): inclusive maximum. Example: Gen.Single().LessThanEqual(1f)
+Between(x, y): both bounds inclusive. Example: Gen.Decimal().Between(0m, 1m)
+ShrinkTowards(origin): the value that shrinking moves to. Example: Gen.Double().ShrinkTowards(1.0)
+WithoutSpecialValues(): no NaN, no infinities, no negative zero. Example: Gen.Double().WithoutSpecialValues()
+
+== Options of range generators (IRangeGen<T>, IDateTimeGen) ==
+From(min): inclusive minimum. Example: Gen.TimeSpan().From(TimeSpan.Zero)
+Until(max): inclusive maximum. Example: Gen.DateOnly().Until(new DateOnly(2030, 12, 31))
+Within(x, y): both bounds inclusive. Example: Gen.TimeOnly().Within(new TimeOnly(9, 0), new TimeOnly(17, 0))
+
+== Options of list and set generators (IListGen<T>, ISetGen<T>); a list or a dictionary has at most 1000 elements, a set has no limit ==
+WithCount(count): an exact count of 0 or more. Example: Gen.Int32().ListOf().WithCount(3)
+WithCountGreaterThanEqual(min): inclusive minimum count. Example: Gen.List(Gen.Int32()).WithCountGreaterThanEqual(1)
+WithCountLessThanEqual(max): inclusive maximum count. Example: Gen.Set(Gen.Int32()).WithCountLessThanEqual(5)
+WithCountBetween(x, y): both counts inclusive. Example: Gen.Int32().ListOf().WithCountBetween(1, 5)
+WithCountGreaterThan(min): exclusive minimum count. Example: Gen.Int32().SetOf().WithCountGreaterThan(0)
+WithCountLessThan(max): exclusive maximum count. Example: Gen.Int32().ListOf().WithCountLessThan(10)
+WithCountBias(bias): the bias of the count. Example: Gen.Int32().ListOf().WithCountBias(Gen.Bias.None)
+DisableCountLimitUnsafe(): IListGen<T> only (not ISetGen<T>); allows more than 1000 elements. Example: Gen.Int32().ListOf().WithCount(5000).DisableCountLimitUnsafe()
+
+== Options of dictionary generators (IDictionaryGen<TKey, TValue>) ==
+WithCount(count): an exact count. Example: Gen.Dictionary(Gen.Int32(), Gen.String()).WithCount(2)
+WithCountGreaterThanEqual(min): inclusive minimum count. Example: Gen.Dictionary(Gen.Int32(), Gen.String()).WithCountGreaterThanEqual(1)
+WithCountLessThanEqual(max): inclusive maximum count. Example: Gen.Dictionary(Gen.Int32(), Gen.String()).WithCountLessThanEqual(3)
+WithCountBetween(x, y): both counts inclusive. Example: Gen.Dictionary(Gen.Int32(), Gen.String()).WithCountBetween(1, 3)
+
+== Options of string generators (IStringGen) ==
+FromCharacters(charType or chars): the chars to use. Example: Gen.String().FromCharacters("abc")
+WithLength(length): an exact length. Example: Gen.String().WithLength(8)
+WithLengthGreaterThanEqual(min): inclusive minimum length. Example: Gen.String().WithLengthGreaterThanEqual(1)
+WithLengthLessThanEqual(max): inclusive maximum length. Example: Gen.String().WithLengthLessThanEqual(20)
+WithLengthBetween(x, y): both lengths inclusive. Example: Gen.String().WithLengthBetween(1, 10)
+WithLengthGreaterThan(min): exclusive minimum length. Example: Gen.String().WithLengthGreaterThan(0)
+WithLengthLessThan(max): exclusive maximum length. Example: Gen.String().WithLengthLessThan(5)
+WithLengthBias(bias): the bias of the length. Example: Gen.String().WithLengthBias(Gen.Bias.None)
+
+== Options of other generators ==
+IChooseGen<T>.WithChoice(gen, weight): adds a weighted choice. Example: Gen.Choose<int>().WithChoice(Gen.Int32(), 1).WithChoice(Gen.Constant(0), 3)
+IReflectedGen<T>.OverrideMember(selector, gen): a generator for one member of Create<T>(). Example: Gen.Create<Order>().OverrideMember(o => o.Quantity, Gen.Int32().Between(1, 9))
+IGenFactory.RegisterType(gen): a generator for each member of that type. Example: Gen.Factory().RegisterType(Gen.String().WithLengthLessThanEqual(5)).Create<Order>()
+IGenFactory.RegisterImplementations<T>(types): the concrete types of an interface or abstract class. Example: Gen.Factory().RegisterImplementations<Shape>(typeof(Circle), typeof(Square)).Create<Shape>()
+IGenFactory.Create<T>(): the generator of the factory. Example: Gen.Factory().Create<Order>()
+
+== Operators on any generator (IGen<T>) ==
+Select(f): maps each value. Example: Gen.Int32().Select(x => x * 2)
+Where(pred): keeps the values that pass; too many discards trip a health check. Example: Gen.Int32().Where(x => x % 2 == 0)
+SelectMany(f): a generator that depends on a value. Example: Gen.Int32().Between(1, 5).SelectMany(n => Gen.String().WithLength(n))
+ListOf(): a list generator. Example: Gen.Int32().ListOf().WithCountLessThanEqual(5)
+SetOf(): a set generator. Example: Gen.Int32().SetOf()
+OrNull(): a reference value or null. Example: Gen.String().OrNull()
+OrNullStruct(): a struct value or null. Example: Gen.Int32().OrNullStruct()
+Two() / Three() / Four(): tuples of values of one generator. Example: Gen.Int32().Two()
+Cast<T>(): changes the value type. Example: Gen.Int32().Cast<int>()
+NoShrink(): no shrinking. Example: Gen.Int32().NoShrink()
+FunctionOf<T, TResult>(): pure functions whose results come from the generator. Example: Gen.Boolean().FunctionOf<int, bool>()
+InfiniteOf(): infinite enumerables. Example: Gen.Int32().InfiniteOf()
+Sample(iterations, seed, size): a list of values. Example: Gen.Int32().Sample(iterations: 5, seed: 0)
+SampleOne(seed, size): one value. Example: Gen.Int32().SampleOne(seed: 0)
+Minimum(seed, pred): the shrunk value for which pred is true. Example: Gen.Int32().Minimum(pred: x => x > 100)
+
+== Properties ==
+Property.ForAll(gen, x => bool or void): a property. Example: Property.ForAll(Gen.Int32(), x => x * 1 == x)
+Property.ForAll(g1, g2, ...): a property of several values. Example: Property.ForAll(Gen.Int32(), Gen.Int32(), (x, y) => x + y == y + x)
+Property.ForAllAsync(gen, async (x, token) => ...): an async property; the token is cancelled at the timeout. Example: Property.ForAllAsync(Gen.Int32(), async x => { await Task.Yield(); return true; })
+gen.ForAll(f): a property from a generator. Example: Gen.Int32().ForAll(x => x >= int.MinValue)
+Property.Precondition(condition): discards a test case when false. Example: Property.ForAll(Gen.Int32(), x => { Property.Precondition(x != 0); return x / x == 1; })
+Label(label, when): counts the share of test cases with a label. Example: Property.ForAll(Gen.Int32(), x => true).Label("negative", x => x < 0)
+Cover(label, minPercent, when): fails the run when the share is below minPercent; the failure has no counterexample and no replay, and its block holds "kind":"coverage" and "cover". Example: Property.ForAll(Gen.Int32(), x => true).Cover("positive", 30, x => x > 0)
+HealthCheck: TooManyDiscards (over 90% discarded; a filter that keeps several percent adapts and passes), SlowGenerator (two values of a run each took over 1 s), TestFunctionNeverRuns; a tripped check throws HealthCheckException. Example: property.Check(suppressHealthChecks: new[] { HealthCheck.TooManyDiscards })
+CSharpExpression.TryFormat(value, out expression): the C# expression of a value; a failure message shows the section "Counterexample as C#:" only when each value has one (never for stateful commands). Example: CSharpExpression.TryFormat(new[] { 1, 2 }, out var expression)
+
+== Arguments of Check, CheckAsync, Assert, AssertAsync ==
+iterations: the count of test cases (default 100). Example: property.Check(iterations: 1000)
+seed: the seed of the run; GALAXYCHECK_SEED and GALAXYCHECK_AGENT set it when it is null. Example: property.Check(seed: 42)
+size: a fixed size from 0 to 100. Example: property.Check(size: 50)
+shrinkLimit: the most shrinks (default 500). Example: property.Check(shrinkLimit: 100)
+replay: runs one test case from a replay string; copy it from a failure. Example: Property.ForAll(Gen.Int32(), x => x < 10).Check(replay: "AgAMAgoA")
+deepCheck: false stops at the first counterexample size. Example: property.Check(deepCheck: false)
+timeout: the time limit of one test case; a slower case fails. Example: property.Check(timeout: TimeSpan.FromMilliseconds(100))
+exhaustive: true (default) tries each value one time when the input space is small. Example: property.Check(exhaustive: false)
+suppressHealthChecks: the health checks to turn off. Example: property.Assert(suppressHealthChecks: new[] { HealthCheck.SlowGenerator })
+CheckResult<T>: Falsified, Counterexample (Value, Replay), Iterations, Shrinks, Labels, Exhaustive, Report. Example: var replay = property.Check().Counterexample?.Replay;
+Assert: throws GalaxyCheck.Runners.PropertyFailedException on a failure. Example: property.Assert(iterations: 200)
+
+== Stateful testing (using GalaxyCheck.Stateful;) ==
+Command<TSystem, TModel>: Precondition, Run, NextModel, Postcondition, Expects. Example: class Push : Command<Stack<int>, int> { public override void Run(Stack<int> s) => s.Push(1); public override int NextModel(int m) => m + 1; }
+StatefulGen.Commands(newModel, nextCommand): sequences of commands. Example: StatefulGen.Commands<Stack<int>, int>(() => 0, model => Gen.Constant<Command<Stack<int>, int>>(new Push()))
+StatefulProperty.Create(newSystem, newModel, nextCommand): a property over command sequences. Example: StatefulProperty.Create(() => new Stack<int>(), () => 0, model => Gen.Constant<Command<Stack<int>, int>>(new Push())).Assert()
+
+== Attributes of the framework packages ==
+[Property] (PropertyAttribute): a property test; parameters are generated. Example: [Property] public bool P(int x) => x * 0 == 0;
+[Property] options Iterations, ShrinkLimit, Seed, Size, TimeoutMilliseconds, Exhaustive. Example: [Property(Iterations = 500, Seed = 7, TimeoutMilliseconds = 100, Exhaustive = false)]
+[Test, PropertyTest] (PropertyTestAttribute): a property in TUnit, with the options of [Property]. Example: [Test, PropertyTest(Iterations = 200)] public bool P(int x) => x == x;
+[PropertyArguments] (PropertyArgumentsAttribute): a TUnit data row for the first parameters. Example: [Test, PropertyTest, PropertyArguments(5)] public bool P(int fixedX, int y) => fixedX + y - y == fixedX;
+[Sample] (SampleAttribute): fails with a list of sampled inputs, to look at a generator. Example: [Sample] public void S(int x) { } (TUnit: [Test, Sample])
+[GenSnapshot] (GenSnapshotAttribute): compares sampled values with a stored snapshot (not in MSTest); it needs c.GenSnapshots.AssertSnapshotMatches in an IConfigureGlobal class, else it fails with "Configuration value AssertSnapshotMatches needs to be set". Example: [GenSnapshot(Iterations = 10)] public int Snap(int x) => x; (TUnit: [Test, GenSnapshot])
+AssertSnapshotMatches: a Func<ISnapshot, Task> that compares the snapshot (Input, Output, TestClassName, TestMethodName, Seed) with a stored one and throws when they differ. Example: c.GenSnapshots.AssertSnapshotMatches = s => { var f = $"{s.TestClassName}.{s.TestMethodName}.{s.Seed}.snap"; var t = System.Text.Json.JsonSerializer.Serialize(s.Output); if (!System.IO.File.Exists(f)) System.IO.File.WriteAllText(f, t); else if (System.IO.File.ReadAllText(f) != t) throw new System.Exception("snapshot " + f + " differs"); return System.Threading.Tasks.Task.CompletedTask; };
+[Replay] (ReplayAttribute): runs the test case of a replay string; copy it from a failure. Example: [Property, Replay("AgAMAgoA")] public bool P(int x) => x < 10;
+[MemberGen] (MemberGenAttribute): a static property or field of the test class gives the generator of a parameter. Example: public static IGen<int> Small => Gen.Int32().Between(0, 9); [Property] public bool P([MemberGen(nameof(Small))] int x) => x < 10;
+[Example] (ExampleAttribute): fixed inputs that run before the generated ones, one per parameter. Example: [Property, Example(0, 0), Example(-1, 1)] public bool P(int x, int y) => x + y == y + x;
+[SuppressHealthCheck] (SuppressHealthCheckAttribute): turns off health checks for a method or class. Example: [Property, SuppressHealthCheck(HealthCheck.TooManyDiscards)]
+[GenFactory] (GenFactoryAttribute): a derived attribute gives the IGenFactory of a method or class. Example: class MyFactory : GenFactoryAttribute { public override IGenFactory Value => Gen.Factory().RegisterType(Gen.Int32().Between(0, 9)); }
+[Gen] (GenAttribute): a derived attribute gives the generator of a parameter. Example: class Small : GenAttribute { public override IGen Value => Gen.Int32().Between(0, 9); }
+[Between] (Gens.Injection.Int32.BetweenAttribute): an int parameter in a range. Example: [Property] public bool P([Between(1, 6)] int die) => die is >= 1 and <= 6;
+[GreaterThanEqual] (Gens.Injection.Int32.GreaterThanEqualAttribute): an int parameter at or above a minimum. Example: [Property] public bool P([GreaterThanEqual(0)] int x) => x >= 0;
+[LessThanEqual] (Gens.Injection.Int32.LessThanEqualAttribute): an int parameter at or below a maximum. Example: [Property] public bool P([LessThanEqual(0)] int x) => x <= 0;
+Framework rules: in TUnit each test attribute of GalaxyCheck comes after [Test]: [Test, PropertyTest], [Test, Sample], [Test, GenSnapshot], and [Test, PropertyTest] in place of [Property] in each example above; NUnit rows use [TestCase], and a [GalaxyCheck.Property] file does not import NUnit.Framework; MSTest methods return void or Task in a [TestClass].
+Global configuration: a class that implements IConfigureGlobal. Example: public class Config : GalaxyCheck.Configuration.IConfigureGlobal { public void Configure(GalaxyCheck.Configuration.IGlobalConfiguration c) => c.Properties.DefaultIterations = 200; }
+
+== Failures, errors, and the quiet mode ==
+Failure block: each failure message holds one line <galaxycheck-failure>, one JSON object, and a line </galaxycheck-failure>; seed and size give the failing test case at the first iteration. Example: {"counterexample":["10"],"csharp":["10"],"replay":"AgAMAgoA","seed":0,"size":12,"iterations":13,"shrinks":1,"kind":"generated","test":"Ns.Class.Method","rerun":"dotnet test --filter FullyQualifiedName=Ns.Class.Method"}
+Example failure: a failed [Example] has no replay, so its block holds "kind":"example", "replay":null, "seed":null, "size":null, and the attribute. Example: {"counterexample":["20"],"csharp":["20"],"replay":null,"seed":null,"size":null,"iterations":1,"shrinks":0,"kind":"example","example":"[Example(20)]","test":"Ns.Class.Method","rerun":"..."}
+Coverage failure: an unmet Cover rule has no counterexample, so its block holds "counterexample":null, "csharp":null, "replay":null, "size":null, "kind":"coverage", and "cover". Example: {"counterexample":null,"csharp":null,"replay":null,"seed":0,"size":null,"iterations":100,"shrinks":0,"kind":"coverage","cover":{"label":"zero","required":50,"actual":10}}
+Inner assert: when a test calls .Assert() inside, the block is of the test, and the inner failure stays in the text between [inner failure, not of this test] and [end of inner failure]. Example: [Property] public void P(int x) => Property.ForAll(Gen.Int32(), y => y < 3).Assert();
+rerun: one bash command, run in the folder of the test project; an argument with a special char is in single quotes. It runs only the failed test, also for a name with a space; dotnet test trims a name, so for a name with white space at its start or end, the command can also run other rows of that method or other tests of its class. MSTest and TUnit cannot select one data row, so the command runs each row of that method and no other method. dotnet test cannot carry a backslash before a quote: for a row name with one (in xunit and NUnit, a string value with a quote in it), the command runs each row of that method; for a method name with one, it runs each test of the class. Example: dotnet run -f net11.0 -- --treenode-filter /MyTests/Ns/Outer+Inner/Method
+Fix line: each generator error and each error of [Replay], [MemberGen], and [Example] ends with a line that starts with "Fix: ". Example: Fix: give a minimum that is not above the maximum, for example .GreaterThanEqual(4).LessThanEqual(5), or swap the two bounds.
+Failure memory: a failed test saves its replay in .galaxycheck/failures.json, and the next run tries it first. Example: c.FailureMemory.Enabled = false;
+GALAXYCHECK_AGENT=1: seed 0 for each property with no seed option, no output for a passed property, and at most 40 lines for the failure of a [Property] or [Sample] test (a framework can add a line or two). Example: GALAXYCHECK_AGENT=1 dotnet test
+GALAXYCHECK_SEED=n: the seed of each property with no seed option; a seed option wins; a value that is not an int fails the run. Example: GALAXYCHECK_SEED=7 dotnet test

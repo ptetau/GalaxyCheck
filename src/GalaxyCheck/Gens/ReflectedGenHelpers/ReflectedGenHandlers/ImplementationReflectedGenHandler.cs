@@ -54,7 +54,7 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
             if (candidates.IsEmpty)
             {
                 // The same message as an unresolvable type, with the full name of the type.
-                return context.Error(type, $"could not resolve type '{name}'");
+                return context.UnresolvedTypeError(type, name);
             }
 
             var isRegistered = _candidateTypesByType.TryGetValue(type, out var r) && !r.IsEmpty;
@@ -70,7 +70,7 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
 
                 if (gens.Length == 0)
                 {
-                    return context.Error(type, $"could not resolve type '{name}'");
+                    return context.UnresolvedTypeError(type, name);
                 }
             }
 

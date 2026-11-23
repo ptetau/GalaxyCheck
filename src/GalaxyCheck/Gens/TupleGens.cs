@@ -5,6 +5,7 @@ namespace GalaxyCheck
 {
     public static partial class Gen
     {
+        /// <summary>Generates key-value pairs from a key generator and a value generator.</summary>
         public static IGen<KeyValuePair<TKey, TValue>> KeyValuePair<TKey, TValue>(IGen<TKey> keyGen, IGen<TValue> valueGen)
         {
             var (k, v) = (keyGen.Advanced, valueGen.Advanced);
@@ -15,6 +16,7 @@ namespace GalaxyCheck
             });
         }
 
+        /// <summary>Generates value tuples whose elements come from the given generators, in order.</summary>
         public static IGen<System.ValueTuple<T1>> ValueTuple<T1>(IGen<T1> gen1)
         {
             var g1 = gen1.Advanced;
@@ -25,6 +27,7 @@ namespace GalaxyCheck
             });
         }
 
+        /// <summary>Generates tuples whose elements come from the given generators, in order.</summary>
         public static IGen<System.Tuple<T1>> Tuple<T1>(IGen<T1> gen1)
         {
             var g1 = gen1.Advanced;
@@ -35,6 +38,7 @@ namespace GalaxyCheck
             });
         }
 
+        /// <summary>Generates value tuples whose elements come from the given generators, in order.</summary>
         public static IGen<System.ValueTuple<T1, T2>> ValueTuple<T1, T2>(IGen<T1> gen1, IGen<T2> gen2)
         {
             var g1 = gen1.Advanced;
@@ -47,6 +51,7 @@ namespace GalaxyCheck
             });
         }
 
+        /// <summary>Generates tuples whose elements come from the given generators, in order.</summary>
         public static IGen<System.Tuple<T1, T2>> Tuple<T1, T2>(IGen<T1> gen1, IGen<T2> gen2)
         {
             var g1 = gen1.Advanced;
@@ -59,6 +64,7 @@ namespace GalaxyCheck
             });
         }
 
+        /// <summary>Generates value tuples whose elements come from the given generators, in order.</summary>
         public static IGen<System.ValueTuple<T1, T2, T3>> ValueTuple<T1, T2, T3>(IGen<T1> gen1, IGen<T2> gen2, IGen<T3> gen3)
         {
             var g1 = gen1.Advanced;
@@ -73,6 +79,7 @@ namespace GalaxyCheck
             });
         }
 
+        /// <summary>Generates tuples whose elements come from the given generators, in order.</summary>
         public static IGen<System.Tuple<T1, T2, T3>> Tuple<T1, T2, T3>(IGen<T1> gen1, IGen<T2> gen2, IGen<T3> gen3)
         {
             var g1 = gen1.Advanced;
@@ -87,6 +94,7 @@ namespace GalaxyCheck
             });
         }
 
+        /// <summary>Generates value tuples whose elements come from the given generators, in order.</summary>
         public static IGen<System.ValueTuple<T1, T2, T3, T4>> ValueTuple<T1, T2, T3, T4>(IGen<T1> gen1, IGen<T2> gen2, IGen<T3> gen3, IGen<T4> gen4)
         {
             var g1 = gen1.Advanced;
@@ -103,6 +111,7 @@ namespace GalaxyCheck
             });
         }
 
+        /// <summary>Generates tuples whose elements come from the given generators, in order.</summary>
         public static IGen<System.Tuple<T1, T2, T3, T4>> Tuple<T1, T2, T3, T4>(IGen<T1> gen1, IGen<T2> gen2, IGen<T3> gen3, IGen<T4> gen4)
         {
             var g1 = gen1.Advanced;
@@ -119,6 +128,7 @@ namespace GalaxyCheck
             });
         }
 
+        /// <summary>Generates value tuples whose elements come from the given generators, in order.</summary>
         public static IGen<System.ValueTuple<T1, T2, T3, T4, T5>> ValueTuple<T1, T2, T3, T4, T5>(IGen<T1> gen1, IGen<T2> gen2, IGen<T3> gen3, IGen<T4> gen4, IGen<T5> gen5)
         {
             var g1 = gen1.Advanced;
@@ -137,6 +147,7 @@ namespace GalaxyCheck
             });
         }
 
+        /// <summary>Generates tuples whose elements come from the given generators, in order.</summary>
         public static IGen<System.Tuple<T1, T2, T3, T4, T5>> Tuple<T1, T2, T3, T4, T5>(IGen<T1> gen1, IGen<T2> gen2, IGen<T3> gen3, IGen<T4> gen4, IGen<T5> gen5)
         {
             var g1 = gen1.Advanced;
@@ -155,6 +166,7 @@ namespace GalaxyCheck
             });
         }
 
+        /// <summary>Generates value tuples whose elements come from the given generators, in order.</summary>
         public static IGen<System.ValueTuple<T1, T2, T3, T4, T5, T6>> ValueTuple<T1, T2, T3, T4, T5, T6>(IGen<T1> gen1, IGen<T2> gen2, IGen<T3> gen3, IGen<T4> gen4, IGen<T5> gen5, IGen<T6> gen6)
         {
             var g1 = gen1.Advanced;
@@ -175,6 +187,7 @@ namespace GalaxyCheck
             });
         }
 
+        /// <summary>Generates tuples whose elements come from the given generators, in order.</summary>
         public static IGen<System.Tuple<T1, T2, T3, T4, T5, T6>> Tuple<T1, T2, T3, T4, T5, T6>(IGen<T1> gen1, IGen<T2> gen2, IGen<T3> gen3, IGen<T4> gen4, IGen<T5> gen5, IGen<T6> gen6)
         {
             var g1 = gen1.Advanced;
@@ -195,6 +208,7 @@ namespace GalaxyCheck
             });
         }
 
+        /// <summary>Generates value tuples whose elements come from the given generators, in order.</summary>
         public static IGen<System.ValueTuple<T1, T2, T3, T4, T5, T6, T7>> ValueTuple<T1, T2, T3, T4, T5, T6, T7>(IGen<T1> gen1, IGen<T2> gen2, IGen<T3> gen3, IGen<T4> gen4, IGen<T5> gen5, IGen<T6> gen6, IGen<T7> gen7)
         {
             var g1 = gen1.Advanced;
@@ -217,6 +231,7 @@ namespace GalaxyCheck
             });
         }
 
+        /// <summary>Generates tuples whose elements come from the given generators, in order.</summary>
         public static IGen<System.Tuple<T1, T2, T3, T4, T5, T6, T7>> Tuple<T1, T2, T3, T4, T5, T6, T7>(IGen<T1> gen1, IGen<T2> gen2, IGen<T3> gen3, IGen<T4> gen4, IGen<T5> gen5, IGen<T6> gen6, IGen<T7> gen7)
         {
             var g1 = gen1.Advanced;

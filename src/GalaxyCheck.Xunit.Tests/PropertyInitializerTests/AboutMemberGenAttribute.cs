@@ -96,7 +96,7 @@ namespace Tests.PropertyInitializerTests
 
             test.Should()
                 .Throw<Exception>()
-                .WithMessage("Expected member 'NotAGen' to be an instance of 'GalaxyCheck.IGen', but it had a value of type 'System.Object'");
+                .WithMessage("Expected member 'NotAGen' to be an instance of 'GalaxyCheck.IGen', but it had a value of type 'System.Object'*");
         }
 
 

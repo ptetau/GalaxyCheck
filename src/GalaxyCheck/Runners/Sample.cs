@@ -10,17 +10,20 @@ namespace GalaxyCheck
 
     public static partial class Extensions
     {
+        /// <summary>Generates one value.</summary>
         public static T SampleOne<T>(
             this IGen<T> gen,
             int? seed = null,
             int? size = null) => gen.Sample(iterations: 1, seed: seed, size: size ?? 100)[0];
 
+        /// <summary>Generates a list of values, 100 by default.</summary>
         public static List<T> Sample<T>(
             this IGen<T> gen,
             int? iterations = null,
             int? seed = null,
             int? size = null) => SampleHelpers.Run(gen.Advanced, iterations, seed, size).Values;
 
+        /// <summary>Generates one value, with the count of discards and of random choices.</summary>
         public static SampleOneWithMetricsResult<T> SampleOneWithMetrics<T>(
             this IGenAdvanced<T> advanced,
             int? seed = null,
@@ -33,6 +36,7 @@ namespace GalaxyCheck
                 sample.RandomnessConsumption);
         }
 
+        /// <summary>Generates a list of values, with the count of discards and of random choices.</summary>
         public static SampleWithMetricsResult<T> SampleWithMetrics<T>(
             this IGenAdvanced<T> advanced,
             int? iterations = null,
@@ -43,11 +47,19 @@ namespace GalaxyCheck
 
 namespace GalaxyCheck.Runners.Sample
 {
+    /// <summary>One sampled value, with metrics.</summary>
+    /// <param name="Value">The sampled value.</param>
+    /// <param name="Discards">The count of discarded values.</param>
+    /// <param name="RandomnessConsumption">The count of random choices that the generator made.</param>
     public record SampleOneWithMetricsResult<T>(
         T Value,
         int Discards,
         int RandomnessConsumption);
 
+    /// <summary>Sampled values, with metrics.</summary>
+    /// <param name="Values">The sampled values.</param>
+    /// <param name="Discards">The count of discarded values.</param>
+    /// <param name="RandomnessConsumption">The count of random choices that the generator made.</param>
     public record SampleWithMetricsResult<T>(
         List<T> Values,
         int Discards,

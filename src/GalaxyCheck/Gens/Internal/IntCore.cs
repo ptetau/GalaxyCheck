@@ -117,14 +117,17 @@ namespace GalaxyCheck.Gens.Internal
                 };
 
                 var pick = source.NextBounded((ulong)(normalWeight * 2 + 1));
-                if (pick == 0)
+                if (pick <= 1)
                 {
-                    return down != 0 || boundsAreExtremes ? (true, down) : (false, up);
-                }
+                    var low = pick == 0 ? down != 0 || boundsAreExtremes : !(up != 0 || boundsAreExtremes);
+                    var bound = low ? 1 : 2;
 
-                if (pick == 1)
-                {
-                    return up != 0 || boundsAreExtremes ? (false, up) : (true, down);
+                    // The retries of a filter that rejected this bound draw a normal value instead.
+                    if ((source.AvoidExtremes & bound) == 0)
+                    {
+                        source.ExtremesMade |= bound;
+                        return low ? (true, down) : (false, up);
+                    }
                 }
             }
 

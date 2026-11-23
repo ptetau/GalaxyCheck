@@ -27,7 +27,9 @@ namespace GalaxyCheck.Internal
 
             foreach (var example in parameters.Examples ?? Array.Empty<PropertyExample>())
             {
-                await PropertyExamples.Run(example, FormatMessage);
+                await PropertyExamples.Run(
+                    example,
+                    (message, display) => FailureMessage.Complete(FormatMessage(message), parameters.Identity, example: display));
             }
 
             string? newReplay = null;
@@ -37,7 +39,7 @@ namespace GalaxyCheck.Internal
                     parameters,
                     replay: null,
                     onReplay: replay => newReplay = replay,
-                    formatMessage: message => FormatMessage(message) + FailureMemoryNote(parameters));
+                    formatMessage: message => Complete(parameters, FormatMessage(message) + FailureMemoryNote(parameters)));
             }
             catch (PropertyFailedException)
             {
@@ -123,7 +125,7 @@ namespace GalaxyCheck.Internal
                     onReplay?.Invoke(newReplay);
                     return $"{Environment.NewLine}    [Replay(\"{newReplay}\")]";
                 },
-                formatMessage: formatMessage ?? FormatMessage);
+                formatMessage: formatMessage ?? (message => Complete(parameters, FormatMessage(message))));
 
         /// <summary>The note, one time for each assembly, that the failure memory has no folder to save to.</summary>
         private static string FailureMemoryNote(PropertyRunParameters parameters) =>
@@ -132,6 +134,10 @@ namespace GalaxyCheck.Internal
                 : "";
 
         private static string FormatMessage(string message) => Environment.NewLine + Environment.NewLine + message;
+
+        /// <summary>Adds the test and its rerun command to the JSON block, and keeps the line limit of the quiet mode.</summary>
+        private static string Complete(PropertyRunParameters parameters, string message) =>
+            FailureMessage.Complete(message, parameters.Identity);
 
         /// <summary>The failure memory is a help: a file that another process holds does not fail the test.</summary>
         private static void TryChange(Action change)

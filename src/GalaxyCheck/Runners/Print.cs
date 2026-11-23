@@ -9,6 +9,7 @@ namespace GalaxyCheck
     public static partial class Extensions
     {
         // TODO: Delete this once C# supports extension methods after implicit conversions
+        /// <summary>Writes sampled inputs of the property to the output.</summary>
         public static void Print<T>(
             this Property<T> property,
             int? iterations = null,
@@ -16,6 +17,7 @@ namespace GalaxyCheck
             int? size = null,
             Action<string>? stdout = null) => Print((Property)property, iterations, seed, size, stdout);
 
+        /// <summary>Writes sampled inputs of the property to the output.</summary>
         public static void Print(
             this Property property,
             int? iterations = null,
@@ -32,6 +34,7 @@ namespace GalaxyCheck
         }
 
         // TODO: Delete this once C# supports extension methods after implicit conversions
+        /// <summary>Writes sampled inputs of the async property to the output.</summary>
         public static Task PrintAsync<T>(
             this AsyncProperty<T> property,
             int? iterations = null,
@@ -39,6 +42,7 @@ namespace GalaxyCheck
             int? size = null,
             Action<string>? stdout = null) => PrintAsync((AsyncProperty)property, iterations, seed, size, stdout);
 
+        /// <summary>Writes sampled inputs of the async property to the output.</summary>
         public static async Task PrintAsync(
             this AsyncProperty property,
             int? iterations = null,
@@ -54,6 +58,7 @@ namespace GalaxyCheck
             PrintHelpers.Print(sample.Values, sample.Discards, stdout);
         }
 
+        /// <summary>Writes sampled values of the generator to the output.</summary>
         public static void Print<T>(
             this IGenAdvanced<T> advanced,
             int? iterations = null,

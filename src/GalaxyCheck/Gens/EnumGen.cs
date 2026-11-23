@@ -7,6 +7,7 @@ namespace GalaxyCheck
 
     public static partial class Gen
     {
+        /// <summary>Generates the values of the enum <typeparamref name="T"/>.</summary>
         public static IGen<T> Enum<T>()
             where T : struct
         {

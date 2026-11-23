@@ -6,12 +6,14 @@ namespace GalaxyCheck
 {
     public partial class Property
     {
+        /// <summary>Creates an async property with no input that holds when the function returns true.</summary>
         public static AsyncProperty NullaryAsync(Func<Task<bool>> func) => new AsyncProperty(
             Gen.Constant(new object[] { }).Select(x => TestFactory.Create(
                 x,
                 () => new ValueTask<bool>(func()),
                 x)));
 
+        /// <summary>Creates an async property that holds when the function returns true for each generated input.</summary>
         public static AsyncProperty<T0> ForAllAsync<T0>(IGen<T0> gen0, Func<T0, Task<bool>> func) =>
             new AsyncProperty<T0>(
                 gen0.Select(x => TestFactory.Create(
@@ -19,6 +21,7 @@ namespace GalaxyCheck
                     () => new ValueTask<bool>(func(x)),
                     new object?[] { x })));
 
+        /// <summary>Creates an async property that holds when the function returns true for each generated input.</summary>
         public static AsyncProperty<(T0, T1)> ForAllAsync<T0, T1>(
             IGen<T0> gen0,
             IGen<T1> gen1,
@@ -28,6 +31,7 @@ namespace GalaxyCheck
                     () => new ValueTask<bool>(func(tuple.Item1, tuple.Item2)),
                     new object?[] { tuple.Item1, tuple.Item2 })));
 
+        /// <summary>Creates an async property that holds when the function returns true for each generated input.</summary>
         public static AsyncProperty<(T0, T1, T2)> ForAllAsync<T0, T1, T2>(
             IGen<T0> gen0,
             IGen<T1> gen1,
@@ -38,6 +42,7 @@ namespace GalaxyCheck
                     () => new ValueTask<bool>(func(tuple.Item1, tuple.Item2, tuple.Item3)),
                     new object?[] { tuple.Item1, tuple.Item2, tuple.Item3 })));
 
+        /// <summary>Creates an async property that holds when the function returns true for each generated input.</summary>
         public static AsyncProperty<(T0, T1, T2, T3)> ForAllAsync<T0, T1, T2, T3>(
             IGen<T0> gen0,
             IGen<T1> gen1,
@@ -49,22 +54,27 @@ namespace GalaxyCheck
                     () => new ValueTask<bool>(func(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4)),
                     new object?[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4 })));
 
+        /// <summary>Creates an async property with no input that holds when the function does not throw.</summary>
         public static AsyncProperty NullaryAsync(Func<Task> func) => NullaryAsync(func.AsTrueFunc());
 
+        /// <summary>Creates an async property that holds when the function does not throw for each generated input.</summary>
         public static AsyncProperty<T0> ForAllAsync<T0>(IGen<T0> gen0, Func<T0, Task> action) =>
             ForAllAsync(gen0, action.AsTrueFunc());
 
+        /// <summary>Creates an async property that holds when the function does not throw for each generated input.</summary>
         public static AsyncProperty<(T0, T1)> ForAllAsync<T0, T1>(
             IGen<T0> gen0,
             IGen<T1> gen1,
             Func<T0, T1, Task> action) => ForAllAsync(gen0, gen1, action.AsTrueFunc());
 
+        /// <summary>Creates an async property that holds when the function does not throw for each generated input.</summary>
         public static AsyncProperty<(T0, T1, T2)> ForAllAsync<T0, T1, T2>(
             IGen<T0> gen0,
             IGen<T1> gen1,
             IGen<T2> gen2,
             Func<T0, T1, T2, Task> action) => ForAllAsync(gen0, gen1, gen2, action.AsTrueFunc());
 
+        /// <summary>Creates an async property that holds when the function does not throw for each generated input.</summary>
         public static AsyncProperty<(T0, T1, T2, T3)> ForAllAsync<T0, T1, T2, T3>(
             IGen<T0> gen0,
             IGen<T1> gen1,

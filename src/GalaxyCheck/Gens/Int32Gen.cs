@@ -8,7 +8,8 @@ namespace GalaxyCheck
         /// <summary>
         /// Generates 32-bit integers (ints). By default, the generator produces ints from 0, that grow towards
         /// <see cref="int.MinValue"/> and <see cref="int.MaxValue"/>, as the generator size increases. However,
-        /// int generation can be customised using the builder methods on <see cref="IIntGen{int}"/>.
+        /// int generation can be customised using the builder methods on <see cref="IIntGen{T}"/>.
+        /// </summary>
         /// <returns>The new generator.</returns>
         public static IIntGen<int> Int32() => new Int32Gen();
     }
@@ -115,7 +116,7 @@ namespace GalaxyCheck.Gens
 
             if (min > max)
             {
-                throw new GenErrorSignal("'min' cannot be greater than 'max'");
+                throw new GenErrorSignal("'min' cannot be greater than 'max'" + global::GalaxyCheck.Internal.FixHint.NumericMinAboveMax);
             }
 
             if (Origin != null && (Origin < min || Origin > max))

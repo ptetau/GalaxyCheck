@@ -9,14 +9,17 @@ using Xunit.Sdk;
 
 namespace GalaxyCheck.Internal.Infrastructure.Xunit
 {
+    /// <summary>The xunit test case of a [GenSnapshot] method.</summary>
     public class GenSnapshotTestCase : XunitTestCase
     {
+        /// <summary>Creates an empty test case for deserialization.</summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("Called by the de-serializer; should only be called by deriving classes for de-serialization purposes")]
         public GenSnapshotTestCase()
         {
         }
 
+        /// <summary>Creates the test case of a method.</summary>
         public GenSnapshotTestCase(
             IMessageSink diagnosticMessageSink,
             TestMethodDisplay defaultMethodDisplay,
@@ -27,6 +30,7 @@ namespace GalaxyCheck.Internal.Infrastructure.Xunit
         {
         }
 
+        /// <summary>Compares each snapshot of the method, and reports one result.</summary>
         public override async Task<RunSummary> RunAsync(
             IMessageSink diagnosticMessageSink,
             IMessageBus messageBus,
@@ -35,6 +39,7 @@ namespace GalaxyCheck.Internal.Infrastructure.Xunit
             CancellationTokenSource cancellationTokenSource)
         {
             EnsureInitialized();
+            constructorArguments = ConstructorArguments.Resolve(constructorArguments);
 
             messageBus.QueueMessage(new TestCaseStarting(this));
 

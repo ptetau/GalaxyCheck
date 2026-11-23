@@ -14,6 +14,7 @@ namespace GalaxyCheck
 {
     public static partial class Extensions
     {
+        /// <summary>Runs the property and returns the result, with the shrunk counterexample of a failure.</summary>
         public static CheckResult<T> Check<T>(
             this IGen<Property.Test<T>> property,
             int? iterations = null,
@@ -30,6 +31,7 @@ namespace GalaxyCheck
             return CheckRunner.Run(property, iterations, seed, size, shrinkLimit, replay, deepCheck, recordChecks: false, options);
         }
 
+        /// <summary>Runs the async property and returns the result, with the shrunk counterexample of a failure.</summary>
         public static Task<CheckResult<T>> CheckAsync<T>(
             this IGen<Property.AsyncTest<T>> property,
             int? iterations = null,
@@ -89,7 +91,8 @@ namespace GalaxyCheck.Runners
             return iteration * 100 / (samples - 1);
         }
 
-        public static int CreateSeed(int? seed) => seed ?? Random.Shared.Next();
+        /// <summary>The seed option, else the seed of the environment (<see cref="AgentMode"/>), else a random seed.</summary>
+        public static int CreateSeed(int? seed) => seed ?? AgentMode.DefaultSeed ?? Random.Shared.Next();
 
         public static Exceptions.GenErrorException GenError(Exception ex, GenParameters parameters) => ex switch
         {
@@ -381,6 +384,7 @@ namespace GalaxyCheck.Runners
     internal sealed class CheckRun<T>
     {
         private const long SlowGeneratorMs = 1000;
+        private int _slowValues;
         private const long EarlyDiscardTotal = 1000;
 
         private readonly int _iterations;
@@ -400,7 +404,6 @@ namespace GalaxyCheck.Runners
         private readonly string[]? _labelNames;
         private readonly int[]? _ruleGroup;
         private readonly bool[]? _groupSeen;
-        private TestCaseOutcome<T> _last;
 
         private readonly IFiniteGen? _finite;
         private readonly long _finiteCount;
@@ -543,11 +546,13 @@ namespace GalaxyCheck.Runners
         /// </summary>
         public bool Complete(in TestCaseOutcome<T> outcome, IReadOnlyList<object?>? presentedInput)
         {
-            if (_watchSlow && outcome.GenerationMs > SlowGeneratorMs)
+            // The clock also counts a pause of the machine (a first JIT compile, a garbage collection, a busy build
+            // agent). Such a pause does not repeat, and a slow generator does, so the second slow value trips the check.
+            if (_watchSlow && outcome.GenerationMs > SlowGeneratorMs && ++_slowValues >= 2)
             {
                 throw HealthMessages.Exception(
                     HealthCheck.SlowGenerator,
-                    $"one value took {outcome.GenerationMs} ms to generate, and the limit is {SlowGeneratorMs} ms.");
+                    $"one value took {outcome.GenerationMs} ms to generate, and the limit is {SlowGeneratorMs} ms. It is the second slow value of this run.");
             }
 
             if (outcome.Discarded)
@@ -605,7 +610,6 @@ namespace GalaxyCheck.Runners
 
         private void CountLabels(in TestCaseOutcome<T> outcome)
         {
-            _last = outcome;
             Array.Clear(_groupSeen!);
             for (var i = 0; i < _rules!.Count; i++)
             {
@@ -711,17 +715,12 @@ namespace GalaxyCheck.Runners
                 var coverFailure = CoverFailure(shares);
                 if (coverFailure != null)
                 {
-                    var last = _last;
+                    // A coverage failure has no counterexample and no replay: no test case failed.
                     return new CheckResult<T>(
                         _iteration,
                         discarded,
                         0,
-                        new Counterexample<T>(
-                            last.Input,
-                            GenParameters.Parse(_seed, _currentSize),
-                            ReplayEncoding.Encode(_seed, _currentSize, Source.Choices, Source.Length),
-                            new CoverNotMetException(coverFailure),
-                            present(last)),
+                        null,
                         checks,
                         initialParameters,
                         nextParameters,
@@ -730,7 +729,8 @@ namespace GalaxyCheck.Runners
                         RandomnessConsumption = (int)Math.Min(int.MaxValue, Source.Consumption),
                         LabelShares = shares,
                         IsExhaustive = _finite != null,
-                        ExhaustiveCount = _finite != null ? _finiteCount : 0
+                        ExhaustiveCount = _finite != null ? _finiteCount : 0,
+                        CoverageFailure = coverFailure
                     };
                 }
 
@@ -797,7 +797,7 @@ namespace GalaxyCheck.Runners
             return shares;
         }
 
-        private string? CoverFailure(IReadOnlyDictionary<string, double>? shares)
+        private CoverageFailure? CoverFailure(IReadOnlyDictionary<string, double>? shares)
         {
             if (_rules == null || shares == null || _replay != null) return null;
 
@@ -805,8 +805,13 @@ namespace GalaxyCheck.Runners
             {
                 if (rule.MinPercent is { } required && shares[rule.Label] < required)
                 {
-                    return $"Cover not met: label \"{rule.Label}\" requires {PercentFormat.Format(required)} of the test cases, " +
-                        $"but only {PercentFormat.Format(shares[rule.Label])} ({Math.Round(shares[rule.Label] * _iteration / 100.0)} of {_iteration}) had it.";
+                    var actual = shares[rule.Label];
+                    return new CoverageFailure(
+                        rule.Label,
+                        required,
+                        actual,
+                        $"Cover not met: label \"{rule.Label}\" requires {PercentFormat.Format(required)} of the test cases, " +
+                        $"but only {PercentFormat.Format(actual)} ({Math.Round(actual * _iteration / 100.0)} of {_iteration}) had it.");
                 }
             }
 

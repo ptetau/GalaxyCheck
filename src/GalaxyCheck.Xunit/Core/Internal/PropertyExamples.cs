@@ -125,7 +125,7 @@ namespace GalaxyCheck.Internal
         /// Runs the test function one time on the inputs of the example. A failing example is reported with its
         /// inputs, and is not shrunk.
         /// </summary>
-        public static async Task Run(PropertyExample example, Func<string, string> formatMessage)
+        public static async Task Run(PropertyExample example, Func<string, string, string> formatMessage)
         {
             var result = await example.Property.CheckAsync(
                 iterations: 1,
@@ -136,9 +136,10 @@ namespace GalaxyCheck.Internal
                 exhaustive: false,
                 suppressHealthChecks: AllHealthChecks);
 
-            if (result.Falsified)
+            // An example is one input, so a cover rule, which judges the share of a label over a run, does not fail it.
+            if (result.Counterexample != null)
             {
-                var counterexample = result.Counterexample!;
+                var counterexample = result.Counterexample;
                 throw new PropertyFailedException(
                     new Counterexample<object?>(
                         counterexample.Value,
@@ -149,7 +150,7 @@ namespace GalaxyCheck.Internal
                     iterations: 1,
                     shrinks: 0,
                     formatReproduction: _ => $"{Environment.NewLine}    {example.Display}",
-                    formatMessage: formatMessage);
+                    formatMessage: message => formatMessage(message, example.Display));
             }
         }
 

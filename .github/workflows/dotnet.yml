@@ -16,14 +16,14 @@ env:
   NUGET_TOKEN: ${{ secrets.NUGET_API_KEY }}
   DOTNET_CLI_TELEMETRY_OPTOUT: true
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
-  PRERELEASE_PACKABLE_PROJECTS: GalaxyCheck GalaxyCheck.Xunit GalaxyCheck.Xunit.CodeAnalysis GalaxyCheck.Stable GalaxyCheck.Stable.Xunit GalaxyCheck.Stable.Xunit.CodeAnalysis
-  PACKABLE_PROJECTS: GalaxyCheck GalaxyCheck.Xunit GalaxyCheck.Xunit.CodeAnalysis
+  PACKABLE_PROJECTS: GalaxyCheck GalaxyCheck.Xunit GalaxyCheck.Xunit.CodeAnalysis GalaxyCheck.Xunit.V3 GalaxyCheck.TUnit GalaxyCheck.NUnit GalaxyCheck.MSTest GalaxyCheck.SourceGeneration
 
 jobs:
   build:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         framework: [net10.0, net11.0]
@@ -42,6 +42,22 @@ jobs:
       - name: Test
         run: dotnet test --no-build --verbosity normal --framework ${{ matrix.framework }} GalaxyCheck.sln
 
+  slice-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            10.0.x
+            11.0.x
+      - name: Test
+        run: dotnet test src/GalaxyCheck.Tests.Slice
+
   pack-prerelease:
     needs: build
     if: github.event_name != 'release'
@@ -54,24 +70,20 @@ jobs:
           dotnet-version: |
             10.0.x
             11.0.x
-      - name: Make GalaxyCheck.Stable
-        run: |
-          ls
-          bash ./scripts/makeGalaxyCheckStable.sh
       - name: Restore
         run: |
-          for project in $PRERELEASE_PACKABLE_PROJECTS; do
+          for project in $PACKABLE_PROJECTS; do
             dotnet restore src/$project/$project.csproj
           done
       - name: Build
         run: |
-          for project in $PRERELEASE_PACKABLE_PROJECTS; do
+          for project in $PACKABLE_PROJECTS; do
             dotnet build --no-restore src/$project/$project.csproj
           done
       - name: Pack
         run: |
           mkdir ./nupkg-prerelease
-          for project in $PRERELEASE_PACKABLE_PROJECTS; do
+          for project in $PACKABLE_PROJECTS; do
             dotnet pack \
               -v normal \
               -c Release \
@@ -106,6 +118,7 @@ jobs:
           name: nupkg-prerelease
           path: nupkg-prerelease
       - name: Push to MyGet
+        if: env.MY_GET_TOKEN != ''
         run: |
           for f in ./nupkg-prerelease/*.nupkg
           do
@@ -177,12 +190,14 @@ jobs:
           name: nupkg-release
           path: nupkg-release
       - name: Push to MyGet
+        if: env.MY_GET_TOKEN != ''
         run: |
           for f in ./nupkg-release/*.nupkg
           do
             dotnet nuget push $f --api-key $MY_GET_TOKEN --source $MY_GET_FEED
           done
       - name: Push to Nuget
+        if: env.NUGET_TOKEN != ''
         run: |
           for f in ./nupkg-release/*.nupkg
           do

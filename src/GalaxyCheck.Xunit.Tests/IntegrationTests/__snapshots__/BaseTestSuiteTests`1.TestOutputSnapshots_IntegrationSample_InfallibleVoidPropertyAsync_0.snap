@@ -4,11 +4,11 @@ Output:
 
 {"testName":"InfallibleVoidPropertyAsync","injectedValues":[0]}
 {"testName":"InfallibleVoidPropertyAsync","injectedValues":[1]}
-{"testName":"InfallibleVoidPropertyAsync","injectedValues":[4]}
-{"testName":"InfallibleVoidPropertyAsync","injectedValues":[5]}
-{"testName":"InfallibleVoidPropertyAsync","injectedValues":[6]}
-{"testName":"InfallibleVoidPropertyAsync","injectedValues":[6]}
-{"testName":"InfallibleVoidPropertyAsync","injectedValues":[46]}
-{"testName":"InfallibleVoidPropertyAsync","injectedValues":[100]}
+{"testName":"InfallibleVoidPropertyAsync","injectedValues":[1]}
 {"testName":"InfallibleVoidPropertyAsync","injectedValues":[0]}
-{"testName":"InfallibleVoidPropertyAsync","injectedValues":[58]}
+{"testName":"InfallibleVoidPropertyAsync","injectedValues":[15]}
+{"testName":"InfallibleVoidPropertyAsync","injectedValues":[8]}
+{"testName":"InfallibleVoidPropertyAsync","injectedValues":[8]}
+{"testName":"InfallibleVoidPropertyAsync","injectedValues":[33]}
+{"testName":"InfallibleVoidPropertyAsync","injectedValues":[44]}
+{"testName":"InfallibleVoidPropertyAsync","injectedValues":[100]}

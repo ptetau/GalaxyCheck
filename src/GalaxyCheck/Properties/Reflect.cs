@@ -11,6 +11,7 @@ namespace GalaxyCheck
 {
     public partial class Property
     {
+        /// <summary>Creates the property of a method whose parameters are generated, as a test framework does.</summary>
         [RequiresUnreferencedCode(GalaxyCheck.Gens.Generated.ReflectionMessages.Path)]
         [RequiresDynamicCode(GalaxyCheck.Gens.Generated.ReflectionMessages.Path)]
         public static Property Reflect(
@@ -43,6 +44,7 @@ namespace GalaxyCheck
             return handler(methodInfo, target, genFactory, customGens, controlData);
         }
 
+        /// <summary>Creates the async property of a method whose parameters are generated, as a test framework does.</summary>
         [RequiresUnreferencedCode(GalaxyCheck.Gens.Generated.ReflectionMessages.Path)]
         [RequiresDynamicCode(GalaxyCheck.Gens.Generated.ReflectionMessages.Path)]
         public static AsyncProperty ReflectAsync(

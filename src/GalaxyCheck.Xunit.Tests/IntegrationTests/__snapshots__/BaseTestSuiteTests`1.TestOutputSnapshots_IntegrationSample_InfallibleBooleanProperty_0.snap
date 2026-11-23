@@ -4,11 +4,11 @@ Output:
 
 {"testName":"InfallibleBooleanProperty","injectedValues":[0]}
 {"testName":"InfallibleBooleanProperty","injectedValues":[1]}
-{"testName":"InfallibleBooleanProperty","injectedValues":[4]}
-{"testName":"InfallibleBooleanProperty","injectedValues":[5]}
-{"testName":"InfallibleBooleanProperty","injectedValues":[6]}
-{"testName":"InfallibleBooleanProperty","injectedValues":[6]}
-{"testName":"InfallibleBooleanProperty","injectedValues":[46]}
-{"testName":"InfallibleBooleanProperty","injectedValues":[100]}
+{"testName":"InfallibleBooleanProperty","injectedValues":[1]}
 {"testName":"InfallibleBooleanProperty","injectedValues":[0]}
-{"testName":"InfallibleBooleanProperty","injectedValues":[58]}
+{"testName":"InfallibleBooleanProperty","injectedValues":[15]}
+{"testName":"InfallibleBooleanProperty","injectedValues":[8]}
+{"testName":"InfallibleBooleanProperty","injectedValues":[8]}
+{"testName":"InfallibleBooleanProperty","injectedValues":[33]}
+{"testName":"InfallibleBooleanProperty","injectedValues":[44]}
+{"testName":"InfallibleBooleanProperty","injectedValues":[100]}

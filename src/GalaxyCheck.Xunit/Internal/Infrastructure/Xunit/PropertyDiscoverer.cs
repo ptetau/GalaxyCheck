@@ -5,6 +5,7 @@ using Xunit.Sdk;
 
 namespace GalaxyCheck.Internal.Infrastructure.Xunit
 {
+    /// <summary>Finds the test cases of a [Property] method for xunit.</summary>
     public class PropertyDiscoverer : TheoryDiscoverer
     {
         private readonly IMessageSink _messageSink;
@@ -13,11 +14,13 @@ namespace GalaxyCheck.Internal.Infrastructure.Xunit
         [System.ThreadStatic]
         private static int _rowCount;
 
+        /// <summary>Creates the discoverer.</summary>
         public PropertyDiscoverer(IMessageSink messageSink) : base(messageSink)
         {
             _messageSink = messageSink;
         }
 
+        /// <summary>Returns the test cases of the method, one for each data row.</summary>
         public override IEnumerable<IXunitTestCase> Discover(
             ITestFrameworkDiscoveryOptions discoveryOptions,
             ITestMethod testMethod,
@@ -44,6 +47,7 @@ namespace GalaxyCheck.Internal.Infrastructure.Xunit
             }
         }
 
+        /// <summary>Returns the test case of one data row.</summary>
         protected override IEnumerable<IXunitTestCase> CreateTestCasesForDataRow(
             ITestFrameworkDiscoveryOptions discoveryOptions,
             ITestMethod testMethod,

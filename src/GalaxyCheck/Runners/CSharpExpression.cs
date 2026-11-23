@@ -138,6 +138,9 @@ namespace GalaxyCheck
                     return true;
                 case Enum v:
                     return WriteEnum(b, v);
+                case Stateful.IStatefulCommand:
+                    // A command of a stateful test runs against a system and a model, so it has no expression.
+                    return false;
             }
 
             var type = value.GetType();

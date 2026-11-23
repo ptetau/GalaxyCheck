@@ -8,6 +8,6 @@ public static class AssertionExtensions
         this ExceptionAssertions<Exceptions.GenErrorException> assertions,
         string messageBody)
     {
-        return assertions.WithMessage("Error during generation: " + messageBody);
+        return assertions.WithMessage("Error during generation: " + messageBody + System.Environment.NewLine + "Fix: *");
     }
 }

@@ -3,12 +3,12 @@
 Output:
 
 {"testName":"PropertyWithGenFromGenFactoryAsync","injectedValues":[0]}
-{"testName":"PropertyWithGenFromGenFactoryAsync","injectedValues":[1]}
-{"testName":"PropertyWithGenFromGenFactoryAsync","injectedValues":[4]}
-{"testName":"PropertyWithGenFromGenFactoryAsync","injectedValues":[8]}
-{"testName":"PropertyWithGenFromGenFactoryAsync","injectedValues":[77]}
-{"testName":"PropertyWithGenFromGenFactoryAsync","injectedValues":[88]}
-{"testName":"PropertyWithGenFromGenFactoryAsync","injectedValues":[4033]}
+{"testName":"PropertyWithGenFromGenFactoryAsync","injectedValues":[15]}
+{"testName":"PropertyWithGenFromGenFactoryAsync","injectedValues":[59]}
+{"testName":"PropertyWithGenFromGenFactoryAsync","injectedValues":[129]}
+{"testName":"PropertyWithGenFromGenFactoryAsync","injectedValues":[15690]}
+{"testName":"PropertyWithGenFromGenFactoryAsync","injectedValues":[140576]}
+{"testName":"PropertyWithGenFromGenFactoryAsync","injectedValues":[544065]}
+{"testName":"PropertyWithGenFromGenFactoryAsync","injectedValues":[8659077]}
+{"testName":"PropertyWithGenFromGenFactoryAsync","injectedValues":[117882095]}
 {"testName":"PropertyWithGenFromGenFactoryAsync","injectedValues":[2147483647]}
-{"testName":"PropertyWithGenFromGenFactoryAsync","injectedValues":[248844990]}
-{"testName":"PropertyWithGenFromGenFactoryAsync","injectedValues":[76659640]}

@@ -6,11 +6,13 @@ using Xunit.Sdk;
 
 namespace GalaxyCheck.Internal.Infrastructure.Xunit
 {
+    /// <summary>Runs the property of one xunit test case and reports its result.</summary>
     public class PropertyTestRunner : TestCaseRunner<PropertyTestCase>
     {
         private readonly object[] _constructorArguments;
         private readonly object[] _testMethodArguments;
 
+        /// <summary>Creates the runner of a test case.</summary>
         public PropertyTestRunner(
             PropertyTestCase testCase,
             IMessageBus messageBus,
@@ -20,10 +22,11 @@ namespace GalaxyCheck.Internal.Infrastructure.Xunit
             object[] testMethodArguments)
             : base(testCase, messageBus, aggregator, cancellationTokenSource)
         {
-            _constructorArguments = constructorArguments;
+            _constructorArguments = ConstructorArguments.Resolve(constructorArguments);
             _testMethodArguments = testMethodArguments;
         }
 
+        /// <summary>Runs the property and reports one result.</summary>
         protected override async Task<RunSummary> RunTestAsync()
         {
             var startTime = DateTime.UtcNow;
@@ -72,7 +75,12 @@ namespace GalaxyCheck.Internal.Infrastructure.Xunit
                     new DefaultPropertyFactory(),
                     GlobalConfiguration.GetInstance(TestCase.TestMethod.TestClass.Class.ToRuntimeType().Assembly).Properties,
                     GlobalConfiguration.GetInstance(TestCase.TestMethod.TestClass.Class.ToRuntimeType().Assembly).FailureMemory,
-                    TestCase.RowIndex);
+                    TestCase.RowIndex,
+                    FailureMessage.XunitFilter(
+                        TestCase.TestMethod.TestClass.Class.ToRuntimeType(),
+                        TestCase.TestMethod.Method.ToRuntimeMethod(),
+                        isDataRow: _testMethodArguments is { Length: > 0 },
+                        TestCase.DisplayName));
             }
             catch (Exception exception)
             {

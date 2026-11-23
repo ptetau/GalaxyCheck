@@ -12,18 +12,21 @@ namespace GalaxyCheck
 
     public static partial class Extensions
     {
+        /// <summary>Samples the inputs of a property as a report shows them, with metrics.</summary>
         public static SampleWithMetricsResult<IReadOnlyList<object?>> SamplePresentationalWithMetrics(
             this Property property,
             int? iterations = null,
             int? seed = null,
             int? size = null) => PresentationalSampleHelpers.RunPresentationalValueSample(property, iterations: iterations, seed: seed, size: size);
 
+        /// <summary>Samples the inputs of an async property as a report shows them, with metrics.</summary>
         public static Task<SampleWithMetricsResult<IReadOnlyList<object?>>> SamplePresentationalWithMetricsAsync(
             this AsyncProperty property,
             int? iterations = null,
             int? seed = null,
             int? size = null) => PresentationalSampleHelpers.RunPresentationalValueSampleAsync(property, iterations: iterations, seed: seed, size: size);
 
+        /// <summary>Samples the values of a generator as a report shows them, with metrics.</summary>
         public static SampleWithMetricsResult<IReadOnlyList<object?>> SamplePresentationalWithMetrics<T>(
             this IGenAdvanced<T> advanced,
             int? iterations = null,
