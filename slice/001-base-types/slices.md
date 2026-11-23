@@ -282,7 +282,7 @@
 - Tier: hard
 - Status: review
 - Test rounds: 1
-- Review rounds: 1
+- Review rounds: 2
 
 ## S11: Agent experience
 
