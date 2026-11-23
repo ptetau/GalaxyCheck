@@ -41,40 +41,6 @@ namespace GalaxyCheck.Internal.Infrastructure.MSTest
             });
         }
 
-        /// <summary>Compares the value of each seed of a [GenSnapshot] method with the stored snapshot.</summary>
-        public static Task<TestResult[]> RunGenSnapshot(ITestMethod testMethod) => Run(new InvocationOutput(), async () =>
-        {
-            var methodInfo = testMethod.MethodInfo;
-            var testClassType = methodInfo.ReflectedType ?? methodInfo.DeclaringType!;
-
-            var initialization = GenSnapshotInitializer.Initialize(
-                testClassType,
-                methodInfo,
-                Array.Empty<object>(),
-                new DefaultParametersGenFactory(),
-                GlobalConfiguration.GetInstance(testClassType.Assembly).GenSnapshots);
-
-            var failures = new List<Exception>();
-            for (var seedIndex = 0; seedIndex < initialization.Seeds.Count; seedIndex++)
-            {
-                var (exception, _) = await GenSnapshotRunner.Run(initialization, testClassType, methodInfo, seedIndex);
-                if (exception != null)
-                {
-                    failures.Add(exception);
-                }
-            }
-
-            if (failures.Count == 1)
-            {
-                throw failures[0];
-            }
-
-            if (failures.Count > 1)
-            {
-                throw new AggregateException(failures);
-            }
-        });
-
         private static async Task<TestResult[]> Run(InvocationOutput output, Func<Task> body)
         {
             var stopwatch = Stopwatch.StartNew();

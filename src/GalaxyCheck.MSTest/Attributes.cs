@@ -29,19 +29,4 @@ namespace GalaxyCheck
         {
         }
     }
-
-    public sealed partial class GenSnapshotAttribute : TestMethodAttribute
-    {
-        public GenSnapshotAttribute([CallerFilePath] string? testFilePath = null, [CallerLineNumber] int callerLineNumber = -1)
-            : base(testFilePath ?? "", callerLineNumber)
-        {
-            TestFileName = testFilePath;
-        }
-
-        public string? TestFileName { get; }
-
-        internal string? SkipReason => null;
-
-        public override Task<TestResult[]> ExecuteAsync(ITestMethod testMethod) => MSTestAdapter.RunGenSnapshot(testMethod);
-    }
 }

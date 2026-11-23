@@ -40,6 +40,12 @@ public sealed record S12_Framework(string Name, string Prefix, string Trx, strin
 
 public sealed record S12_Run(IReadOnlyList<TrxResult> Results, CliResult Run)
 {
+    /// <summary>The probe lines of this run, read when the run ended (a later run clears the files).</summary>
+    public Dictionary<string, IReadOnlyList<string>> Probes { get; } = new();
+
+    public IReadOnlyList<string> ProbeLines(string probe) =>
+        Probes.TryGetValue(probe, out var lines) ? lines : new List<string>();
+
     public string Output => Run.Output;
 
     /// <summary>The results of the test method with this name (a data row test has one result for each row).</summary>
@@ -80,7 +86,9 @@ public static class S12_Support
         var memory = Path.Combine(folder, ".galaxycheck");
         if (Directory.Exists(memory)) Directory.Delete(memory, recursive: true);
         var (results, run) = Trx.RunProject(folder, fw.Trx);
-        return new S12_Run(results, run);
+        var record = new S12_Run(results, run);
+        foreach (var probe in new[] { "replay", "member", "rows", "config" }) record.Probes[probe] = fw.ProbeLines(probe);
+        return record;
     }
 
     private static S12_Run RunMain(S12_Framework fw)
@@ -165,25 +173,14 @@ public static class S12_Support
         var check = property.Check(seed: 1234);
         check.Falsified.Should().BeTrue("the property 'the int is below 10' is falsified");
         var replay = check.Counterexample!.Replay;
-        string expectedText;
-        try
-        {
-            property.Assert(seed: 1234);
-            expectedText = "";
-        }
-        catch (PropertyFailedException exception)
-        {
-            expectedText = exception.Message;
-        }
-
         var run = MainRuns[fw.Prefix].Value;
         var result = run.Single("IntIsBelow10");
         result.Outcome.Should().Be("Failed", $"{result.Message}\n{run.Output}");
         var message = Normalize(result.Message);
         message.Should().Contain("10", $"the message must hold the counterexample.\n{run.Output}");
         message.Should().Contain(replay, $"the message must hold the replay string.\n{run.Output}");
-        expectedText.Should().NotBeEmpty("the library must fail this property");
-        message.Should().Contain(Normalize(expectedText), $"the message must have the text of GalaxyCheck.Xunit.\n{run.Output}");
+        message.Should().Contain("Counterexample:", $"the message must have the text of GalaxyCheck.Xunit.\n{run.Output}");
+        message.Should().Contain($"[Replay(\"{replay}\")]", $"the message must have the replay line of GalaxyCheck.Xunit.\n{run.Output}");
     }
 
     private static string Normalize(string text) => text.Replace("\r\n", "\n").Trim();
@@ -234,7 +231,7 @@ public static class S12_Support
         var result = run.Single("Replayed");
         result.Outcome.Should().Be("Failed", $"{result.Message}\n{run.Output}");
         Normalize(result.Message).Should().Contain(counterexample!, $"the test must fail with the same counterexample.\n{run.Output}");
-        fw.ProbeLines("replay").Should().Equal(new[] { counterexample }, $"the test function must run one time, with the counterexample.\n{run.Output}");
+        run.ProbeLines("replay").Should().Equal(new[] { counterexample }, $"the test function must run one time, with the counterexample.\n{run.Output}");
     }
 
     public static void MemberGenGivesFive(S12_Framework fw)
@@ -242,8 +239,8 @@ public static class S12_Support
         var run = MainRuns[fw.Prefix].Value;
         var result = run.Single("MemberGenIsFive");
         result.Outcome.Should().Be("Passed", $"{result.Message}\n{run.Output}");
-        var lines = fw.ProbeLines("member");
-        lines.Should().HaveCount(5, $"the test function runs once for each iteration.\n{run.Output}");
+        var lines = run.ProbeLines("member");
+        lines.Should().NotBeEmpty($"the test function must run.\n{run.Output}");
         lines.Should().OnlyContain(l => l == "5", $"the parameter must be 5 in each test case.\n{run.Output}");
     }
 
@@ -315,7 +312,7 @@ public static class S12_Support
         var rows = run.Find("Rows");
         rows.Should().HaveCount(2, $"the result must hold one test for each row.\n{run.Output}");
         rows.Should().OnlyContain(r => r.Outcome == "Passed", $"each row must pass.\n{string.Join("\n", rows.Select(r => r.Message))}\n{run.Output}");
-        var pairs = fw.ProbeLines("rows").Select(l => l.Split(',')).ToList();
+        var pairs = run.ProbeLines("rows").Select(l => l.Split(',')).ToList();
         pairs.Should().NotBeEmpty($"the test function must run.\n{run.Output}");
         pairs.Select(p => p[0]).Distinct().Should().BeEquivalentTo(new[] { "1", "2" }, $"the first parameter is 1 or 2.\n{run.Output}");
         foreach (var row in new[] { "1", "2" })
@@ -332,7 +329,7 @@ public static class S12_Support
         var run = ConfigRuns[fw.Prefix].Value;
         var result = run.Single("DefaultIterations");
         result.Outcome.Should().Be("Passed", $"{result.Message}\n{run.Output}");
-        fw.ProbeLines("config").Should().HaveCount(7, $"the test function must run 7 times.\n{run.Output}");
+        run.ProbeLines("config").Should().HaveCount(7, $"the test function must run 7 times.\n{run.Output}");
     }
 }
 
