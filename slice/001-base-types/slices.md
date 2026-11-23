@@ -300,7 +300,7 @@
   - Given `GALAXYCHECK_SEED=7` and a property with no seed option, when it runs, then its values are those of seed 7, and a property with the seed option 3 gives the values of seed 3. (R66)
 - Layers: report, runner, each framework package, docs, packaging
 - Tier: standard
-- Status: review
+- Status: done
 - Test rounds: 1
 - Review rounds: 3
 
