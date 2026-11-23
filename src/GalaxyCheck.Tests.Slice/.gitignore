@@ -6,3 +6,4 @@ samples/**/__snapshots__/__mismatch__/
 samples/**/_run-*/
 samples/**/__snapshots__/
 samples/**/logs/
+samples/S13/*/FixedReplay.cs

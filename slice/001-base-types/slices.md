@@ -264,9 +264,9 @@
   - Given a property of an int with `[Example("a")]`, when the project runs, then the result is one failed test whose message names the parameter. (R52)
 - Layers: nunit package, shared framework core, packaging, mstest package, each framework package, store
 - Tier: standard
-- Status: building
+- Status: review
 - Test rounds: 2
-- Review rounds: 0
+- Review rounds: 1
 
 ## S10: The source generator and the reference pages
 
