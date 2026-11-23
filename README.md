@@ -55,6 +55,345 @@ public class AboutSort
 
 To use another test framework, read [Getting started](docs/getting-started.md).
 
+## Examples
+
+Each example states one rule of a small piece of domain code, and names the fault that the rule finds. The examples
+come from the three [full demos](#the-full-demos), in a reduced form. Each block compiles and passes alone.
+
+### Round trip: format and parse money
+
+A round trip formats a value and parses the text again. This property finds a format with the wrong count of
+decimal places. The generator `AnyMoney` is a LINQ expression: it selects a currency first, and then an amount in the minor units
+of that currency.
+
+```csharp
+using GalaxyCheck;
+using System;
+using System.Globalization;
+
+public record Money(decimal Amount, string Currency)
+{
+    public static int Places(string currency) => currency == "JPY" ? 0 : currency == "BHD" ? 3 : 2;
+
+    public string Format() =>
+        Currency + " " + Amount.ToString("N" + Places(Currency), CultureInfo.InvariantCulture);
+
+    public static Money Parse(string text) =>
+        new(decimal.Parse(text.Substring(4), NumberStyles.Number, CultureInfo.InvariantCulture), text.Substring(0, 3));
+}
+
+public class MoneyRoundTrip
+{
+    public static IGen<Money> AnyMoney =>
+        from currency in Gen.Element(new[] { "USD", "JPY", "BHD" })
+        from minorUnits in Gen.Int64().Between(-100_000_000, 100_000_000)
+        select new Money(minorUnits / (decimal)Math.Pow(10, Money.Places(currency)), currency);
+
+    [Property]
+    public Property FormatThenParseGivesTheSameMoney() =>
+        AnyMoney.ForAll(money => Money.Parse(money.Format()) == money);
+}
+```
+
+To see a failure, we changed `Format` in a scratch copy to always write two decimal places (`"N2"`). The property
+then failed with this output:
+
+```text
+GalaxyCheck.Runners.PropertyFailedException :
+
+Falsified after 4 tests (1 shrink)
+Reproduction:
+    [Replay("Ao7+wAUDAwIBAA==")]
+Counterexample: { Amount = 0.001, Currency = "BHD" }
+Counterexample as C#:
+    new global::Money(0.001m, "BHD")
+
+Property function returned false
+```
+
+The shrunk counterexample is the smallest amount in a currency with three decimal places. This README does not show
+the JSON block at the end of the output.
+
+### Invariant: a transfer creates or loses no money
+
+An invariant is a rule that holds after each operation. This property finds a transfer that creates money, loses
+money, or takes an account below zero.
+
+```csharp
+using GalaxyCheck;
+using System.Linq;
+
+public static class Bank
+{
+    public static void Transfer(long[] balances, int payer, int payee, long cents)
+    {
+        if (cents <= 0 || balances[payer] < cents) return;
+        balances[payer] -= cents;
+        balances[payee] += cents;
+    }
+}
+
+public class TransferInvariant
+{
+    [Property]
+    public Property TransfersKeepTheTotal() =>
+        Property.ForAll(
+            Gen.Int64().Between(0, 1_000).ListOf().WithCount(3),
+            Gen.Zip(Gen.Int32().Between(0, 2), Gen.Int32().Between(0, 2), Gen.Int64().Between(-10, 1_000)).ListOf(),
+            (start, transfers) =>
+            {
+                var balances = start.ToArray();
+                foreach (var (payer, payee, cents) in transfers) Bank.Transfer(balances, payer, payee, cents);
+                return balances.Sum() == start.Sum() && balances.All(b => b >= 0);
+            });
+}
+```
+
+### Oracle: compare a fast version with a slow version
+
+An oracle is a simple, slow version of the code that is obviously right. This property finds a fast split that
+gives the leftover cents to the wrong parts.
+
+```csharp
+using GalaxyCheck;
+using System.Linq;
+
+public static class Split
+{
+    public static long[] Fast(long cents, int parts) =>
+        Enumerable.Range(0, parts).Select(i => cents / parts + (i < cents % parts ? 1 : 0)).ToArray();
+
+    public static long[] OneCentAtATime(long cents, int parts)
+    {
+        var result = new long[parts];
+        for (long i = 0; i < cents; i++) result[i % parts]++;
+        return result;
+    }
+}
+
+public class SplitOracle
+{
+    [Property]
+    public Property FastSplitAgreesWithTheSlowSplit() =>
+        Property.ForAll(Gen.Int64().Between(0, 10_000), Gen.Int32().Between(1, 12),
+            (cents, parts) => Split.Fast(cents, parts).SequenceEqual(Split.OneCentAtATime(cents, parts)));
+}
+```
+
+### Metamorphic: a change to the input that must not change the output
+
+A metamorphic property changes the input in a known way, and compares the two outputs. You do not need the correct
+output. This property finds an email key that changes with the case, white space at the ends, or a sub-address.
+
+```csharp
+using GalaxyCheck;
+
+public static class Email
+{
+    public static string Key(string address)
+    {
+        var parts = address.Trim().ToLowerInvariant().Split('@');
+        return parts[0].Split('+')[0] + "@" + parts[1];
+    }
+}
+
+public class EmailMetamorphic
+{
+    [Property]
+    public Property CaseSpacesAndSubAddressDoNotMatter() =>
+        Property.ForAll(
+            Gen.StringMatching("[a-z][a-z0-9.]{0,8}@[a-z]{1,8}\\.com"),
+            Gen.StringMatching("[a-z0-9]{0,5}"),
+            (address, tag) =>
+            {
+                var at = address.IndexOf('@');
+                var messy = " " + address.Substring(0, at).ToUpperInvariant() + "+" + tag + address.Substring(at) + " ";
+                return Email.Key(messy) == Email.Key(address);
+            });
+}
+```
+
+### Commutative and idempotent: merge two contacts
+
+A merge must not depend on the order of its arguments, and a second merge must change nothing. This property
+finds a merge that breaks a tie of dates by the argument order, or that adds an address two times.
+
+```csharp
+using GalaxyCheck;
+using System.Collections.Generic;
+using System.Linq;
+
+public record Contact(string Name, int LastActivityDay, IReadOnlySet<string> Emails)
+{
+    public static Contact Merge(Contact a, Contact b)
+    {
+        var recent = a.LastActivityDay > b.LastActivityDay
+            || (a.LastActivityDay == b.LastActivityDay && string.CompareOrdinal(a.Name, b.Name) <= 0) ? a : b;
+        return new(recent.Name, recent.LastActivityDay, a.Emails.Union(b.Emails).ToHashSet());
+    }
+
+    public bool Same(Contact c) => Name == c.Name && LastActivityDay == c.LastActivityDay && Emails.SetEquals(c.Emails);
+}
+
+public class MergeLaws
+{
+    public static IGen<Contact> AnyContact =>
+        from name in Gen.Element(new[] { "Ann", "Bob" })
+        from day in Gen.Int32().Between(1, 3)
+        from emails in Gen.Element(new[] { "a@x.com", "b@x.com" }).ListOf().WithCountLessThanEqual(2)
+        select new Contact(name, day, emails.ToHashSet());
+
+    [Property]
+    public Property MergeIsCommutativeAndIdempotent() =>
+        Property.ForAll(AnyContact, AnyContact, (a, b) =>
+            Contact.Merge(a, b).Same(Contact.Merge(b, a)) && Contact.Merge(Contact.Merge(a, b), b).Same(Contact.Merge(a, b)));
+}
+```
+
+### Tolerance: momentum in a collision
+
+Floating-point code seldom gives the exact answer, so a numeric property compares with a tolerance. This property
+finds an impulse that uses the wrong mass.
+
+```csharp
+using GalaxyCheck;
+using System;
+
+public static class Collision
+{
+    public static (double, double) Elastic(double m1, double v1, double m2, double v2) =>
+        (((m1 - m2) * v1 + 2 * m2 * v2) / (m1 + m2), ((m2 - m1) * v2 + 2 * m1 * v1) / (m1 + m2));
+}
+
+public class CollisionTolerance
+{
+    [Property]
+    public Property MomentumIsConserved() =>
+        Property.ForAll(Gen.Double().Between(0.001, 1_000), Gen.Double().Between(-100, 100).Two(),
+            Gen.Double().Between(0.001, 1_000), (m1, velocities, m2) =>
+            {
+                var (v1, v2) = velocities;
+                var (u1, u2) = Collision.Elastic(m1, v1, m2, v2);
+                var scale = m1 * Math.Abs(v1) + m2 * Math.Abs(v2);
+                return Math.Abs(m1 * u1 + m2 * u2 - (m1 * v1 + m2 * v2)) <= 1e-9 * scale + 1e-300;
+            });
+}
+```
+
+### Explicit examples beside generated inputs
+
+`[Example]` runs a known edge case before the generated inputs. The second example is a rounding error below
+absolute zero, and finds a check of absolute zero with no tolerance. The second property is a round trip with a
+tolerance.
+
+```csharp
+using GalaxyCheck;
+using System;
+
+public static class Temperature
+{
+    public static double FahrenheitToKelvin(double f)
+    {
+        var kelvin = (f - 32) * 5 / 9 + 273.15;
+        if (kelvin < -1e-9) throw new ArgumentOutOfRangeException(nameof(f), "Below absolute zero");
+        return Math.Max(kelvin, 0);
+    }
+
+    public static double KelvinToFahrenheit(double k) => (k - 273.15) * 9 / 5 + 32;
+}
+
+public class TemperatureExamples
+{
+    public static IGen<double> Fahrenheit => Gen.Double().Between(-459.67, 10_000);
+
+    [Property]
+    [Example(-459.67)]
+    [Example(-459.6700000000001)]
+    public bool AbsoluteZeroIsNotAnError([MemberGen(nameof(Fahrenheit))] double f) =>
+        Temperature.FahrenheitToKelvin(f) >= 0;
+
+    [Property]
+    public Property ConversionRoundTrips() =>
+        Fahrenheit.ForAll(f => Math.Abs(Temperature.KelvinToFahrenheit(Temperature.FahrenheitToKelvin(f)) - f) <= 1e-9 * Math.Max(1, Math.Abs(f)));
+}
+```
+
+### Precondition: discard the cases that do not apply
+
+`Property.Precondition` discards a test case that does not meet a condition. Use a precondition only when most
+cases meet it. This property finds an overdraft check that refuses a legal withdrawal.
+
+```csharp
+using GalaxyCheck;
+using System;
+
+public record Account(long Cents, long Limit)
+{
+    public Account Withdraw(long cents) =>
+        cents <= Cents + Limit ? this with { Cents = Cents - cents } : throw new InvalidOperationException("No funds");
+}
+
+public class WithdrawalPrecondition
+{
+    [Property]
+    public Property WithdrawalWithinTheLimitTakesTheExactAmount() =>
+        Property.ForAll(Gen.Int64().Between(0, 1_000), Gen.Int64().Between(0, 200), Gen.Int64().Between(1, 1_000),
+            (cents, limit, amount) =>
+            {
+                Property.Precondition(amount <= cents + limit);
+                return new Account(cents, limit).Withdraw(amount).Cents == cents - amount;
+            });
+}
+```
+
+### Model-based: compare a system with a simple model
+
+A model-based test runs random commands on the real system and on a simple model, and compares the two after each
+command. This test finds a wallet that refuses a legal withdrawal, or that adds the wrong amount. A failure gives the
+shortest command sequence that it found. Read [Stateful testing](docs/stateful-testing.md).
+
+```csharp
+using GalaxyCheck;
+using GalaxyCheck.Stateful;
+using System;
+
+public class Wallet
+{
+    public long Cents { get; private set; }
+    public void Add(long cents) => Cents = Cents + cents >= 0 ? Cents + cents : throw new InvalidOperationException();
+}
+
+public class Change : Command<Wallet, long>
+{
+    private readonly long cents;
+    public Change(long cents) => this.cents = cents;
+    public override bool Precondition(long model) => model + cents >= 0;
+    public override void Run(Wallet wallet) => wallet.Add(cents);
+    public override long NextModel(long model) => model + cents;
+    public override bool Postcondition(Wallet wallet, long before, long after) => wallet.Cents == after;
+    public override string ToString() => cents >= 0 ? $"Deposit {cents}" : $"Withdraw {-cents}";
+}
+
+public class WalletModel
+{
+    [Property]
+    public Property WalletAgreesWithTheModel() =>
+        StatefulProperty.Create(() => new Wallet(), () => 0L,
+            model => Gen.Int64().Between(-model, 100).Select(cents => (Command<Wallet, long>)new Change(cents)));
+}
+```
+
+### The full demos
+
+The folder [examples](examples/README.md) holds three demos with real domain code, more properties, and the
+bugs that each property found in a scratch copy.
+
+| Demo | Domain | Test framework | Run the tests |
+| --- | --- | --- | --- |
+| [Banking](examples/Banking/README.md) | Money, a ledger, transfers, interest | xunit v3 | `cd examples/Banking/Banking.Tests && dotnet test` |
+| [Physics](examples/Physics/README.md) | Vectors, units, collisions, a spring, an orbit | TUnit | `cd examples/Physics && dotnet test --project Physics.Tests` |
+| [CRM](examples/Crm/README.md) | Contacts, normalisation, merge, a pipeline, search | NUnit | `cd examples/Crm/Crm.Tests && dotnet test` |
+
 ## A tour of the features
 
 ### Shrinking

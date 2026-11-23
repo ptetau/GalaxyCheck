@@ -34,6 +34,15 @@ This index lists each page of the documentation. Start with [Getting started](ge
 - [Failure memory](failure-memory.md): the file `.galaxycheck/failures.json`.
 - [Stateful testing](stateful-testing.md): sequences of commands against a model.
 
+## Examples
+
+- [Examples in the README](../README.md#examples): nine short properties, from a round trip to a model-based
+  test.
+- [Banking demo](../examples/Banking/README.md): money, a ledger, transfers, and interest, in xunit v3.
+- [Physics demo](../examples/Physics/README.md): vectors, units, collisions, a spring, and an orbit, in TUnit.
+- [CRM demo](../examples/Crm/README.md): contacts, normalisation, merge, a pipeline, and search, in NUnit.
+- [All three demos](../examples/README.md): how to build and run each demo, and where to find each pattern.
+
 ## Tools and platforms
 
 - [The source generator and NativeAOT](source-generator.md): generated code for `Gen.Create<T>()`, and the
