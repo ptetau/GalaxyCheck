@@ -31,6 +31,8 @@ numbers. The user can run properties in xunit v2, xunit v3, TUnit, NUnit, and MS
 - D18 (self-testing): The tests of the library use the current library for their own property tests, as soon as the fast core exists. The old prebuilt copies of the library go.
 - D19 (reference suite): The library has a reference suite of test cases that other property-based testing libraries use on themselves, with a preference for novel cases. Each case is written new from the idea. No test code is copied. `docs/reference-suite.md` names the source of each case.
 - D20 (TUnit forms): TUnit finds a test only through its own `[Test]` attribute, has its own `[Property]` attribute, and refuses a data row that does not fill each parameter. So a TUnit property is written `[Test, PropertyTest]`: the TUnit package has `PropertyTestAttribute` with the options of `PropertyAttribute`, and keeps `PropertyAttribute` for a user who adds a using alias. A data row in TUnit is `[PropertyArguments(...)]`, which gives the first parameters.
+- D21 (MSTest forms): MSTest finds only a test method that returns void, Task, or ValueTask. So an MSTest property is a void or Task method that asserts or throws. The MSTest package has no `[GenSnapshot]`, and R27 does not apply to it. The other attributes work as in the other packages.
+- D22 (NUnit rows): An NUnit data row stays `[TestCase(...)]` and `[TestCaseSource]`, which NUnit engineers know. The package makes a row that gives only the first parameters runnable.
 
 ## Requirements
 

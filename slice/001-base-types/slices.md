@@ -245,12 +245,12 @@
   - Given a pack of GalaxyCheck.MSTest, when a test lists its `lib/` folders, then it finds `net10.0` and `net11.0`. (R22)
   - Given an MSTest project with a `[Property]` test that holds, when the project runs, then the result holds one passed test for it. (R23)
   - Given an MSTest `[Property]` test "the int is below 10", when the project runs, then the result holds one failed test, and its message holds the counterexample 10 and a replay string, in the text that GalaxyCheck.Xunit gives. (R23)
-  - Given MSTest `[Property]` tests with a void, a boolean, a `Property`, and a generator return, and the async form of each, when the project runs, then each test that holds passes and each test that is falsified fails. (R24)
-  - Given the MSTest package, when a test reads its public types, then `Property`, `Sample`, `GenSnapshot`, `Replay`, and `MemberGen` attributes exist with the options of GalaxyCheck.Xunit. (R22)
+  - Given MSTest `[Property]` tests with a void return and a `Task` return, when the project runs, then each test that holds passes and each test that is falsified fails. (R24, D21)
+  - Given the MSTest package, when a test reads its public types, then `Property`, `Sample`, `Replay`, and `MemberGen` attributes exist with the options of GalaxyCheck.Xunit. (R22)
   - Given a failing MSTest property with `[Replay]` of its replay string, when the project runs, then the test function runs one time and the test fails with the same counterexample. (R25)
   - Given a parameter with `[MemberGen]` that names a member which returns `Gen.Int32().Between(5, 5)`, when the project runs, then the parameter is 5 in each test case. (R25)
   - Given a `[Sample]` test, when the project runs, then the test fails and its message lists the sampled values. (R26)
-  - Given a `[GenSnapshot]` test with a stored snapshot, when the generator changes its values, then the test fails, and with no change it passes. (R27)
+  - Given the MSTest package, when a test reads its public types, then it has no `GenSnapshotAttribute`. (R27, D21)
   - Given a `[Property]` with `[DataRow(1)]` and `[DataRow(2)]` and one more int parameter, when the project runs, then the result holds 2 tests, the first parameter is 1 or 2, and the second is generated. (R28)
   - Given a global configuration with default iterations of 7, when a `[Property]` with no iterations option runs, then the test function runs 7 times. (R29)
   - Given a failing `[Property]` test in each of the five frameworks, when the project runs, then a file in the documented folder of the test project holds the replay string under the full name of the test. (R38)
@@ -265,7 +265,7 @@
 - Layers: nunit package, shared framework core, packaging, mstest package, each framework package, store
 - Tier: standard
 - Status: building
-- Test rounds: 1
+- Test rounds: 2
 - Review rounds: 0
 
 ## S10: The source generator and the reference pages
