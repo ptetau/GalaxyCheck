@@ -2,5 +2,5 @@ namespace S13Sample;
 
 public static class FixedReplay
 {
-    public const string Value = "AoaA8c0CFQIyAA==";
+    public const string Value = "AtD+25YHFAIyAA==";
 }

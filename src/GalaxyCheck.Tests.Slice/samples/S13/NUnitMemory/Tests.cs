@@ -1,5 +1,7 @@
 namespace S13Sample;
 
+// NUnit loads an assembly only if it refers to NUnit, so each test class has this attribute.
+[NUnit.Framework.TestFixture]
 public class MemoryTests
 {
     [GalaxyCheck.Property]
