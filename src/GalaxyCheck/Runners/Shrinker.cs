@@ -680,7 +680,7 @@ namespace GalaxyCheck.Runners
             {
                 for (var j = i + 1; j < _bestLength && j <= i + PairWindow; j++)
                 {
-                    if (!IsFree(i) || _best[i] < 2) break;
+                    if (!IsFree(i) || _best[i] < 1) break;
                     if (!IsFree(j)) continue;
 
                     var amount = _best[i];
