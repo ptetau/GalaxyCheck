@@ -302,7 +302,7 @@
 - Tier: standard
 - Status: review
 - Test rounds: 1
-- Review rounds: 2
+- Review rounds: 3
 
 ## S12: The library tests itself
 
