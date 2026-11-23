@@ -1,4 +1,6 @@
-﻿using GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers;
+using System.Diagnostics.CodeAnalysis;
+using GalaxyCheck.Gens.Generated;
+using GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -6,6 +8,8 @@ using System.Linq;
 
 namespace GalaxyCheck.Gens.ReflectedGenHelpers
 {
+    [RequiresUnreferencedCode(ReflectionMessages.Path)]
+    [RequiresDynamicCode(ReflectionMessages.Path)]
     internal static class ReflectedGenBuilder
     {
         public static IGen Build(

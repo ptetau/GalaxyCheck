@@ -21,6 +21,8 @@ namespace GalaxyCheck
         /// with minimal configuration through reflection.
         /// </summary>
         /// <returns>A generator for the given type.</returns>
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode(Gens.Generated.ReflectionMessages.Path)]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode(Gens.Generated.ReflectionMessages.Path)]
         public static IGen<object> Create(Type type, NullabilityInfo? nullabilityInfo = null) => Factory().Create(type, nullabilityInfo);
 
         /// <summary>

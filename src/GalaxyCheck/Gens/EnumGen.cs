@@ -1,4 +1,4 @@
-﻿namespace GalaxyCheck
+namespace GalaxyCheck
 {
     using GalaxyCheck.Gens.Enum;
     using System;
@@ -32,7 +32,7 @@ namespace GalaxyCheck.Gens.Enum
     {
         public static IGen<T> GenFlagsEnum<T>()
         {
-            var values = System.Enum.GetValues(typeof(T)).Cast<int>();
+            var values = System.Enum.GetValuesAsUnderlyingType(typeof(T)).Cast<object>().Select(System.Convert.ToInt32);
             var gen = Gen
                 .Element(values)
                 .SetOf()
@@ -43,7 +43,11 @@ namespace GalaxyCheck.Gens.Enum
             return new FlagsEnumGen<T>(gen, values.ToArray());
         }
 
-        public static IGen<T> GenNonFlagsEnum<T>() => Gen.Element(System.Enum.GetValues(typeof(T)).Cast<T>());
+        public static IGen<T> GenNonFlagsEnum<T>() => Gen.Element(System.Enum
+            .GetValuesAsUnderlyingType(typeof(T))
+            .Cast<object>()
+            .Select(value => (T)System.Enum.ToObject(typeof(T), value))
+            .ToArray());
     }
 }
 

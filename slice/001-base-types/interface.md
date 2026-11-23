@@ -100,6 +100,8 @@ The stubs fail with `System.NotImplementedException`. The message holds "not imp
 
 - Project `src/GalaxyCheck.SourceGeneration`, used as an analyzer reference. With it, `Gen.Create<T>()` for a type that the compiler knows uses generated code.
 - A type with no support: the compiler reports the diagnostic `GCSG001`, and its message holds the name of the type.
+- A call that uses reflection at run time: the compiler reports the diagnostic `GCSG002`. The calls are `Gen.Create<T>()` with a type parameter, `Create<T>()` on a factory with a registration, and each `OverrideMember(...)`. Such a call does not work with trimming or NativeAOT.
+- The package holds the generator and its analyzer in `analyzers/dotnet/cs/`, with no `lib/` folder.
 - Publish check: `dotnet publish <project> -r linux-x64 -p:PublishAot=true -p:TreatWarningsAsErrors=false`. The output holds no line with both `warning IL` and `GalaxyCheck`.
 
 ### Benchmarks and gate (R46 to R50)

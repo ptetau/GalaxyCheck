@@ -1,9 +1,13 @@
-﻿using GalaxyCheck.Internal;
+using System.Diagnostics.CodeAnalysis;
+using GalaxyCheck.Gens.Generated;
+using GalaxyCheck.Internal;
 using System;
 using System.Collections.Generic;
 
 namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
 {
+    [RequiresUnreferencedCode(ReflectionMessages.Path)]
+    [RequiresDynamicCode(ReflectionMessages.Path)]
     internal class RegistryReflectedGenHandler : IReflectedGenHandler
     {
         private readonly IReadOnlyDictionary<Type, Func<IGen>> _registeredGensByType;

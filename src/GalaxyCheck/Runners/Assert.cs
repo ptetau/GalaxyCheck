@@ -191,6 +191,10 @@ namespace GalaxyCheck.Runners
                 {
                     lines.Add($"    {expression}");
                 }
+                else if (ExampleRenderer.HasNoReadableMembers(value))
+                {
+                    lines.Add("    (not available: the members of the value cannot be read)");
+                }
                 else
                 {
                     lines.AddRange(ExampleRenderer.Render(new[] { value }).Select(l => $"    {l}"));

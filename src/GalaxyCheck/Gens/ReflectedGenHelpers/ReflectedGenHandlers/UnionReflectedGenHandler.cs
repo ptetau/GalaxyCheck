@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+using GalaxyCheck.Gens.Generated;
 #if NET11_0_OR_GREATER
 using System;
 using System.Linq;
@@ -8,6 +10,8 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
     /// <summary>
     /// Handles a C# union. A union type has the union attribute and one public constructor for each case type.
     /// </summary>
+    [RequiresUnreferencedCode(ReflectionMessages.Path)]
+    [RequiresDynamicCode(ReflectionMessages.Path)]
     internal class UnionReflectedGenHandler : IReflectedGenHandler
     {
         public bool CanHandleGen(Type type, ReflectedGenHandlerContext context) =>

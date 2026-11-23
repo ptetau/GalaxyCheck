@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.Linq;
 
 namespace GalaxyCheck.Internal
 {
     internal static class GenExtensions
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode(GalaxyCheck.Gens.Generated.ReflectionMessages.Path)]
         public static Type ReflectGenTypeArgument(this IGen gen)
         {
             var reflectedGenType = gen
@@ -16,6 +17,7 @@ namespace GalaxyCheck.Internal
             return reflectedGenType.GetGenericArguments().Single();
         }
 
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode(GalaxyCheck.Gens.Generated.ReflectionMessages.Path)]
         public static Type ReflectGenTypeArgument(this Func<IGen> gen)
         {
             var genType = gen.GetType().GetGenericArguments().Single();
