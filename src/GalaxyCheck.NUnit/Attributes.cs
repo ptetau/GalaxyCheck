@@ -32,11 +32,13 @@ namespace GalaxyCheck
 
     public sealed partial class GenSnapshotAttribute : NUnitAttribute, ISimpleTestBuilder, IImplyFixture, IWrapTestMethod
     {
+        /// <summary>Creates the attribute. The compiler passes the path of the test file.</summary>
         public GenSnapshotAttribute([CallerFilePath] string? testFilePath = null)
         {
             TestFileName = testFilePath;
         }
 
+        /// <summary>The path of the file of the test method.</summary>
         public string? TestFileName { get; }
 
         internal string? SkipReason => null;

@@ -69,6 +69,7 @@ namespace GalaxyCheck.Gens
     using System.Buffers;
     using System.Collections.Generic;
 
+    /// <summary>A generator of lists with options for the count of elements.</summary>
     public interface IListGen<T> : IGen<IReadOnlyList<T>>
     {
         /// <summary>

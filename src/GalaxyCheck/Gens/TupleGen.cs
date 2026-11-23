@@ -16,8 +16,10 @@
         /// <returns>A new generator.</returns>
         public static IGen<(T, T)> Two<T>(this IGen<T> gen) => Gen.Zip(gen, gen);
 
+        /// <summary>Generates a tuple of three values from the generator.</summary>
         public static IGen<(T, T, T)> Three<T>(this IGen<T> gen) => Gen.Zip(gen, gen, gen);
 
+        /// <summary>Generates a tuple of four values from the generator.</summary>
         public static IGen<(T, T, T, T)> Four<T>(this IGen<T> gen) => Gen.Zip(gen, gen, gen, gen);
     }
 }

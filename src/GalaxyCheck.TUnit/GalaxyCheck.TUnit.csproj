@@ -9,6 +9,7 @@
     <IsTestProject>false</IsTestProject>
     <PackageId>GalaxyCheck.TUnit</PackageId>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <GenerateDocumentationFile Condition="'$(Configuration)' == 'Release'">true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,6 +28,11 @@
   <!-- The build file that records the folder of the test project for the failure memory. -->
   <ItemGroup>
     <None Include="..\build\GalaxyCheck.ProjectFolder.props" Pack="true" PackagePath="buildTransitive\$(PackageId).props" Visible="false" />
+  </ItemGroup>
+
+  <!-- The agent reference file (R65), at the root of the package. -->
+  <ItemGroup>
+    <None Include="..\..\docs\llms.txt" Pack="true" PackagePath="\" Visible="false" />
   </ItemGroup>
 
 </Project>

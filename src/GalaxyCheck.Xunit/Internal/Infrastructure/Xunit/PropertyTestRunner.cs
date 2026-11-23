@@ -6,11 +6,13 @@ using Xunit.Sdk;
 
 namespace GalaxyCheck.Internal.Infrastructure.Xunit
 {
+    /// <summary>Runs the property of one xunit test case and reports its result.</summary>
     public class PropertyTestRunner : TestCaseRunner<PropertyTestCase>
     {
         private readonly object[] _constructorArguments;
         private readonly object[] _testMethodArguments;
 
+        /// <summary>Creates the runner of a test case.</summary>
         public PropertyTestRunner(
             PropertyTestCase testCase,
             IMessageBus messageBus,
@@ -24,6 +26,7 @@ namespace GalaxyCheck.Internal.Infrastructure.Xunit
             _testMethodArguments = testMethodArguments;
         }
 
+        /// <summary>Runs the property and reports one result.</summary>
         protected override async Task<RunSummary> RunTestAsync()
         {
             var startTime = DateTime.UtcNow;

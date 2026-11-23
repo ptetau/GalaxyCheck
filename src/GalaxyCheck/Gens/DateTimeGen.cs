@@ -36,6 +36,7 @@ namespace GalaxyCheck
 
 namespace GalaxyCheck.Gens
 {
+    /// <summary>A generator of DateTime values with optional bounds.</summary>
     public interface IDateTimeGen : IGen<DateTime>
     {
         /// <summary>

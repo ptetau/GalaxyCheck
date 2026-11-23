@@ -56,6 +56,7 @@ namespace GalaxyCheck.Gens
     using System.Collections.Generic;
     using System.Linq;
 
+    /// <summary>A generator of strings with options for the characters and the length.</summary>
     public interface IStringGen : IGen<string>
     {
         /// <summary>

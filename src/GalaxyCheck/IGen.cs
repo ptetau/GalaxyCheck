@@ -2,6 +2,7 @@ using GalaxyCheck.Gens.Parameters;
 
 namespace GalaxyCheck
 {
+    /// <summary>The advanced operations of a generator.</summary>
     public interface IGenAdvanced
     {
         /// <summary>
@@ -18,9 +19,11 @@ namespace GalaxyCheck
     /// </summary>
     public interface IGen
     {
+        /// <summary>The advanced operations of the generator, for example generating from a source of choices.</summary>
         IGenAdvanced Advanced { get; }
     }
 
+    /// <summary>The advanced operations of a generator of <typeparamref name="T"/>.</summary>
     public interface IGenAdvanced<out T> : IGenAdvanced
     {
         /// <summary>
@@ -38,6 +41,7 @@ namespace GalaxyCheck
     /// <typeparam name="T">The type of the generator's values.</typeparam>
     public interface IGen<out T> : IGen
     {
+        /// <summary>The advanced operations of the generator, for example generating from a source of choices.</summary>
         new IGenAdvanced<T> Advanced { get; }
     }
 }

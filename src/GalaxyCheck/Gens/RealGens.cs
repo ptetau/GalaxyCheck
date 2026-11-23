@@ -3,20 +3,26 @@ namespace GalaxyCheck.Gens
     /// <summary>A generator of real numbers with bounds, a shrink origin, and special values.</summary>
     public interface IRealGen<T> : IGen<T>
     {
+        /// <summary>Generates values at or above the minimum.</summary>
         IRealGen<T> GreaterThanEqual(T min);
 
+        /// <summary>Generates values at or below the maximum.</summary>
         IRealGen<T> LessThanEqual(T max);
 
+        /// <summary>Generates values between the two bounds, both inclusive.</summary>
         IRealGen<T> Between(T x, T y);
 
+        /// <summary>Sets the value that shrinking moves to. It must lie between the bounds.</summary>
         IRealGen<T> ShrinkTowards(T origin);
 
+        /// <summary>Leaves out NaN, the infinities, and negative zero.</summary>
         IRealGen<T> WithoutSpecialValues();
     }
 
     /// <summary>A generator of complex numbers.</summary>
     public interface IComplexGen : IGen<System.Numerics.Complex>
     {
+        /// <summary>Leaves out the parts that are NaN or infinite.</summary>
         IComplexGen WithoutSpecialValues();
     }
 }

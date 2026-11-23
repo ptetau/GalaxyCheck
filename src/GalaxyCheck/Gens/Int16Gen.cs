@@ -8,7 +8,8 @@ namespace GalaxyCheck
         /// <summary>
         /// Generates 16-bit integers (shorts). By default, the generator produces shorts from 0, that grow towards
         /// <see cref="short.MinValue"/> and <see cref="short.MaxValue"/>, as the generator size increases. However,
-        /// short generation can be customised using the builder methods on <see cref="IIntGen{short}"/>.
+        /// short generation can be customised using the builder methods on <see cref="IIntGen{T}"/>.
+        /// </summary>
         /// <returns>The new generator.</returns>
         public static IIntGen<short> Int16() => new Int16Gen();
     }

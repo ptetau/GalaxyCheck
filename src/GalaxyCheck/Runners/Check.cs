@@ -14,6 +14,7 @@ namespace GalaxyCheck
 {
     public static partial class Extensions
     {
+        /// <summary>Runs the property and returns the result, with the shrunk counterexample of a failure.</summary>
         public static CheckResult<T> Check<T>(
             this IGen<Property.Test<T>> property,
             int? iterations = null,
@@ -30,6 +31,7 @@ namespace GalaxyCheck
             return CheckRunner.Run(property, iterations, seed, size, shrinkLimit, replay, deepCheck, recordChecks: false, options);
         }
 
+        /// <summary>Runs the async property and returns the result, with the shrunk counterexample of a failure.</summary>
         public static Task<CheckResult<T>> CheckAsync<T>(
             this IGen<Property.AsyncTest<T>> property,
             int? iterations = null,
@@ -89,7 +91,8 @@ namespace GalaxyCheck.Runners
             return iteration * 100 / (samples - 1);
         }
 
-        public static int CreateSeed(int? seed) => seed ?? Random.Shared.Next();
+        /// <summary>The seed option, else the seed of the environment (<see cref="AgentMode"/>), else a random seed.</summary>
+        public static int CreateSeed(int? seed) => seed ?? AgentMode.DefaultSeed ?? Random.Shared.Next();
 
         public static Exceptions.GenErrorException GenError(Exception ex, GenParameters parameters) => ex switch
         {

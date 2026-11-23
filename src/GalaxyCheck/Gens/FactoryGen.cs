@@ -50,13 +50,16 @@ namespace GalaxyCheck.Gens
     using System.Text;
 
 
+    /// <summary>A generator that builds values of <typeparamref name="T"/> from their constructors and members.</summary>
     public interface IReflectedGen<T> : IGen<T>
     {
+        /// <summary>Uses the given generator for one member of the value.</summary>
         IReflectedGen<T> OverrideMember<TMember>(
             Expression<Func<T, TMember>> memberSelector,
             IGen<TMember> memberGen);
     }
 
+    /// <summary>Builds generators for types, with registered generators and implementations. Create one with <c>Gen.Factory()</c>.</summary>
     public interface IGenFactory
     {
         /// <summary>

@@ -7,16 +7,21 @@ using System.Reflection;
 
 namespace GalaxyCheck.Runners
 {
+    /// <summary>Renders the values of a test case as text for a report.</summary>
     [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2070", Justification = "It reads the public members of a value to show it in a failure report. A value whose members trimming removed is shown by its ToString(), and its C# expression is marked as not available.")]
     [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "It reads the public members of a value to show it in a failure report. A value whose members trimming removed is shown by its ToString(), and its C# expression is marked as not available.")]
     public static class ExampleRenderer
     {
+        /// <summary>Returns the lines of text of the values of a test case.</summary>
         public static IEnumerable<string> Render(IReadOnlyList<object?> example) => example.Count switch
         {
             0 => RenderNullary(),
             1 => TryUnwrapTuple(example.Single(), out var unwrapped) ? RenderMultiary(unwrapped!) : RenderUnary(example),
             _ => RenderMultiary(example),
         };
+
+        /// <summary>The text of one value, as a counterexample line shows it.</summary>
+        internal static string RenderOne(object? value) => RenderValue(value);
 
         private static string[] RenderNullary()
         {

@@ -155,7 +155,8 @@ namespace GalaxyCheck.Internal.Infrastructure.TUnit
                 GlobalConfiguration.GetInstance(testClassType.Assembly).FailureMemory,
                 testDetails.TestClassArguments is { Length: > 0 } classArguments ? classArguments : null,
                 TUnitAdapter.RowIndex(testDetails),
-                TUnitAdapter.ClassDataIndex(testDetails));
+                TUnitAdapter.ClassDataIndex(testDetails),
+                RerunStyle.TUnitTreeNodeFilter);
 
             await initialization.Runner.Run(initialization.Parameters);
         }

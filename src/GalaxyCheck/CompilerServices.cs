@@ -1,4 +1,11 @@
 ﻿namespace System.Runtime.CompilerServices
 {
-    public class IsExternalInit { }
+    /// <summary>Lets the compiler use init accessors.</summary>
+    public class IsExternalInit
+    {
+        /// <summary>Creates the marker. The compiler uses the type, not an instance.</summary>
+        public IsExternalInit()
+        {
+        }
+    }
 }

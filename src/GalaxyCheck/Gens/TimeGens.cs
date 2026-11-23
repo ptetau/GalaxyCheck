@@ -3,10 +3,13 @@ namespace GalaxyCheck.Gens
     /// <summary>A generator of values in an inclusive range.</summary>
     public interface IRangeGen<T> : IGen<T>
     {
+        /// <summary>Generates values at or after the minimum.</summary>
         IRangeGen<T> From(T min);
 
+        /// <summary>Generates values at or before the maximum.</summary>
         IRangeGen<T> Until(T max);
 
+        /// <summary>Generates values between the two bounds, both inclusive.</summary>
         IRangeGen<T> Within(T x, T y);
     }
 }

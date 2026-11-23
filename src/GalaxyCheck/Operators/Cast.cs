@@ -14,6 +14,7 @@ namespace GalaxyCheck
         /// <returns>A new generator with the cast applied.</returns>
         public static IGen<T> Cast<T>(this IGen gen) => gen is IGen<T> typed ? typed : new CastGen<T>(gen);
 
+        /// <summary>Returns the generator as it is. The overload stops a cast of a typed generator through <see cref="IGen"/>.</summary>
         public static IGen<T> Cast<T>(this IGen<T> gen) => gen;
     }
 }

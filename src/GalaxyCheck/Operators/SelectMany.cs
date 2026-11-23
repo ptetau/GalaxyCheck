@@ -18,6 +18,7 @@ namespace GalaxyCheck
         public static IGen<TResult> SelectMany<T, TResult>(this IGen<T> gen, Func<T, IGen<TResult>> selector) =>
             new SelectManyGen<T, TResult>(gen, selector);
 
+        /// <summary>Generates a value, then a second value from a generator that depends on it, and combines the two. Query syntax uses it.</summary>
         public static IGen<TResult> SelectMany<T, TResultGen, TResult>(
             this IGen<T> gen,
             Func<T, IGen<TResultGen>> genSelector,

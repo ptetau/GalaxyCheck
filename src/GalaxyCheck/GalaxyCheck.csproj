@@ -18,4 +18,10 @@
   <ItemGroup>
     <PackageReference Include="System.Linq.Async" Version="7.0.1" />
   </ItemGroup>
+
+  <!-- The agent reference file (R65), at the root of the package. -->
+  <ItemGroup>
+    <None Include="..\..\docs\llms.txt" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
 </Project>

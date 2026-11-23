@@ -10,6 +10,7 @@ namespace GalaxyCheck
 {
     public static partial class Extensions
     {
+        /// <summary>Runs the property and throws <see cref="Runners.PropertyFailedException"/> when it fails.</summary>
         public static void Assert<T>(
             this IGen<Property.Test<T>> property,
             int? iterations = null,
@@ -28,6 +29,7 @@ namespace GalaxyCheck
             ThrowIfFalsified(checkResult, formatReproduction, formatMessage);
         }
 
+        /// <summary>Runs the async property and throws <see cref="Runners.PropertyFailedException"/> when it fails.</summary>
         public static async Task AssertAsync<T>(
             this IGen<Property.AsyncTest<T>> property,
             int? iterations = null,
@@ -78,10 +80,12 @@ namespace GalaxyCheck
 
 namespace GalaxyCheck.Runners
 {
+    /// <summary>Thrown by Assert when a property fails. The message holds the counterexample, the replay string, and a JSON block for tools.</summary>
     public class PropertyFailedException : Exception
     {
         private readonly Counterexample<object?> _counterexample;
 
+        /// <summary>Creates the exception for a counterexample.</summary>
         public PropertyFailedException(
             Counterexample<object?> counterexample,
             int iterations,
@@ -99,11 +103,12 @@ namespace GalaxyCheck.Runners
             Func<string, string>? formatReproduction,
             Func<string, string>? formatMessage,
             IReadOnlyList<string>? labelLines)
-            : base(FormatMessage(formatMessage, BuildMessage(counterexample, iterations, shrinks, formatReproduction, labelLines)))
+            : base(FormatMessage(formatMessage, BuildMessage(counterexample, iterations, shrinks, formatReproduction, labelLines, withRecord: true)))
         {
             _counterexample = counterexample;
         }
 
+        /// <summary>The stack trace of the exception of the counterexample, or else of this exception.</summary>
         public override string StackTrace => _counterexample.Exception?.StackTrace ?? base.StackTrace!;
 
         internal static string BuildReport(
@@ -111,20 +116,47 @@ namespace GalaxyCheck.Runners
             int iterations,
             int shrinks,
             IReadOnlyList<string>? labelLines) =>
-                BuildMessage(counterexample, iterations, shrinks, null, labelLines);
+                BuildMessage(counterexample, iterations, shrinks, null, labelLines, withRecord: false);
 
         private static string FormatMessage(Func<string, string>? formatMessage, string message) =>
             formatMessage == null
                 ? message
                 : formatMessage(message);
 
+        /// <summary>The failure message: the readable lines, then the JSON block.</summary>
+        /// <param name="withRecord">True to end the message with the JSON block of <see cref="FailureRecord"/>.</param>
         private static string BuildMessage(
             Counterexample<object?> counterexample,
             int iterations,
             int shrinks,
             Func<string, string>? formatReproduction,
-            IReadOnlyList<string>? labelLines) =>
-                string.Join(Environment.NewLine, BuildLines(counterexample, iterations, shrinks, formatReproduction, labelLines));
+            IReadOnlyList<string>? labelLines,
+            bool withRecord)
+        {
+            var text = string.Join(Environment.NewLine, BuildLines(counterexample, iterations, shrinks, formatReproduction, labelLines));
+            if (!withRecord)
+            {
+                return text;
+            }
+
+            var lines = text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None).ToList();
+            if (AgentMode.IsOn && lines.Count > MaxAgentTextLines)
+            {
+                var hidden = lines.Count - (MaxAgentTextLines - 1);
+                lines = lines.Take(MaxAgentTextLines - 1).ToList();
+                lines.Add($"... ({hidden} more lines: the JSON block below holds the counterexample)");
+            }
+
+            lines.Add("");
+            lines.AddRange(FailureRecord.Lines(counterexample, iterations, shrinks));
+            return string.Join(Environment.NewLine, lines);
+        }
+
+        /// <summary>
+        /// The most lines of the readable part of the message in the quiet mode. The rest of the 40 lines is for the
+        /// JSON block and for the text that a test framework adds.
+        /// </summary>
+        private const int MaxAgentTextLines = 28;
 
         private static IEnumerable<string> BuildLines(
             Counterexample<object?> counterexample,
