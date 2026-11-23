@@ -280,9 +280,9 @@
   - Given a public generator method with no entry, when the test runs, then it fails and its message names the method. (R60)
 - Layers: source generator, automatic generator, packaging, docs, tests
 - Tier: hard
-- Status: building
+- Status: review
 - Test rounds: 1
-- Review rounds: 0
+- Review rounds: 1
 
 ## S11: Agent experience
 
