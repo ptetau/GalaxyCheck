@@ -8,7 +8,8 @@ namespace GalaxyCheck.Internal.Infrastructure.XunitV3
     /// <summary>The body that runs in place of the reflection call of a test method.</summary>
     internal interface ITestBody
     {
-        Task Run(IXunitTest test, object? testClassInstance);
+        /// <param name="rowIndex">The stable index of the data row among the rows of the method, or null.</param>
+        Task Run(IXunitTest test, object? testClassInstance, string? rowIndex);
     }
 
     /// <summary>Runs the property of a [Property] or [Sample] method. A data row gives the first parameters.</summary>
@@ -16,7 +17,7 @@ namespace GalaxyCheck.Internal.Infrastructure.XunitV3
     {
         public static PropertyBody Instance { get; } = new();
 
-        public async Task Run(IXunitTest test, object? testClassInstance)
+        public async Task Run(IXunitTest test, object? testClassInstance, string? rowIndex)
         {
             var testClassType = test.TestMethod.TestClass.Class;
             var arguments = test.TestMethodArguments;
@@ -27,7 +28,9 @@ namespace GalaxyCheck.Internal.Infrastructure.XunitV3
                 testClassInstance,
                 arguments.Length == 0 ? null : arguments,
                 new DefaultPropertyFactory(),
-                GlobalConfiguration.GetInstance(testClassType.Assembly).Properties);
+                GlobalConfiguration.GetInstance(testClassType.Assembly).Properties,
+                GlobalConfiguration.GetInstance(testClassType.Assembly).FailureMemory,
+                rowIndex: rowIndex);
 
             await initialization.Runner.Run(initialization.Parameters);
         }
@@ -38,7 +41,7 @@ namespace GalaxyCheck.Internal.Infrastructure.XunitV3
     {
         public static GenSnapshotBody Instance { get; } = new();
 
-        public async Task Run(IXunitTest test, object? testClassInstance)
+        public async Task Run(IXunitTest test, object? testClassInstance, string? rowIndex)
         {
             var testClassType = test.TestMethod.TestClass.Class;
             var testMethod = test.TestMethod.Method;

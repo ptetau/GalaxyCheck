@@ -1,0 +1,13 @@
+<Project>
+  <!--
+    Records the folder of the test project in the test assembly, so that the failure memory of GalaxyCheck finds
+    .galaxycheck/failures.json for any output layout, for example with UseArtifactsOutput. Two GalaxyCheck packages
+    record the same folder twice, which does no harm.
+  -->
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>GalaxyCheck.ProjectFolder</_Parameter1>
+      <_Parameter2>$(MSBuildProjectDirectory)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+</Project>

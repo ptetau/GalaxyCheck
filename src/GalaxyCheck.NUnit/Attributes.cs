@@ -1,135 +1,48 @@
-using System;
-using System.Threading.Tasks;
+using GalaxyCheck.Internal.Infrastructure.NUnit;
+using NUnit.Framework;
+using NUnit.Framework.Interfaces;
+using NUnit.Framework.Internal;
+using NUnit.Framework.Internal.Commands;
+using System.Runtime.CompilerServices;
 
-// Stubs. Each attribute is a plain attribute until its slice is built, so the test framework finds no test.
+// The NUnit part of each attribute. The options are in the shared core. Each attribute builds the test of its method
+// (ISimpleTestBuilder), so NUnit needs no [Test] beside it, and wraps the command of the test (IWrapTestMethod), so
+// that the property runs in place of one call of the method. A [TestCase] or [TestCaseSource] row builds its own test,
+// and the attribute wraps its command in the same way.
 
 namespace GalaxyCheck
 {
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class PropertyAttribute : Attribute
+    public partial class PropertyAttribute : NUnitAttribute, ISimpleTestBuilder, IImplyFixture, IWrapTestMethod, ITestAction
     {
-        public int Iterations { get; set; }
+        // NUnit skips an [Ignore] test before it runs, so the shared core never sees a skip reason.
+        internal string? SkipReason => null;
 
-        public int ShrinkLimit { get; set; }
+        TestMethod ISimpleTestBuilder.BuildFrom(IMethodInfo method, Test? suite) => NUnitAdapter.BuildTestMethod(method, suite);
 
-        public int Seed { get; set; }
+        TestCommand ICommandWrapper.Wrap(TestCommand command) => new PropertyCommand(command.Test);
 
-        public int Size { get; set; }
+        ActionTargets ITestAction.Targets => ActionTargets.Suite;
 
-        public int TimeoutMilliseconds { get; set; }
+        void ITestAction.BeforeTest(ITest test) => NUnitAdapter.AcceptPartialRows(test);
 
-        public bool Exhaustive { get; set; } = true;
-    }
-
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class SampleAttribute : PropertyAttribute
-    {
-    }
-
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public sealed class GenSnapshotAttribute : Attribute
-    {
-        public int Iterations { get; set; }
-
-        public int Size { get; set; }
-    }
-
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class ReplayAttribute : Attribute
-    {
-        public string Replay { get; }
-
-        public ReplayAttribute(string replay)
+        void ITestAction.AfterTest(ITest test)
         {
-            Replay = replay;
         }
     }
 
-    [AttributeUsage(AttributeTargets.Parameter)]
-    public class MemberGenAttribute : Attribute
+    public sealed partial class GenSnapshotAttribute : NUnitAttribute, ISimpleTestBuilder, IImplyFixture, IWrapTestMethod
     {
-        public string MemberName { get; }
-
-        public MemberGenAttribute(string memberName)
+        public GenSnapshotAttribute([CallerFilePath] string? testFilePath = null)
         {
-            MemberName = memberName;
+            TestFileName = testFilePath;
         }
-    }
 
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    public class ExampleAttribute : Attribute
-    {
-        public object?[] Inputs { get; }
+        public string? TestFileName { get; }
 
-        public ExampleAttribute(params object?[] inputs)
-        {
-            Inputs = inputs;
-        }
-    }
+        internal string? SkipReason => null;
 
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class SuppressHealthCheckAttribute : Attribute
-    {
-        public HealthCheck[] Checks { get; }
+        TestMethod ISimpleTestBuilder.BuildFrom(IMethodInfo method, Test? suite) => NUnitAdapter.BuildTestMethod(method, suite);
 
-        public SuppressHealthCheckAttribute(params HealthCheck[] checks)
-        {
-            Checks = checks;
-        }
-    }
-}
-
-namespace GalaxyCheck.Configuration
-{
-    public interface IConfigureGlobal
-    {
-        void Configure(IGlobalConfiguration instance);
-    }
-
-    public interface IGlobalConfiguration
-    {
-        IGlobalPropertyConfiguration Properties { get; }
-
-        IGlobalGenSnapshotConfiguration GenSnapshots { get; }
-
-        IGlobalFailureMemoryConfiguration FailureMemory { get; }
-    }
-
-    public interface IGlobalPropertyConfiguration
-    {
-        int DefaultIterations { get; set; }
-
-        int DefaultShrinkLimit { get; set; }
-
-        int? Seed { get; set; }
-    }
-
-    public interface IGlobalGenSnapshotConfiguration
-    {
-        int DefaultIterations { get; set; }
-
-        int DefaultSize { get; set; }
-
-        Func<ISnapshot, Task>? AssertSnapshotMatches { get; set; }
-    }
-
-    public interface IGlobalFailureMemoryConfiguration
-    {
-        bool Enabled { get; set; }
-    }
-
-    public interface ISnapshot
-    {
-        object?[] Input { get; }
-
-        object? Output { get; }
-
-        string TestFileName { get; }
-
-        string TestClassName { get; }
-
-        string TestMethodName { get; }
-
-        int Seed { get; }
+        TestCommand ICommandWrapper.Wrap(TestCommand command) => new GenSnapshotCommand(command.Test);
     }
 }

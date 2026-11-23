@@ -1,135 +1,32 @@
-using System;
+using GalaxyCheck.Internal.Infrastructure.MSTest;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
-// Stubs. Each attribute is a plain attribute until its slice is built, so the test framework finds no test.
+// The MSTest part of each attribute. The options are in the shared core. Each attribute is a TestMethodAttribute, so
+// MSTest finds the method as a test with no [TestMethod] beside it, and it runs the property in place of one call of
+// the method. A [DataRow] or [DynamicData] row gives the first parameters.
 
 namespace GalaxyCheck
 {
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class PropertyAttribute : Attribute
+    public partial class PropertyAttribute : TestMethodAttribute
     {
-        public int Iterations { get; set; }
-
-        public int ShrinkLimit { get; set; }
-
-        public int Seed { get; set; }
-
-        public int Size { get; set; }
-
-        public int TimeoutMilliseconds { get; set; }
-
-        public bool Exhaustive { get; set; } = true;
-    }
-
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class SampleAttribute : PropertyAttribute
-    {
-    }
-
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public sealed class GenSnapshotAttribute : Attribute
-    {
-        public int Iterations { get; set; }
-
-        public int Size { get; set; }
-    }
-
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class ReplayAttribute : Attribute
-    {
-        public string Replay { get; }
-
-        public ReplayAttribute(string replay)
+        public PropertyAttribute([CallerFilePath] string callerFilePath = "", [CallerLineNumber] int callerLineNumber = -1)
+            : base(callerFilePath, callerLineNumber)
         {
-            Replay = replay;
         }
+
+        // MSTest skips an [Ignore] test before it runs, so the shared core never sees a skip reason.
+        internal string? SkipReason => null;
+
+        public override Task<TestResult[]> ExecuteAsync(ITestMethod testMethod) => MSTestAdapter.RunProperty(testMethod);
     }
 
-    [AttributeUsage(AttributeTargets.Parameter)]
-    public class MemberGenAttribute : Attribute
+    public partial class SampleAttribute
     {
-        public string MemberName { get; }
-
-        public MemberGenAttribute(string memberName)
+        public SampleAttribute([CallerFilePath] string callerFilePath = "", [CallerLineNumber] int callerLineNumber = -1)
+            : base(callerFilePath, callerLineNumber)
         {
-            MemberName = memberName;
         }
-    }
-
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    public class ExampleAttribute : Attribute
-    {
-        public object?[] Inputs { get; }
-
-        public ExampleAttribute(params object?[] inputs)
-        {
-            Inputs = inputs;
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class SuppressHealthCheckAttribute : Attribute
-    {
-        public HealthCheck[] Checks { get; }
-
-        public SuppressHealthCheckAttribute(params HealthCheck[] checks)
-        {
-            Checks = checks;
-        }
-    }
-}
-
-namespace GalaxyCheck.Configuration
-{
-    public interface IConfigureGlobal
-    {
-        void Configure(IGlobalConfiguration instance);
-    }
-
-    public interface IGlobalConfiguration
-    {
-        IGlobalPropertyConfiguration Properties { get; }
-
-        IGlobalGenSnapshotConfiguration GenSnapshots { get; }
-
-        IGlobalFailureMemoryConfiguration FailureMemory { get; }
-    }
-
-    public interface IGlobalPropertyConfiguration
-    {
-        int DefaultIterations { get; set; }
-
-        int DefaultShrinkLimit { get; set; }
-
-        int? Seed { get; set; }
-    }
-
-    public interface IGlobalGenSnapshotConfiguration
-    {
-        int DefaultIterations { get; set; }
-
-        int DefaultSize { get; set; }
-
-        Func<ISnapshot, Task>? AssertSnapshotMatches { get; set; }
-    }
-
-    public interface IGlobalFailureMemoryConfiguration
-    {
-        bool Enabled { get; set; }
-    }
-
-    public interface ISnapshot
-    {
-        object?[] Input { get; }
-
-        object? Output { get; }
-
-        string TestFileName { get; }
-
-        string TestClassName { get; }
-
-        string TestMethodName { get; }
-
-        int Seed { get; }
     }
 }

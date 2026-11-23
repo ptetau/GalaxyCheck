@@ -4,24 +4,24 @@ namespace S13Sample;
 public class MemoryTests
 {
     [GalaxyCheck.Property]
-    public bool MemSwitchable(int x)
+    public void MemSwitchable(int x)
     {
         Probe.Log("MemSwitchable", x);
-        return x < 10 || Probe.Hold;
+        if (!(x < 10 || Probe.Hold)) throw new Exception("the int is not below 10");
     }
 
     [GalaxyCheck.Property]
-    public bool MemOther(int x)
+    public void MemOther(int x)
     {
         Probe.Log("MemOther", x);
-        return x < 50;
+        if (!(x < 50)) throw new Exception("the int is not below 50");
     }
 
     [GalaxyCheck.Replay(FixedReplay.Value)]
     [GalaxyCheck.Property]
-    public bool MemReplayOverride(int x)
+    public void MemReplayOverride(int x)
     {
         Probe.Log("MemReplayOverride", x);
-        return x < 50;
+        if (!(x < 50)) throw new Exception("the int is not below 50");
     }
 }

@@ -13,7 +13,7 @@ namespace GalaxyCheck.Internal
 
         public IGlobalGenSnapshotConfiguration GenSnapshots { get; } = new GlobalGenSnapshotConfiguration();
 
-        public IGlobalFailureMemoryConfiguration FailureMemory => throw new System.NotImplementedException("not implemented");
+        public IGlobalFailureMemoryConfiguration FailureMemory { get; } = new GlobalFailureMemoryConfiguration();
 
         private static ConcurrentDictionary<Assembly, GlobalConfiguration> _instancesByAssembly = new();
 

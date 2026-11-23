@@ -12,9 +12,12 @@ public class MainTests
     }
 
     [Property(Seed = 1234)]
-    public bool IntIsBelow10(int x) => x < 10;
+    public void IntIsBelow10(int x)
+    {
+        if (!(x < 10)) throw new Exception("the int is not below 10");
+    }
 
-    // R24: each method form, holding and falsified.
+    // R24 (D21): MSTest has the void and the Task form only.
     [Property]
     public void Void_Holds(int x)
     {
@@ -25,26 +28,6 @@ public class MainTests
     {
         if (x >= 10) throw new InvalidOperationException("too big");
     }
-
-    [Property]
-    public bool Bool_Holds(int x) => true;
-
-    [Property]
-    public bool Bool_Falsified(int x) => x < 10;
-
-    [Property]
-    public Property Property_Holds() => Property.ForAll(Gen.Int32(), x => true);
-
-    [Property]
-    public Property Property_Falsified() => Property.ForAll(Gen.Int32(), x => x < 10);
-
-    [Property]
-    public IGen<Property.Test<int>> Gen_Holds() =>
-        Property.ForAll(Gen.Int32(), x => true);
-
-    [Property]
-    public IGen<Property.Test<int>> Gen_Falsified() =>
-        Property.ForAll(Gen.Int32(), x => x < 10);
 
     [Property]
     public async Task AsyncVoid_Holds(int x)
@@ -58,36 +41,6 @@ public class MainTests
         await Task.Yield();
         if (x >= 10) throw new InvalidOperationException("too big");
     }
-
-    [Property]
-    public async Task<bool> AsyncBool_Holds(int x)
-    {
-        await Task.Yield();
-        return true;
-    }
-
-    [Property]
-    public async Task<bool> AsyncBool_Falsified(int x)
-    {
-        await Task.Yield();
-        return x < 10;
-    }
-
-    [Property]
-    public AsyncProperty AsyncProperty_Holds() =>
-        Property.ForAllAsync(Gen.Int32(), async x => { await Task.Yield(); return true; });
-
-    [Property]
-    public AsyncProperty AsyncProperty_Falsified() =>
-        Property.ForAllAsync(Gen.Int32(), async x => { await Task.Yield(); return x < 10; });
-
-    [Property]
-    public IGen<Property.AsyncTest<int>> AsyncGen_Holds() =>
-        Property.ForAllAsync(Gen.Int32(), async x => { await Task.Yield(); return true; });
-
-    [Property]
-    public IGen<Property.AsyncTest<int>> AsyncGen_Falsified() =>
-        Property.ForAllAsync(Gen.Int32(), async x => { await Task.Yield(); return x < 10; });
 
     // R25: the parameter takes its generator from a member.
     public static IGen<int> FiveGen => Gen.Int32().Between(5, 5);
@@ -141,7 +94,6 @@ public class MainTests
 
         RequireType("PropertyAttribute", "Iterations", "ShrinkLimit", "Seed", "Size", "TimeoutMilliseconds", "Exhaustive");
         RequireType("SampleAttribute");
-        RequireType("GenSnapshotAttribute", "Iterations", "Size");
         RequireType("ReplayAttribute");
         RequireType("MemberGenAttribute");
 

@@ -4,42 +4,39 @@ namespace S13Sample;
 public class PlainTests
 {
     [GalaxyCheck.Property]
-    public bool PlainDisabled(int x)
+    public void PlainDisabled(int x)
     {
         Probe.Log("PlainDisabled", x);
-        return x < 10;
+        if (!(x < 10)) throw new Exception("the int is not below 10");
     }
 
     [GalaxyCheck.Example(1, 2)]
     [GalaxyCheck.Example(3, 4)]
     [GalaxyCheck.Property(Iterations = 10)]
-    public bool ExOrder(int first, int second)
+    public void ExOrder(int first, int second)
     {
         Probe.Log("ExOrder", first + "," + second);
-        return true;
     }
 
     [GalaxyCheck.Example(3, 4)]
     [GalaxyCheck.Property]
-    public bool ExFails(int first, int second)
+    public void ExFails(int first, int second)
     {
         Probe.Log("ExFails", first + "," + second);
-        return first != 3;
+        if (first == 3) throw new Exception("the first parameter is 3");
     }
 
     [GalaxyCheck.Example(1)]
     [GalaxyCheck.Property]
-    public bool ExMissing(int first, int second)
+    public void ExMissing(int first, int second)
     {
         Probe.Log("ExMissing", first + "," + second);
-        return true;
     }
 
     [GalaxyCheck.Example("a")]
     [GalaxyCheck.Property]
-    public bool ExWrongType(int number)
+    public void ExWrongType(int number)
     {
         Probe.Log("ExWrongType", number);
-        return true;
     }
 }

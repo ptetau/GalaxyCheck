@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Sdk;
@@ -14,14 +17,19 @@ namespace GalaxyCheck.Internal.Infrastructure.XunitV3
     /// </summary>
     internal sealed class PropertyDiscoverer : TheoryDiscoverer
     {
-        public override ValueTask<IReadOnlyCollection<IXunitTestCase>> Discover(
+        /// <summary>The count of data rows that the discovery of the current method has seen, in the declared order.</summary>
+        private static readonly AsyncLocal<StrongBox<int>?> RowCount = new();
+
+        public override async ValueTask<IReadOnlyCollection<IXunitTestCase>> Discover(
             ITestFrameworkDiscoveryOptions discoveryOptions,
             IXunitTestMethod testMethod,
             IFactAttribute factAttribute)
         {
             if (testMethod.DataAttributes.Count > 0)
             {
-                return base.Discover(discoveryOptions, testMethod, factAttribute);
+                // The base reads the rows in the declared order, so the count gives each row its index.
+                RowCount.Value = new StrongBox<int>(0);
+                return await base.Discover(discoveryOptions, testMethod, factAttribute);
             }
 
             var details = TestIntrospectionHelper.GetTestCaseDetails(discoveryOptions, testMethod, factAttribute);
@@ -44,7 +52,7 @@ namespace GalaxyCheck.Internal.Infrastructure.XunitV3
                 details.SourceLineNumber,
                 details.Timeout);
 
-            return new([testCase]);
+            return [testCase];
         }
 
         protected override ValueTask<IReadOnlyCollection<IXunitTestCase>> CreateTestCasesForDataRow(
@@ -73,7 +81,8 @@ namespace GalaxyCheck.Internal.Infrastructure.XunitV3
                 testMethodArguments,
                 details.SourceFilePath,
                 details.SourceLineNumber,
-                details.Timeout);
+                details.Timeout,
+                RowCount.Value is { } rowCount ? (rowCount.Value++).ToString(CultureInfo.InvariantCulture) : null);
 
             return new([testCase]);
         }

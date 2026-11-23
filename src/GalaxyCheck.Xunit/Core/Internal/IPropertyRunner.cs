@@ -1,5 +1,6 @@
 using GalaxyCheck.Gens;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace GalaxyCheck.Internal
@@ -13,7 +14,10 @@ namespace GalaxyCheck.Internal
         int? Size,
         TimeSpan? Timeout = null,
         bool Exhaustive = true,
-        HealthCheck[]? SuppressHealthChecks = null);
+        HealthCheck[]? SuppressHealthChecks = null,
+        IReadOnlyList<PropertyExample>? Examples = null,
+        SavedFailure? SavedFailure = null,
+        Func<string?>? TakeFailureMemoryNote = null);
 
     internal interface IPropertyRunner
     {
