@@ -63,17 +63,18 @@ namespace GalaxyCheck.Internal
             {
                 await Assert(parameters, savedReplay, onReplay: null);
             }
-            catch (GalaxyCheck.Exceptions.GenErrorException)
+            catch (PropertyFailedException)
             {
-                // The saved replay does not decode, or no longer fits the generators: the parameters of the test or
-                // the version of GalaxyCheck changed. Drop the stale entry and run the property as normal. A real
-                // generator error throws again in the generated run, with its own message.
-                TryChange(savedFailure.Remove);
-                return;
+                // The saved failure still falsifies the property: it fails the test, and the entry stays.
+                throw;
+            }
+            catch (Exception)
+            {
+                // The saved replay is stale: it does not decode, no longer fits the generators, discards, or hits a
+                // generator error. Drop the entry and run the property as normal. A real generator error throws
+                // again in the generated run, with its own message.
             }
 
-            // A PropertyFailedException means the saved failure still fails: it propagates, and the entry stays.
-            // Any other error propagates with its own message.
             TryChange(savedFailure.Remove);
         }
 
