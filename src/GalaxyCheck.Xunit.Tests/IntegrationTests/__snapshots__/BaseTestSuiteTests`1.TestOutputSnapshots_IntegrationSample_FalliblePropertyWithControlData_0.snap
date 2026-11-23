@@ -4,11 +4,11 @@ Output:
 
 {"testName":"FalliblePropertyWithControlData_0","injectedValues":[0,0]}
 {"testName":"FalliblePropertyWithControlData_0","injectedValues":[0,1]}
-{"testName":"FalliblePropertyWithControlData_0","injectedValues":[0,4]}
-{"testName":"FalliblePropertyWithControlData_0","injectedValues":[0,5]}
-{"testName":"FalliblePropertyWithControlData_0","injectedValues":[0,6]}
-{"testName":"FalliblePropertyWithControlData_0","injectedValues":[0,6]}
-{"testName":"FalliblePropertyWithControlData_0","injectedValues":[0,46]}
-{"testName":"FalliblePropertyWithControlData_0","injectedValues":[0,100]}
+{"testName":"FalliblePropertyWithControlData_0","injectedValues":[0,1]}
 {"testName":"FalliblePropertyWithControlData_0","injectedValues":[0,0]}
-{"testName":"FalliblePropertyWithControlData_0","injectedValues":[0,58]}
+{"testName":"FalliblePropertyWithControlData_0","injectedValues":[0,15]}
+{"testName":"FalliblePropertyWithControlData_0","injectedValues":[0,8]}
+{"testName":"FalliblePropertyWithControlData_0","injectedValues":[0,8]}
+{"testName":"FalliblePropertyWithControlData_0","injectedValues":[0,33]}
+{"testName":"FalliblePropertyWithControlData_0","injectedValues":[0,44]}
+{"testName":"FalliblePropertyWithControlData_0","injectedValues":[0,100]}

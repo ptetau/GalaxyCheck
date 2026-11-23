@@ -4,11 +4,11 @@ Output:
 
 {"testName":"InfallibleVoidProperty","injectedValues":[0]}
 {"testName":"InfallibleVoidProperty","injectedValues":[1]}
-{"testName":"InfallibleVoidProperty","injectedValues":[4]}
-{"testName":"InfallibleVoidProperty","injectedValues":[5]}
-{"testName":"InfallibleVoidProperty","injectedValues":[6]}
-{"testName":"InfallibleVoidProperty","injectedValues":[6]}
-{"testName":"InfallibleVoidProperty","injectedValues":[46]}
-{"testName":"InfallibleVoidProperty","injectedValues":[100]}
+{"testName":"InfallibleVoidProperty","injectedValues":[1]}
 {"testName":"InfallibleVoidProperty","injectedValues":[0]}
-{"testName":"InfallibleVoidProperty","injectedValues":[58]}
+{"testName":"InfallibleVoidProperty","injectedValues":[15]}
+{"testName":"InfallibleVoidProperty","injectedValues":[8]}
+{"testName":"InfallibleVoidProperty","injectedValues":[8]}
+{"testName":"InfallibleVoidProperty","injectedValues":[33]}
+{"testName":"InfallibleVoidProperty","injectedValues":[44]}
+{"testName":"InfallibleVoidProperty","injectedValues":[100]}

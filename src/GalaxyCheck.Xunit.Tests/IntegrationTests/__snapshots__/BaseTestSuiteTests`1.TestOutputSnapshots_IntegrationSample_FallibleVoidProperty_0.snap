@@ -6,7 +6,13 @@ Output:
 
 Falsified after 1 test (0 shrinks)
 Reproduction: 
-    [Replay("H4sIAAAAAAAACjMx0jPQAwCnieL5BQAAAA==")]
-Counterexample: [0]
+    [Replay("AioAAQA=")]
+Counterexample: 0
+Counterexample as C#:
+    0
 
 ---- Failed!
+
+<galaxycheck-failure>
+{"counterexample":["0"],"csharp":["0"],"replay":"AioAAQA=","seed":42,"size":0,"iterations":1,"shrinks":0,"test":"IntegrationSample.Tests.FallibleVoidProperty","rerun":"dotnet test --filter FullyQualifiedName=IntegrationSample.Tests.FallibleVoidProperty"}
+</galaxycheck-failure>

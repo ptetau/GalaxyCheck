@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="PublishAot;PublishTrimmed;SelfContained">
+<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="PublishAot;PublishTrimmed;SelfContained;IncludeSymbols;IncludeSource">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -19,6 +19,9 @@
     <RepositoryUrl>https://github.com/nth-commit/GalaxyCheck</RepositoryUrl>
     <!-- The package carries the generator as an analyzer, not as a library that the project references. -->
     <IncludeBuildOutput>false</IncludeBuildOutput>
+    <!-- The package holds only an analyzer, so it has no symbol package. A pack with the symbol option fails without this. -->
+    <IncludeSymbols>false</IncludeSymbols>
+    <IncludeSource>false</IncludeSource>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <DevelopmentDependency>true</DevelopmentDependency>
     <NoWarn>$(NoWarn);NU5128</NoWarn>

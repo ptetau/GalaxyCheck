@@ -6,7 +6,13 @@ Output:
 
 Falsified after 1 test (0 shrinks)
 Reproduction: 
-    [Replay("H4sIAAAAAAAACjMx0jPQAwCnieL5BQAAAA==")]
+    [Replay("AioAAQA=")]
 Counterexample: 0
+Counterexample as C#:
+    0
 
 Property function returned false
+
+<galaxycheck-failure>
+{"counterexample":["0"],"csharp":["0"],"replay":"AioAAQA=","seed":42,"size":0,"iterations":1,"shrinks":0,"test":"IntegrationSample.AsyncTests.FalliblePropertyWithControlDataAsync(1)","rerun":"dotnet test --filter 'FullyQualifiedName=IntegrationSample.AsyncTests.FalliblePropertyWithControlDataAsync&DisplayName=IntegrationSample.AsyncTests.FalliblePropertyWithControlDataAsync\\(x: 1\\)'"}
+</galaxycheck-failure>

@@ -39,6 +39,7 @@ namespace GalaxyCheck.Internal.Infrastructure.Xunit
             CancellationTokenSource cancellationTokenSource)
         {
             EnsureInitialized();
+            constructorArguments = ConstructorArguments.Resolve(constructorArguments);
 
             messageBus.QueueMessage(new TestCaseStarting(this));
 

@@ -294,3 +294,4 @@ src/GalaxyCheck.Stable.Xunit.CodeAnalysis
 nupkg-prerelease/
 # The old prebuilt test packages are kept in the repository
 !packages-local/*.nupkg
+.galaxycheck/
