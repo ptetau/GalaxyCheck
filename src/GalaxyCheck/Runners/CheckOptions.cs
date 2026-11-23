@@ -53,6 +53,7 @@ namespace GalaxyCheck
                     () => new ValueTask<bool>(func(x, TestContext.Token)),
                     new object?[] { x })));
 
+        /// <summary>Creates an async property whose function gets a token that is cancelled at the time limit of the run.</summary>
         public static AsyncProperty<T0> ForAllAsync<T0>(IGen<T0> gen0, Func<T0, CancellationToken, Task> action) =>
             ForAllAsync(gen0, async (T0 x, CancellationToken token) =>
             {

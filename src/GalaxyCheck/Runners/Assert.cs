@@ -4,12 +4,14 @@ using GalaxyCheck.Runners.Check;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace GalaxyCheck
 {
     public static partial class Extensions
     {
+        /// <summary>Runs the property and throws <see cref="Runners.PropertyFailedException"/> when it fails.</summary>
         public static void Assert<T>(
             this IGen<Property.Test<T>> property,
             int? iterations = null,
@@ -28,6 +30,7 @@ namespace GalaxyCheck
             ThrowIfFalsified(checkResult, formatReproduction, formatMessage);
         }
 
+        /// <summary>Runs the async property and throws <see cref="Runners.PropertyFailedException"/> when it fails.</summary>
         public static async Task AssertAsync<T>(
             this IGen<Property.AsyncTest<T>> property,
             int? iterations = null,
@@ -78,10 +81,12 @@ namespace GalaxyCheck
 
 namespace GalaxyCheck.Runners
 {
+    /// <summary>Thrown by Assert when a property fails. The message holds the counterexample, the replay string, and a JSON block for tools.</summary>
     public class PropertyFailedException : Exception
     {
         private readonly Counterexample<object?> _counterexample;
 
+        /// <summary>Creates the exception for a counterexample.</summary>
         public PropertyFailedException(
             Counterexample<object?> counterexample,
             int iterations,
@@ -99,11 +104,12 @@ namespace GalaxyCheck.Runners
             Func<string, string>? formatReproduction,
             Func<string, string>? formatMessage,
             IReadOnlyList<string>? labelLines)
-            : base(FormatMessage(formatMessage, BuildMessage(counterexample, iterations, shrinks, formatReproduction, labelLines)))
+            : base(FormatMessage(formatMessage, BuildMessage(counterexample, iterations, shrinks, formatReproduction, labelLines, withRecord: true)))
         {
             _counterexample = counterexample;
         }
 
+        /// <summary>The stack trace of the exception of the counterexample, or else of this exception.</summary>
         public override string StackTrace => _counterexample.Exception?.StackTrace ?? base.StackTrace!;
 
         internal static string BuildReport(
@@ -111,20 +117,48 @@ namespace GalaxyCheck.Runners
             int iterations,
             int shrinks,
             IReadOnlyList<string>? labelLines) =>
-                BuildMessage(counterexample, iterations, shrinks, null, labelLines);
+                BuildMessage(counterexample, iterations, shrinks, null, labelLines, withRecord: false);
 
         private static string FormatMessage(Func<string, string>? formatMessage, string message) =>
             formatMessage == null
                 ? message
                 : formatMessage(message);
 
+        /// <summary>The failure message: the readable lines, then the JSON block.</summary>
+        /// <param name="withRecord">True to end the message with the JSON block of <see cref="FailureRecord"/>.</param>
         private static string BuildMessage(
             Counterexample<object?> counterexample,
             int iterations,
             int shrinks,
             Func<string, string>? formatReproduction,
-            IReadOnlyList<string>? labelLines) =>
-                string.Join(Environment.NewLine, BuildLines(counterexample, iterations, shrinks, formatReproduction, labelLines));
+            IReadOnlyList<string>? labelLines,
+            bool withRecord)
+        {
+            var text = RenameMarkerLines(
+                string.Join(Environment.NewLine, BuildLines(counterexample, iterations, shrinks, formatReproduction, labelLines)));
+            if (!withRecord)
+            {
+                return text;
+            }
+
+            var lines = text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None).ToList();
+            if (AgentMode.IsOn && lines.Count > MaxAgentTextLines)
+            {
+                var hidden = lines.Count - (MaxAgentTextLines - 1);
+                lines = lines.Take(MaxAgentTextLines - 1).ToList();
+                lines.Add($"... ({hidden} more lines: the JSON block below holds the counterexample)");
+            }
+
+            lines.Add("");
+            lines.AddRange(FailureRecord.Lines(counterexample, iterations, shrinks));
+            return string.Join(Environment.NewLine, lines);
+        }
+
+        /// <summary>
+        /// The most lines of the readable part of the message in the quiet mode. The rest of the 40 lines is for the
+        /// JSON block and for the text that a test framework adds.
+        /// </summary>
+        private const int MaxAgentTextLines = 28;
 
         private static IEnumerable<string> BuildLines(
             Counterexample<object?> counterexample,
@@ -244,5 +278,80 @@ namespace GalaxyCheck.Runners
         }
 
         private static string ExceptionLine(Exception ex) => $"---- {ex.Message}";
+
+        /// <summary>
+        /// Gives other names to the marker lines of the readable text: the text of a value, an example, a label, or an
+        /// exception can hold a line <c>&lt;galaxycheck-failure&gt;</c>, for example the block of a property that the
+        /// test asserts inside. So the message holds one real block, the last one.
+        /// </summary>
+        private static string RenameMarkerLines(string text)
+        {
+            var (lines, breaks) = SplitLines(text);
+            var inInnerBlock = false;
+            for (var i = 0; i < lines.Length; i++)
+            {
+                var trimmed = lines[i].Trim();
+                if (trimmed == FailureRecord.StartLine)
+                {
+                    lines[i] = "    [inner failure, not of this test]";
+                    inInnerBlock = true;
+                }
+                else if (trimmed == FailureRecord.EndLine)
+                {
+                    lines[i] = "    [end of inner failure]";
+                    inInnerBlock = false;
+                }
+                else if (inInnerBlock)
+                {
+                    lines[i] = "    " + lines[i];
+                }
+            }
+
+            var result = new StringBuilder(text.Length + 64);
+            for (var i = 0; i < lines.Length; i++)
+            {
+                result.Append(lines[i]);
+                if (i < breaks.Length)
+                {
+                    result.Append(breaks[i]);
+                }
+            }
+
+            return result.ToString();
+        }
+
+        /// <summary>
+        /// Splits the text at each line break that a line reader can see: <c>\r\n</c>, <c>\n</c>, <c>\r</c>,
+        /// <c>\v</c>, <c>\f</c>, U+0085, U+2028, and U+2029. A <c>\r\n</c> or a <c>\n</c> becomes
+        /// <see cref="Environment.NewLine"/>, and each other break stays.
+        /// </summary>
+        private static (string[] Lines, string[] Breaks) SplitLines(string text)
+        {
+            var lines = new List<string>();
+            var breaks = new List<string>();
+            var start = 0;
+            for (var i = 0; i < text.Length; i++)
+            {
+                var c = text[i];
+                if (c is '\n' or '\r' or '\v' or '\f' or '\u0085' or '\u2028' or '\u2029')
+                {
+                    lines.Add(text.Substring(start, i - start));
+                    if (c == '\r' && i + 1 < text.Length && text[i + 1] == '\n')
+                    {
+                        breaks.Add(Environment.NewLine);
+                        i++;
+                    }
+                    else
+                    {
+                        breaks.Add(c == '\n' ? Environment.NewLine : c.ToString());
+                    }
+
+                    start = i + 1;
+                }
+            }
+
+            lines.Add(text.Substring(start));
+            return (lines.ToArray(), breaks.ToArray());
+        }
     }
 }

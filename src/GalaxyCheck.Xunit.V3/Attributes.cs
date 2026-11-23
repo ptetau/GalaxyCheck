@@ -11,6 +11,7 @@ namespace GalaxyCheck
     public partial class PropertyAttribute : FactAttribute, ITheoryAttribute
     {
         // The constructors match the xunit v2 package, so xunit gets no source line for a property.
+        /// <summary>Creates the attribute with the default options.</summary>
         public PropertyAttribute()
             : base(null, -1)
         {
@@ -29,6 +30,7 @@ namespace GalaxyCheck
     [XunitTestCaseDiscoverer(typeof(PropertyDiscoverer))]
     public partial class SampleAttribute
     {
+        /// <summary>Creates the attribute with the default options.</summary>
         public SampleAttribute()
         {
         }
@@ -37,12 +39,14 @@ namespace GalaxyCheck
     [XunitTestCaseDiscoverer(typeof(GenSnapshotDiscoverer))]
     public sealed partial class GenSnapshotAttribute : FactAttribute
     {
+        /// <summary>Creates the attribute. The compiler passes the path of the test file.</summary>
         public GenSnapshotAttribute([CallerFilePath] string? testFilePath = null)
             : base(testFilePath, -1)
         {
             TestFileName = testFilePath;
         }
 
+        /// <summary>The path of the file of the test method.</summary>
         public string? TestFileName { get; }
 
         internal string? SkipReason => null;

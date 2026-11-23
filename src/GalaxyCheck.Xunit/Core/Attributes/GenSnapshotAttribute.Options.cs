@@ -4,9 +4,11 @@ namespace GalaxyCheck
 {
     // The options of [GenSnapshot] in each framework package. Each package declares the base class, the
     // constructor that records the file of the test, and TestFileName.
+    /// <summary>Marks a method whose sampled values are compared with a stored snapshot.</summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public sealed partial class GenSnapshotAttribute
     {
+        /// <summary>The count of snapshots, one for each seed.</summary>
         public int Iterations
         {
             get
@@ -26,6 +28,7 @@ namespace GalaxyCheck
 
         internal int? NullableSize { get; private set; }
 
+        /// <summary>The size of the sampled values.</summary>
         public int Size
         {
             get

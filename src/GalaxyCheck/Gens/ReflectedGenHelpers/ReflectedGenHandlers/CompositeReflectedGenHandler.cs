@@ -99,7 +99,7 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
 
             if (gen == null)
             {
-                return context.Error(type, $"could not resolve type '{type}'");
+                return context.UnresolvedTypeError(type, type.ToString());
             }
 
             return gen;

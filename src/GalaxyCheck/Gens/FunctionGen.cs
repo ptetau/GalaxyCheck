@@ -5,6 +5,7 @@
 
     public static partial class Gen
     {
+        /// <summary>Generates pure functions whose results come from the given generator. A function gives the same result for equal arguments.</summary>
         public static IGen<Func<TResult>> Function<TResult>(
             IGen<TResult> returnGen,
             int? invocationLimit = 1000) =>
@@ -12,6 +13,7 @@
                     .Select<VariadicFunc<TResult>, Func<TResult>>(
                         f => () => f());
 
+        /// <summary>Generates pure functions whose results come from the given generator. A function gives the same result for equal arguments.</summary>
         public static IGen<Func<T0, TResult>> Function<T0, TResult>(
             IGen<TResult> returnGen,
             int? invocationLimit = 1000) =>
@@ -19,6 +21,7 @@
                     .Select<VariadicFunc<TResult>, Func<T0, TResult>>(
                         f => (arg0) => f(arg0));
 
+        /// <summary>Generates pure functions whose results come from the given generator. A function gives the same result for equal arguments.</summary>
         public static IGen<Func<T0, T1, TResult>> Function<T0, T1, TResult>(
             IGen<TResult> returnGen,
             int? invocationLimit = 1000) =>
@@ -26,6 +29,7 @@
                     .Select<VariadicFunc<TResult>, Func<T0, T1, TResult>>(
                         f => (arg0, arg1) => f(arg0, arg1));
 
+        /// <summary>Generates pure functions whose results come from the given generator. A function gives the same result for equal arguments.</summary>
         public static IGen<Func<T0, T1, T2, TResult>> Function<T0, T1, T2, TResult>(
             IGen<TResult> returnGen,
             int? invocationLimit = 1000) =>
@@ -33,6 +37,7 @@
                     .Select<VariadicFunc<TResult>, Func<T0, T1, T2, TResult>>(
                         f => (arg0, arg1, arg2) => f(arg0, arg1, arg2));
 
+        /// <summary>Generates pure functions whose results come from the given generator. A function gives the same result for equal arguments.</summary>
         public static IGen<Func<T0, T1, T2, T3, TResult>> Function<T0, T1, T2, T3, TResult>(
             IGen<TResult> returnGen,
             int? invocationLimit = 1000) =>
@@ -46,26 +51,31 @@
 
     public static partial class Extensions
     {
+        /// <summary>Generates pure functions whose results come from this generator. A function gives the same result for equal arguments.</summary>
         public static IGen<Func<TResult>> FunctionOf<TResult>(
             this IGen<TResult> returnGen,
             int? invocationLimit = 1000) =>
                 Gen.Function(returnGen, invocationLimit);
 
+        /// <summary>Generates pure functions whose results come from this generator. A function gives the same result for equal arguments.</summary>
         public static IGen<Func<T0, TResult>> FunctionOf<T0, TResult>(
             this IGen<TResult> returnGen,
             int? invocationLimit = 1000) =>
                 Gen.Function<T0, TResult>(returnGen, invocationLimit);
 
+        /// <summary>Generates pure functions whose results come from this generator. A function gives the same result for equal arguments.</summary>
         public static IGen<Func<T0, T1, TResult>> FunctionOf<T0, T1, TResult>(
             this IGen<TResult> returnGen,
             int? invocationLimit = 1000) =>
                 Gen.Function<T0, T1, TResult>(returnGen, invocationLimit);
 
+        /// <summary>Generates pure functions whose results come from this generator. A function gives the same result for equal arguments.</summary>
         public static IGen<Func<T0, T1, T2, TResult>> FunctionOf<T0, T1, T2, TResult>(
             this IGen<TResult> returnGen,
             int? invocationLimit = 1000) =>
                 Gen.Function<T0, T1, T2, TResult>(returnGen, invocationLimit);
 
+        /// <summary>Generates pure functions whose results come from this generator. A function gives the same result for equal arguments.</summary>
         public static IGen<Func<T0, T1, T2, T3, TResult>> FunctionOf<T0, T1, T2, T3, TResult>(
             this IGen<TResult> returnGen,
             int? invocationLimit = 1000) =>

@@ -9,6 +9,7 @@
     <IsTestProject>false</IsTestProject>
     <PackageId>GalaxyCheck.Xunit.V3</PackageId>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <GenerateDocumentationFile Condition="'$(Configuration)' == 'Release'">true</GenerateDocumentationFile>
     <!-- Keep the dependencies beside the assembly in bin, so that a tool can load the built assembly. -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
@@ -29,6 +30,11 @@
   <!-- The build file that records the folder of the test project for the failure memory. -->
   <ItemGroup>
     <None Include="..\build\GalaxyCheck.ProjectFolder.props" Pack="true" PackagePath="buildTransitive\$(PackageId).props" Visible="false" />
+  </ItemGroup>
+
+  <!-- The agent reference file (R65), at the root of the package. -->
+  <ItemGroup>
+    <None Include="..\..\docs\llms.txt" Pack="true" PackagePath="\" Visible="false" />
   </ItemGroup>
 
 </Project>

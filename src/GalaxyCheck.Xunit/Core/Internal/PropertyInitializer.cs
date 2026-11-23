@@ -28,7 +28,8 @@ namespace GalaxyCheck.Internal
             IPropertyFactory propertyFactory,
             IGlobalPropertyConfiguration config,
             IGlobalFailureMemoryConfiguration? failureMemory = null,
-            string? rowIndex = null) =>
+            string? rowIndex = null,
+            string? dotnetTestFilter = null) =>
                 InitializeWithInstance(
                     testClassType,
                     testMethodInfo,
@@ -37,7 +38,8 @@ namespace GalaxyCheck.Internal
                     propertyFactory,
                     config,
                     failureMemory,
-                    rowIndex: rowIndex);
+                    rowIndex: rowIndex,
+                    dotnetTestFilter: dotnetTestFilter);
 
         /// <summary>Builds the property of a test method on an instance of its class that the framework made.</summary>
         /// <param name="testClassInstance">The instance of the test class, or null for a static test method.</param>
@@ -46,6 +48,9 @@ namespace GalaxyCheck.Internal
         /// <param name="testClassArguments">The arguments of a parameterized test class, or null.</param>
         /// <param name="rowIndex">The stable index of the data row among the rows of the test, or null.</param>
         /// <param name="fixtureIndex">The stable index of the fixture among the fixtures of the class, or null.</param>
+        /// <param name="rerunStyle">How the framework runs one test from the command line.</param>
+        /// <param name="frameworkTestName">The full name of the test as the framework reports it, or null.</param>
+        /// <param name="dotnetTestFilter">The <c>dotnet test</c> filter that runs only the test, or null.</param>
         public static PropertyInitializationResult InitializeWithInstance(
             Type testClassType,
             MethodInfo testMethodInfo,
@@ -56,7 +61,10 @@ namespace GalaxyCheck.Internal
             IGlobalFailureMemoryConfiguration? failureMemory = null,
             object?[]? testClassArguments = null,
             string? rowIndex = null,
-            string? fixtureIndex = null)
+            string? fixtureIndex = null,
+            RerunStyle rerunStyle = RerunStyle.DotnetTestFilter,
+            string? frameworkTestName = null,
+            string? dotnetTestFilter = null)
         {
             var propertyAttribute = testMethodInfo.GetCustomAttributes<PropertyAttribute>(inherit: true).Single();
 
@@ -96,7 +104,9 @@ namespace GalaxyCheck.Internal
                 SuppressHealthChecks: SuppressedHealthChecks(testClassType, testMethodInfo),
                 Examples: examples,
                 SavedFailure: savedFailure,
-                TakeFailureMemoryNote: takeFailureMemoryNote);
+                TakeFailureMemoryNote: takeFailureMemoryNote,
+                Identity: FailureMessage.Identify(
+                    rerunStyle, testClassType, testMethodInfo, testMethodArguments, testClassArguments, rowIndex, fixtureIndex, frameworkTestName, dotnetTestFilter));
 
             return new PropertyInitializationResult(
                 propertyAttribute.Runner,

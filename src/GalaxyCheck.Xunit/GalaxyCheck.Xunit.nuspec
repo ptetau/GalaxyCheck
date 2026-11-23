@@ -28,6 +28,7 @@
         <file src="bin\Release\net11.0\GalaxyCheck.Xunit.dll" target="lib\net11.0" />
         <file src="bin\Release\net11.0\GalaxyCheck.Xunit.xml" target="lib\net11.0" />
         <file src="bin\Release\net11.0\GalaxyCheck.Xunit.pdb" target="lib\net11.0" />
+        <file src="..\..\docs\llms.txt" target="" />
         <file src="..\build\GalaxyCheck.ProjectFolder.props" target="buildTransitive\GalaxyCheck.Xunit.props" />
     </files>
 </package>

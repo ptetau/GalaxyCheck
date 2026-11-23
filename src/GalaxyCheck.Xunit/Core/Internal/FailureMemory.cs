@@ -88,7 +88,7 @@ namespace GalaxyCheck.Internal
             string? rowIndex = null,
             string? fixtureIndex = null,
             Action? onShared = null) =>
-            $"{testClassType.FullName ?? testClassType.Name}{Arguments(testClassArguments, fixtureIndex, onShared)}" +
+            $"{TypeKeyName(testClassType)}{Arguments(testClassArguments, fixtureIndex, onShared)}" +
             $".{testMethodInfo.Name}{Arguments(testMethodArguments, rowIndex, onShared)}";
 
         private static string Arguments(object?[]? arguments, string? index, Action? onShared)
@@ -138,7 +138,7 @@ namespace GalaxyCheck.Internal
         };
 
         /// <summary>The name of a type with its namespace and type arguments, and no assembly version.</summary>
-        private static string TypeKeyName(Type type)
+        internal static string TypeKeyName(Type type)
         {
             if (type.IsArray)
             {

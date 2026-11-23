@@ -7,16 +7,21 @@ using System.Reflection;
 
 namespace GalaxyCheck.Runners
 {
+    /// <summary>Renders the values of a test case as text for a report.</summary>
     [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2070", Justification = "It reads the public members of a value to show it in a failure report. A value whose members trimming removed is shown by its ToString(), and its C# expression is marked as not available.")]
     [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "It reads the public members of a value to show it in a failure report. A value whose members trimming removed is shown by its ToString(), and its C# expression is marked as not available.")]
     public static class ExampleRenderer
     {
+        /// <summary>Returns the lines of text of the values of a test case.</summary>
         public static IEnumerable<string> Render(IReadOnlyList<object?> example) => example.Count switch
         {
             0 => RenderNullary(),
             1 => TryUnwrapTuple(example.Single(), out var unwrapped) ? RenderMultiary(unwrapped!) : RenderUnary(example),
             _ => RenderMultiary(example),
         };
+
+        /// <summary>The text of one value, as a counterexample line shows it.</summary>
+        internal static string RenderOne(object? value) => RenderValue(value);
 
         private static string[] RenderNullary()
         {
@@ -61,6 +66,7 @@ namespace GalaxyCheck.Runners
                     new AbbreviationRendererHandler(),
                     new StringExampleRendererHandler(),
                     new PrimitiveExampleRendererHandler(),
+                    new ScalarExampleRendererHandler(),
                     new StatefulCommandRendererHandler(),
                     new EnumerableExampleRendererHandler(elementLimit: BreadthLimit),
                     new ClassTupleRendererHandler(),
@@ -144,6 +150,39 @@ namespace GalaxyCheck.Runners
                 obj is Delegate;
 
             public string Render(object? obj, IExampleRendererHandler renderer, ImmutableList<object?> path) => obj?.ToString() ?? "null";
+        }
+
+        /// <summary>
+        /// Renders a value of .NET that is one thing by its text, for example a <c>Guid</c>, <c>BigInteger</c>,
+        /// <c>Rune</c>, <c>Version</c>, or <c>TimeSpan</c>: a struct or a sealed class of a <c>System</c> namespace,
+        /// with no type arguments, that is not a collection and that writes its own text. Its member list does not
+        /// show the value. A formattable value uses the invariant culture.
+        /// </summary>
+        private class ScalarExampleRendererHandler : IExampleRendererHandler
+        {
+            public bool CanRender(object? obj) => obj != null && IsScalarLike(obj.GetType());
+
+            public string Render(object? obj, IExampleRendererHandler renderer, ImmutableList<object?> path) =>
+                obj is IFormattable formattable
+                    ? formattable.ToString(null, System.Globalization.CultureInfo.InvariantCulture)
+                    : obj!.ToString() ?? obj.GetType().Name;
+
+            private static bool IsScalarLike(Type type)
+            {
+                if (!(type.IsValueType || type.IsSealed) ||
+                    type.IsGenericType ||
+                    type.Namespace == null ||
+                    !(type.Namespace == "System" || type.Namespace.StartsWith("System.", StringComparison.Ordinal)) ||
+                    typeof(IEnumerable).IsAssignableFrom(type) ||
+                    typeof(Delegate).IsAssignableFrom(type) ||
+                    type.GetInterface("System.Runtime.CompilerServices.ITuple") != null)
+                {
+                    return false;
+                }
+
+                var toString = type.GetMethod(nameof(ToString), Type.EmptyTypes);
+                return toString != null && toString.DeclaringType != typeof(object) && toString.DeclaringType != typeof(ValueType);
+            }
         }
 
         /// <summary>Renders a stateful command by its own text, which holds its inputs, on one line.</summary>

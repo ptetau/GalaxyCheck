@@ -15,9 +15,11 @@ namespace GalaxyCheck
         public static Property<T> Cover<T>(this Property<T> property, string label, double minPercent, Func<T, bool> when) =>
             new Property<T>(property, LabelRules.Add(property.Rules, label, minPercent, when));
 
+        /// <summary>Counts the share of test cases for which <paramref name="when"/> is true under a label.</summary>
         public static AsyncProperty<T> Label<T>(this AsyncProperty<T> property, string label, Func<T, bool> when) =>
             new AsyncProperty<T>(property, LabelRules.Add(property.Rules, label, null, when));
 
+        /// <summary>Fails the run when the share of test cases with the label is below <paramref name="minPercent"/>.</summary>
         public static AsyncProperty<T> Cover<T>(this AsyncProperty<T> property, string label, double minPercent, Func<T, bool> when) =>
             new AsyncProperty<T>(property, LabelRules.Add(property.Rules, label, minPercent, when));
     }

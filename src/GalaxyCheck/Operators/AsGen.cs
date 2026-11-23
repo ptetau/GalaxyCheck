@@ -2,6 +2,7 @@
 {
     public static partial class Extensions
     {
+        /// <summary>Returns the generator of the advanced operations.</summary>
         public static IGen<T> AsGen<T>(this IGenAdvanced<T> advanced) => new AdvancedToGen<T>(advanced);
 
         private class AdvancedToGen<T> : IGen<T>

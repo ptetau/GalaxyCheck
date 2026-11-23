@@ -5,3 +5,7 @@ Counterexample as C#:
     1000
 
 Property function returned false
+
+<galaxycheck-failure>
+{"counterexample":["1000"],"csharp":["1000"],"replay":"AgAjAugHAA==","seed":0,"size":35,"iterations":36,"shrinks":5}
+</galaxycheck-failure>

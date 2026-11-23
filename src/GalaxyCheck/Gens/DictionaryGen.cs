@@ -6,12 +6,16 @@ namespace GalaxyCheck.Gens
     public interface IDictionaryGen<TKey, TValue> : IGen<IReadOnlyDictionary<TKey, TValue>>
         where TKey : notnull
     {
+        /// <summary>Gives each dictionary exactly this count of entries.</summary>
         IDictionaryGen<TKey, TValue> WithCount(int count);
 
+        /// <summary>Gives each dictionary at least this count of entries.</summary>
         IDictionaryGen<TKey, TValue> WithCountGreaterThanEqual(int minCount);
 
+        /// <summary>Gives each dictionary at most this count of entries.</summary>
         IDictionaryGen<TKey, TValue> WithCountLessThanEqual(int maxCount);
 
+        /// <summary>Gives each dictionary a count of entries between the two bounds, both inclusive.</summary>
         IDictionaryGen<TKey, TValue> WithCountBetween(int x, int y);
     }
 }
@@ -59,7 +63,7 @@ namespace GalaxyCheck.Gens.Internal
 
         public override IReadOnlyDictionary<TKey, TValue> Generate(GenSource source)
         {
-            var (minCount, maxCount) = CountRange.Resolve(Count, enableCountLimit: true);
+            var (minCount, maxCount) = CountRange.Resolve(Count, enableCountLimit: true, CountRange.DictionaryLimitError);
             var keyGen = KeyGen.Advanced;
             var valueGen = ValueGen.Advanced;
 

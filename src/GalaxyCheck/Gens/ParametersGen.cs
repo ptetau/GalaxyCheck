@@ -151,7 +151,9 @@ namespace GalaxyCheck.Gens
                 if (parameterInfo.ParameterType.IsAssignableFrom(genTypeArgument) == false)
                 {
                     return Gen.Advanced.Error<object>(
-                        $"generator of type '{genTypeArgument.FullName}' is not compatible with parameter of type '{parameterInfo.ParameterType.FullName}'");
+                        $"generator of type '{genTypeArgument.FullName}' is not compatible with parameter of type '{parameterInfo.ParameterType.FullName}'" +
+                        System.Environment.NewLine +
+                        $"Fix: give parameter '{parameterInfo.Name}' a generator of type IGen<{(global::GalaxyCheck.Internal.FixHint.TypeName(parameterInfo.ParameterType))}>, or change the type of the parameter to {(global::GalaxyCheck.Internal.FixHint.TypeName(genTypeArgument))}.");
                 }
 
                 return customGen.Cast<object>();

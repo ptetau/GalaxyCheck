@@ -33,11 +33,13 @@ namespace GalaxyCheck
 
     public sealed partial class GenSnapshotAttribute : System.Attribute, IDataSourceAttribute, ITestRegisteredEventReceiver
     {
+        /// <summary>Creates the attribute. The compiler passes the path of the test file.</summary>
         public GenSnapshotAttribute([CallerFilePath] string? testFilePath = null)
         {
             TestFileName = testFilePath;
         }
 
+        /// <summary>The path of the file of the test method.</summary>
         public string? TestFileName { get; }
 
         internal string? SkipReason => null;
@@ -119,11 +121,13 @@ namespace GalaxyCheck
     [System.AttributeUsage(System.AttributeTargets.Method, AllowMultiple = true)]
     public sealed class PropertyArgumentsAttribute : System.Attribute
     {
+        /// <summary>Creates one data row with values for the first parameters.</summary>
         public PropertyArgumentsAttribute(params object?[]? values)
         {
             Values = values ?? new object?[] { null };
         }
 
+        /// <summary>The values of the row, in the order of the parameters.</summary>
         public object?[] Values { get; }
     }
 }

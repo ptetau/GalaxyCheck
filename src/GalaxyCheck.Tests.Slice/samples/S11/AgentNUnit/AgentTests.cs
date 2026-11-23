@@ -1,5 +1,6 @@
 namespace AgentSample;
 
+[NUnit.Framework.TestFixture]
 public class AgentTests
 {
     [GalaxyCheck.Property(Seed = 1, Iterations = 1000)]

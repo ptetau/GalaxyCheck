@@ -3,10 +3,13 @@ namespace GalaxyCheck.Gens
     /// <summary>A generator of values in an inclusive range.</summary>
     public interface IRangeGen<T> : IGen<T>
     {
+        /// <summary>Generates values at or after the minimum.</summary>
         IRangeGen<T> From(T min);
 
+        /// <summary>Generates values at or before the maximum.</summary>
         IRangeGen<T> Until(T max);
 
+        /// <summary>Generates values between the two bounds, both inclusive.</summary>
         IRangeGen<T> Within(T x, T y);
     }
 }
@@ -50,7 +53,9 @@ namespace GalaxyCheck.Gens.Internal
         {
             if (min > max)
             {
-                throw new GenErrorSignal("'min' cannot be greater than 'max'");
+                throw new GenErrorSignal(
+                    "'min' cannot be greater than 'max'" + Environment.NewLine +
+                    "Fix: give a .From(...) bound that is not after the .Until(...) bound, or call .Within(x, y), which takes its two bounds in either order.");
             }
 
             var origin = Math.Clamp(defaultOrigin, min, max);

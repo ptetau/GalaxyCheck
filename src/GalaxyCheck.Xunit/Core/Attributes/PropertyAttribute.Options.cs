@@ -4,6 +4,7 @@ using System;
 namespace GalaxyCheck
 {
     // The options of [Property] in each framework package. Each package declares the base class and the discovery.
+    /// <summary>Marks a method as a property test: GalaxyCheck generates its parameters and runs it for each test case.</summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public partial class PropertyAttribute
     {
@@ -25,6 +26,7 @@ namespace GalaxyCheck
 
         internal bool? NullableExhaustive { get; private set; }
 
+        /// <summary>The count of test cases. The default comes from the global configuration, or 100.</summary>
         public int Iterations
         {
             get
@@ -41,6 +43,7 @@ namespace GalaxyCheck
 
         internal int? NullableIterations { get; private set; }
 
+        /// <summary>The most shrinks of a counterexample. The default comes from the global configuration, or 500.</summary>
         public int ShrinkLimit
         {
             get
@@ -57,6 +60,7 @@ namespace GalaxyCheck
 
         internal int? NullableShrinkLimit { get; private set; }
 
+        /// <summary>The seed of the run. With no seed, GALAXYCHECK_SEED or GALAXYCHECK_AGENT can set it, else it is random.</summary>
         public int Seed
         {
             get
@@ -73,6 +77,7 @@ namespace GalaxyCheck
 
         internal int? NullableSeed { get; private set; }
 
+        /// <summary>A fixed size for each test case, from 0 to 100.</summary>
         public int Size
         {
             get

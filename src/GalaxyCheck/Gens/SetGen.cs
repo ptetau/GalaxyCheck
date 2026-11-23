@@ -5,6 +5,7 @@ namespace GalaxyCheck
 
     public static partial class Gen
     {
+        /// <summary>Generates sets whose elements come from the given generator.</summary>
         public static ISetGen<T> Set<T>(IGen<T> elementGen) => new SetGen<T>(
             ElementGen: elementGen,
             Count: RangeIntention.Unspecified());
@@ -59,6 +60,7 @@ namespace GalaxyCheck.Gens
     using System;
     using System.Collections.Generic;
 
+    /// <summary>A generator of sets with options for the count of elements.</summary>
     public interface ISetGen<T> : IGen<IReadOnlySet<T>>
     {
         /// <summary>

@@ -7,20 +7,24 @@ namespace GalaxyCheck
 {
     public static partial class Gen
     {
+        /// <summary>Generates a tuple with one value from each of the given generators, in order.</summary>
         public static IGen<(T0, T1)> Zip<T0, T1>(IGen<T0> gen0, IGen<T1> gen1) =>
             new ZipGen2<T0, T1>(gen0, gen1);
 
+        /// <summary>Generates a tuple with one value from each of the given generators, in order.</summary>
         public static IGen<(T0, T1, T2)> Zip<T0, T1, T2>(
             IGen<T0> gen0,
             IGen<T1> gen1,
             IGen<T2> gen2) => new ZipGen3<T0, T1, T2>(gen0, gen1, gen2);
 
+        /// <summary>Generates a tuple with one value from each of the given generators, in order.</summary>
         public static IGen<(T0, T1, T2, T3)> Zip<T0, T1, T2, T3>(
             IGen<T0> gen0,
             IGen<T1> gen1,
             IGen<T2> gen2,
             IGen<T3> gen3) => new ZipGen4<T0, T1, T2, T3>(gen0, gen1, gen2, gen3);
 
+        /// <summary>Generates a list with one value from each of the generators, in order.</summary>
         public static IGen<IEnumerable<T>> Zip<T>(IEnumerable<IGen<T>> gens) =>
             new ZipManyGen<T>(gens.Select(gen => gen.Advanced).ToArray());
     }

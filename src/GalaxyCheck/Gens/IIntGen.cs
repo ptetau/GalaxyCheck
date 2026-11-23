@@ -3,6 +3,7 @@ using System;
 
 namespace GalaxyCheck.Gens
 {
+    /// <summary>A generator of integers with optional bounds, an origin, and a bias.</summary>
     public interface IIntGen<T> : IGen<T>
     {
         /// <summary>
@@ -24,6 +25,7 @@ namespace GalaxyCheck.Gens
         /// "smallest" value that all values should shrink towards. The origin must be within the the bounds of the
         /// generator. If not otherwise specified, the generator will try and infer the most sensible origin, based
         /// upon other constraints.
+        /// </summary>
         /// <param name="origin">The "smallest" value that generated values should shrink towards.</param>
         /// <returns>A new generator with the origin applied.</returns>
         IIntGen<T> ShrinkTowards(T origin);

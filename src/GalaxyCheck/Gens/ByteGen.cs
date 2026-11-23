@@ -8,11 +8,13 @@ namespace GalaxyCheck
         /// <summary>
         /// Generates bytes. By default, the generator produces bytes from 0x00 that will grow towards 0xFF, as the
         /// generator size increases. However, byte generation can be customised using the builder methods on
-        /// <see cref="IIntGen{byte}"/>.
+        /// <see cref="IIntGen{T}"/>.
+        /// </summary>
         /// <returns>The new generator.</returns>
         public static IIntGen<byte> Byte() => new ByteGen();
     }
 
+    /// <summary>The operators and runners of generators and properties, for example <c>Select</c>, <c>Sample</c>, and <c>Check</c>.</summary>
     public static partial class Extensions
     {
         /// <summary>
@@ -115,7 +117,7 @@ namespace GalaxyCheck.Gens
 
             if (min > max)
             {
-                throw new GenErrorSignal("'min' cannot be greater than 'max'");
+                throw new GenErrorSignal("'min' cannot be greater than 'max'" + global::GalaxyCheck.Internal.FixHint.NumericMinAboveMax);
             }
 
             if (Origin != null && (Origin < min || Origin > max))

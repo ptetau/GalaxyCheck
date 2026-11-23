@@ -108,8 +108,10 @@ namespace GalaxyCheck.Stateful
         }
     }
 
+    /// <summary>Generators of command sequences for stateful tests.</summary>
     public static class StatefulGen
     {
+        /// <summary>Generates sequences of commands. Each next command comes from the model after the commands before it.</summary>
         public static IGen<IReadOnlyList<Command<TSystem, TModel>>> Commands<TSystem, TModel>(
             Func<TModel> newModel,
             Func<TModel, IGen<Command<TSystem, TModel>>> nextCommand)
@@ -120,8 +122,10 @@ namespace GalaxyCheck.Stateful
         }
     }
 
+    /// <summary>Properties of stateful systems.</summary>
     public static class StatefulProperty
     {
+        /// <summary>Creates a property that runs each command sequence on a new system and checks each postcondition against the model.</summary>
         public static Property<IReadOnlyList<Command<TSystem, TModel>>> Create<TSystem, TModel>(
             Func<TSystem> newSystem,
             Func<TModel> newModel,

@@ -55,8 +55,10 @@ namespace GalaxyCheck.Gens
     using System.Collections.Immutable;
     using System.Linq;
 
+    /// <summary>A generator that picks one of its weighted choices for each value.</summary>
     public interface IChooseGen<T> : IGen<T>
     {
+        /// <summary>Adds a choice with a weight. A choice with a higher weight is picked more often.</summary>
         IChooseGen<T> WithChoice(IGen<T> gen, int weight);
     }
 
