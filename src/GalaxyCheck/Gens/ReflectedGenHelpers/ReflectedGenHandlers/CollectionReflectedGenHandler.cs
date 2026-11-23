@@ -1,4 +1,6 @@
-﻿using System;
+using System.Diagnostics.CodeAnalysis;
+using GalaxyCheck.Gens.Generated;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
@@ -7,6 +9,8 @@ using System.Reflection;
 
 namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
 {
+    [RequiresUnreferencedCode(ReflectionMessages.Path)]
+    [RequiresDynamicCode(ReflectionMessages.Path)]
     internal class CollectionReflectedGenHandler : IReflectedGenHandler, IEmptyCollectionGenHandler
     {
         public bool CanHandleGen(Type type, ReflectedGenHandlerContext context) => IsCollection(type);

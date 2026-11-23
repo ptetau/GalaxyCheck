@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+using GalaxyCheck.Gens.Generated;
 using GalaxyCheck.Gens.Internal;
 using System;
 using System.Collections.Generic;
@@ -6,6 +8,8 @@ using System.Reflection;
 
 namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
 {
+    [RequiresUnreferencedCode(ReflectionMessages.Path)]
+    [RequiresDynamicCode(ReflectionMessages.Path)]
     internal class NonDefaultConstructorReflectedGenHandler : IReflectedGenHandler
     {
         public bool CanHandleGen(Type type, ReflectedGenHandlerContext context) =>

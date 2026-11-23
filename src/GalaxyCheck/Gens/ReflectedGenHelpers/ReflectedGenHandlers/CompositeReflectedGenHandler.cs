@@ -1,10 +1,14 @@
-﻿using System;
+using System.Diagnostics.CodeAnalysis;
+using GalaxyCheck.Gens.Generated;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
 namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
 {
+    [RequiresUnreferencedCode(ReflectionMessages.Path)]
+    [RequiresDynamicCode(ReflectionMessages.Path)]
     internal class CompositeReflectedGenHandler : IReflectedGenHandler
     {
         private readonly IReadOnlyList<IReflectedGenHandler> _genHandlersByPriority;

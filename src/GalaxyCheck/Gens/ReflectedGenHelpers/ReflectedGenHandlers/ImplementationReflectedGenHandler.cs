@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+using GalaxyCheck.Gens.Generated;
 using GalaxyCheck.Gens.Internal;
 using GalaxyCheck.Gens.Parameters;
 using System;
@@ -13,6 +15,8 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
     /// Handles an interface or an abstract class. The values come from the candidate types that the user registered,
     /// or else from the concrete types in the assembly of the type that are assignable to it.
     /// </summary>
+    [RequiresUnreferencedCode(ReflectionMessages.Path)]
+    [RequiresDynamicCode(ReflectionMessages.Path)]
     internal class ImplementationReflectedGenHandler : IReflectedGenHandler
     {
         private readonly ImmutableDictionary<Type, ImmutableArray<Type>> _candidateTypesByType;
@@ -98,6 +102,8 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
         }
     }
 
+    [RequiresUnreferencedCode(ReflectionMessages.Path)]
+    [RequiresDynamicCode(ReflectionMessages.Path)]
     internal static class OneOf
     {
         /// <summary>Makes a pick generator that is typed to the given type.</summary>

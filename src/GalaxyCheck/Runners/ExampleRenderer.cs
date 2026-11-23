@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -7,6 +7,8 @@ using System.Reflection;
 
 namespace GalaxyCheck.Runners
 {
+    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2070", Justification = "It reads the public members of a value to show it in a failure report. A member that trimming removed is not shown, and a value with no usable constructor gets no expression.")]
+    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "It reads the public members of a value to show it in a failure report. A member that trimming removed is not shown, and a value with no usable constructor gets no expression.")]
     public static class ExampleRenderer
     {
         public static IEnumerable<string> Render(IReadOnlyList<object?> example) => example.Count switch
