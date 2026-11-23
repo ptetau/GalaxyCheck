@@ -47,6 +47,13 @@ namespace Tests.IntegrationTests
                     .Aggregate(new DirectoryInfo(_currentDirectory), (acc, _) => acc.Parent!);
                 var integrationProjectDir = Path.Combine(currentProjectDir.FullName, "samples", TestSuiteName);
 
+                // The failure memory of an earlier run changes the messages of this run, so it starts with none.
+                var failureMemoryDir = Path.Combine(integrationProjectDir, ".galaxycheck");
+                if (Directory.Exists(failureMemoryDir))
+                {
+                    Directory.Delete(failureMemoryDir, recursive: true);
+                }
+
                 var testProcess = Process.Start(new ProcessStartInfo
                 {
                     FileName = "dotnet",
@@ -96,6 +103,8 @@ namespace Tests.IntegrationTests
                 from desc in element.Descendants()
                 where desc.Name.LocalName.Contains("Output")
                 select desc.Value).SingleOrDefault();
+            // Windows writes "\r\n", and the snapshots hold "\n".
+            output = output?.Replace("\r\n", "\n");
             if (output?.Contains("   at ") is true)
             {
                 output = output[..output.IndexOf("   at ")]; // Scrub the stacktrace with local paths 😅

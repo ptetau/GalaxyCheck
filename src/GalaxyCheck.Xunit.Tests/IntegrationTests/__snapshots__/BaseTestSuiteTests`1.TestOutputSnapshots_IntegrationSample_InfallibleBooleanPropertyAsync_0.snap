@@ -4,11 +4,11 @@ Output:
 
 {"testName":"InfallibleBooleanPropertyAsync","injectedValues":[0]}
 {"testName":"InfallibleBooleanPropertyAsync","injectedValues":[1]}
-{"testName":"InfallibleBooleanPropertyAsync","injectedValues":[4]}
-{"testName":"InfallibleBooleanPropertyAsync","injectedValues":[5]}
-{"testName":"InfallibleBooleanPropertyAsync","injectedValues":[6]}
-{"testName":"InfallibleBooleanPropertyAsync","injectedValues":[6]}
-{"testName":"InfallibleBooleanPropertyAsync","injectedValues":[46]}
-{"testName":"InfallibleBooleanPropertyAsync","injectedValues":[100]}
+{"testName":"InfallibleBooleanPropertyAsync","injectedValues":[1]}
 {"testName":"InfallibleBooleanPropertyAsync","injectedValues":[0]}
-{"testName":"InfallibleBooleanPropertyAsync","injectedValues":[58]}
+{"testName":"InfallibleBooleanPropertyAsync","injectedValues":[15]}
+{"testName":"InfallibleBooleanPropertyAsync","injectedValues":[8]}
+{"testName":"InfallibleBooleanPropertyAsync","injectedValues":[8]}
+{"testName":"InfallibleBooleanPropertyAsync","injectedValues":[33]}
+{"testName":"InfallibleBooleanPropertyAsync","injectedValues":[44]}
+{"testName":"InfallibleBooleanPropertyAsync","injectedValues":[100]}

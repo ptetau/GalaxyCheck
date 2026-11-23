@@ -3,12 +3,12 @@
 Output:
 
 {"testName":"PropertyWithGenFromMemberGenAsync","injectedValues":[0]}
-{"testName":"PropertyWithGenFromMemberGenAsync","injectedValues":[0]}
-{"testName":"PropertyWithGenFromMemberGenAsync","injectedValues":[-2]}
-{"testName":"PropertyWithGenFromMemberGenAsync","injectedValues":[2]}
-{"testName":"PropertyWithGenFromMemberGenAsync","injectedValues":[62]}
-{"testName":"PropertyWithGenFromMemberGenAsync","injectedValues":[-62]}
-{"testName":"PropertyWithGenFromMemberGenAsync","injectedValues":[1262]}
-{"testName":"PropertyWithGenFromMemberGenAsync","injectedValues":[79136866]}
-{"testName":"PropertyWithGenFromMemberGenAsync","injectedValues":[-1712087576]}
-{"testName":"PropertyWithGenFromMemberGenAsync","injectedValues":[747512566]}
+{"testName":"PropertyWithGenFromMemberGenAsync","injectedValues":[14]}
+{"testName":"PropertyWithGenFromMemberGenAsync","injectedValues":[-78]}
+{"testName":"PropertyWithGenFromMemberGenAsync","injectedValues":[7196360]}
+{"testName":"PropertyWithGenFromMemberGenAsync","injectedValues":[-6410]}
+{"testName":"PropertyWithGenFromMemberGenAsync","injectedValues":[-827738]}
+{"testName":"PropertyWithGenFromMemberGenAsync","injectedValues":[4200896]}
+{"testName":"PropertyWithGenFromMemberGenAsync","injectedValues":[-6001530]}
+{"testName":"PropertyWithGenFromMemberGenAsync","injectedValues":[5341718]}
+{"testName":"PropertyWithGenFromMemberGenAsync","injectedValues":[-21872316]}

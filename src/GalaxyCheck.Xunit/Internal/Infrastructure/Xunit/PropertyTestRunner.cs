@@ -22,7 +22,7 @@ namespace GalaxyCheck.Internal.Infrastructure.Xunit
             object[] testMethodArguments)
             : base(testCase, messageBus, aggregator, cancellationTokenSource)
         {
-            _constructorArguments = constructorArguments;
+            _constructorArguments = ConstructorArguments.Resolve(constructorArguments);
             _testMethodArguments = testMethodArguments;
         }
 

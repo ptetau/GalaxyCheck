@@ -4,11 +4,11 @@ Output:
 
 {"testName":"InfalliblePropertyWithControlData_1","injectedValues":[1,0]}
 {"testName":"InfalliblePropertyWithControlData_1","injectedValues":[1,1]}
-{"testName":"InfalliblePropertyWithControlData_1","injectedValues":[1,4]}
-{"testName":"InfalliblePropertyWithControlData_1","injectedValues":[1,5]}
-{"testName":"InfalliblePropertyWithControlData_1","injectedValues":[1,6]}
-{"testName":"InfalliblePropertyWithControlData_1","injectedValues":[1,6]}
-{"testName":"InfalliblePropertyWithControlData_1","injectedValues":[1,46]}
-{"testName":"InfalliblePropertyWithControlData_1","injectedValues":[1,100]}
+{"testName":"InfalliblePropertyWithControlData_1","injectedValues":[1,1]}
 {"testName":"InfalliblePropertyWithControlData_1","injectedValues":[1,0]}
-{"testName":"InfalliblePropertyWithControlData_1","injectedValues":[1,58]}
+{"testName":"InfalliblePropertyWithControlData_1","injectedValues":[1,15]}
+{"testName":"InfalliblePropertyWithControlData_1","injectedValues":[1,8]}
+{"testName":"InfalliblePropertyWithControlData_1","injectedValues":[1,8]}
+{"testName":"InfalliblePropertyWithControlData_1","injectedValues":[1,33]}
+{"testName":"InfalliblePropertyWithControlData_1","injectedValues":[1,44]}
+{"testName":"InfalliblePropertyWithControlData_1","injectedValues":[1,100]}
