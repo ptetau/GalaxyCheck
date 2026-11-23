@@ -1,6 +1,6 @@
 # Generators
 
-This page has one entry for each public generator method of `Gen` and of `Gen.Realistic`. Each entry has one C# example. Each example assumes `using GalaxyCheck;`.
+This page has one entry for each public generator method of `Gen`, of `Gen.Realistic`, and of `Gen.Advanced`. Each entry has one C# example. Each example assumes `using GalaxyCheck;`.
 
 A test of the library checks that each public generator method has an entry. When you add a generator method, add its entry here.
 
@@ -80,13 +80,22 @@ var gen = Gen.Constant("fixed");
 
 ### Gen.Create
 
-Generates values of a type. It reads the type by reflection, or uses the code of the source generator.
+Generates values of a type. It uses the code of the source generator, or else it reads the type by reflection.
 
 ```csharp
-public record Order(int Id, string Name);
-
 var gen = Gen.Create<Order>();
+
+public record Order(int Id, string Name);
 ```
+
+To get the generated code, add the generator package to the project: `dotnet add package GalaxyCheck.SourceGeneration`. The package writes the code of each `Gen.Create<T>()` at compile time, so that the call works in a trimmed or NativeAOT app, and it makes the same values as the reflection path.
+
+The package reports two warnings:
+
+- GCSG001 (no generated code for the type): the generator cannot write the code of a type, for example a collection, an abstract class, a type that refers to itself, a type with a `required` member, a file-local type, or a generic type with a reference type argument. The warning names the type, and the call uses reflection.
+- GCSG002 (the call uses reflection): the call always reads the type by reflection at run time, so it does not work with trimming or NativeAOT.
+
+These calls always use reflection and get GCSG002: `Gen.Create<T>()` where `T` is a type parameter, `Create<T>()` on a factory with a registration (for example `Gen.Factory().RegisterType(...).Create<T>()`), `OverrideMember(...)`, and `Gen.Create<T>(nullabilityInfo)` with a `NullabilityInfo`. `Gen.Factory().Create<T>()` with no registration uses the generated code.
 
 ### Gen.DateOnly
 
@@ -186,12 +195,12 @@ var gen = Gen.Enum<DayOfWeek>();
 
 ### Gen.Factory
 
-Makes a factory that shares type registrations between auto-generators.
+Makes a factory that shares type registrations between auto-generators. `Create<T>()` on a factory with a registration reads the type by reflection, and the source generator reports GCSG002 for it.
 
 ```csharp
-public record Order(int Id, string Name);
-
 var gen = Gen.Factory().RegisterType(Gen.Int32().GreaterThanEqual(0)).Create<Order>();
+
+public record Order(int Id, string Name);
 ```
 
 ### Gen.Function
@@ -539,4 +548,14 @@ Generates realistic street addresses.
 
 ```csharp
 var gen = Gen.Realistic.StreetAddress();
+```
+
+## Gen.Advanced
+
+### Gen.Advanced.Error
+
+Generates no value: each run of the generator gives an error with the message. Use it in a custom generator for an input that is not valid.
+
+```csharp
+var gen = Gen.Advanced.Error<int>("the range is empty");
 ```

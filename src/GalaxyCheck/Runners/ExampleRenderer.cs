@@ -7,8 +7,8 @@ using System.Reflection;
 
 namespace GalaxyCheck.Runners
 {
-    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2070", Justification = "It reads the public members of a value to show it in a failure report. A member that trimming removed is not shown, and a value with no usable constructor gets no expression.")]
-    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "It reads the public members of a value to show it in a failure report. A member that trimming removed is not shown, and a value with no usable constructor gets no expression.")]
+    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2070", Justification = "It reads the public members of a value to show it in a failure report. A value whose members trimming removed is shown by its ToString(), and its C# expression is marked as not available.")]
+    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "It reads the public members of a value to show it in a failure report. A value whose members trimming removed is shown by its ToString(), and its C# expression is marked as not available.")]
     public static class ExampleRenderer
     {
         public static IEnumerable<string> Render(IReadOnlyList<object?> example) => example.Count switch
@@ -248,6 +248,11 @@ namespace GalaxyCheck.Runners
                 }
 
                 var properties = obj.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public);
+                if (properties.Length == 0)
+                {
+                    // Trimming can remove the members, and "{  }" shows nothing of the value.
+                    return obj.ToString() ?? obj.GetType().Name;
+                }
 
                 var propertiesToRender = properties.Take(_propertyLimit).ToList();
                 var hasMoreProperties = properties.Skip(_propertyLimit).Any();
@@ -267,6 +272,20 @@ namespace GalaxyCheck.Runners
             public bool CanRender(object? obj) => obj == AbbreviationSymbol;
 
             public string Render(object? obj, IExampleRendererHandler renderer, ImmutableList<object?> path) => "...";
+        }
+
+        /// <summary>
+        /// True when the renderer shows the value by its ToString(), because it cannot read a public member of the
+        /// value. Then the text is no C# expression.
+        /// </summary>
+        internal static bool HasNoReadableMembers(object? value)
+        {
+            if (value is null) return false;
+            var type = value.GetType();
+            return !type.IsPrimitive && !type.IsEnum && value is not string && value is not decimal && value is not DateTime &&
+                   value is not Delegate && value is not IEnumerable && value is not Stateful.IStatefulCommand &&
+                   type.GetInterface("System.Runtime.CompilerServices.ITuple") == null &&
+                   type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Length == 0;
         }
 
         private static bool IsClassTupleInstance(object? value)

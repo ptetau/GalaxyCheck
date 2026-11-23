@@ -28,6 +28,15 @@ namespace GalaxyCheck.SourceGeneration
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
+        public static readonly DiagnosticDescriptor ReflectionCall = new DiagnosticDescriptor(
+            id: "GCSG002",
+            title: "The call uses reflection at run time",
+            messageFormat:
+                "This call uses reflection at run time and does not work with trimming or NativeAOT: {0}",
+            category: "GalaxyCheck.SourceGeneration",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
         private const string GenType = "global::GalaxyCheck.Gen";
         private const string HelpersType = "global::GalaxyCheck.Gens.Generated.GeneratedGenHelpers";
         private const string RegistryType = "global::GalaxyCheck.Gens.Generated.GeneratedGens";
@@ -39,9 +48,10 @@ namespace GalaxyCheck.SourceGeneration
         {
             var requests = context.SyntaxProvider
                 .CreateSyntaxProvider(
-                    predicate: static (node, _) => IsCreateCandidate(node),
-                    transform: static (syntaxContext, cancellationToken) => Plan(syntaxContext, cancellationToken))
-                .Where(static request => request != null)
+                    predicate: static (node, _) => IsCandidate(node),
+                    transform: static (syntaxContext, cancellationToken) =>
+                        Plan((InvocationExpressionSyntax)syntaxContext.Node, syntaxContext.SemanticModel, cancellationToken))
+                .Where(static request => request is { Code: not null })
                 .Select(static (request, _) => request!)
                 .Collect();
 
@@ -52,46 +62,102 @@ namespace GalaxyCheck.SourceGeneration
             context.RegisterSourceOutput(requests.Combine(canRegister), static (output, input) => Emit(output, input.Left, input.Right));
         }
 
-        private static bool IsCreateCandidate(SyntaxNode node) =>
-            node is InvocationExpressionSyntax { ArgumentList.Arguments.Count: 0 } invocation &&
+        internal static bool IsCandidate(SyntaxNode node) =>
+            node is InvocationExpressionSyntax invocation &&
             invocation.Expression switch
             {
-                MemberAccessExpressionSyntax { Name: GenericNameSyntax name } => IsCreateName(name),
-                GenericNameSyntax name => IsCreateName(name),
+                MemberAccessExpressionSyntax { Name: GenericNameSyntax name } => IsCreateName(name, invocation) || IsOverrideName(name),
+                MemberAccessExpressionSyntax { Name: IdentifierNameSyntax name } => name.Identifier.ValueText == "OverrideMember",
+                GenericNameSyntax name => IsCreateName(name, invocation) || IsOverrideName(name),
+                IdentifierNameSyntax name => name.Identifier.ValueText == "OverrideMember",
                 _ => false
             };
 
-        private static bool IsCreateName(GenericNameSyntax name) =>
-            name.Identifier.ValueText == "Create" && name.TypeArgumentList.Arguments.Count == 1;
+        private static bool IsCreateName(GenericNameSyntax name, InvocationExpressionSyntax invocation) =>
+            name.Identifier.ValueText == "Create" && name.TypeArgumentList.Arguments.Count == 1 &&
+            invocation.ArgumentList.Arguments.Count <= 1;
 
-        private static CreateRequest? Plan(GeneratorSyntaxContext syntaxContext, CancellationToken cancellationToken)
+        private static bool IsOverrideName(GenericNameSyntax name) => name.Identifier.ValueText == "OverrideMember";
+
+        /// <summary>
+        /// Plans one call: generated code, GCSG001 (no generated code for the type), or GCSG002 (the call always
+        /// uses reflection). The analyzer reports the diagnostics, so that a pragma or an editorconfig can change them.
+        /// </summary>
+        internal static CreateRequest? Plan(InvocationExpressionSyntax invocation, SemanticModel model, CancellationToken cancellationToken)
         {
-            var invocation = (InvocationExpressionSyntax)syntaxContext.Node;
-            if (syntaxContext.SemanticModel.GetSymbolInfo(invocation, cancellationToken).Symbol is not IMethodSymbol method ||
-                method.Name != "Create" ||
-                method.TypeArguments.Length != 1 ||
-                method.Parameters.Length != 1 ||
-                method.ContainingType?.ToDisplayString() != "GalaxyCheck.Gen")
+            if (model.GetSymbolInfo(invocation, cancellationToken).Symbol is not IMethodSymbol method)
+            {
+                return null;
+            }
+
+            var containingType = method.ContainingType?.OriginalDefinition.ToDisplayString();
+
+            if (method.Name == "OverrideMember" && containingType == "GalaxyCheck.Gens.IReflectedGen<T>")
+            {
+                return CreateRequest.Reflection(
+                    "OverrideMember always builds the generator by reflection; write the generator with Gen.Select or Gen.Zip instead");
+            }
+
+            if (method.Name != "Create" || method.TypeArguments.Length != 1 || method.Parameters.Length != 1)
+            {
+                return null;
+            }
+
+            bool isGenCreate;
+            if (containingType == "GalaxyCheck.Gen")
+            {
+                isGenCreate = true;
+            }
+            else if (containingType == "GalaxyCheck.Gens.IGenFactory")
+            {
+                isGenCreate = IsDefaultFactory(invocation, model, cancellationToken);
+            }
+            else
             {
                 return null;
             }
 
             var type = method.TypeArguments[0];
+            var typeName = type.ToDisplayString();
             if (ContainsTypeParameter(type))
             {
                 // A type parameter has no type until run time, so no code can be written for it.
-                return null;
+                return CreateRequest.Reflection(
+                    $"the type argument '{typeName}' holds a type parameter, so GalaxyCheck reads the type by reflection");
             }
 
-            var location = LocationInfo.From(invocation.GetLocation());
-            var typeKey = type.WithNullableAnnotation(NullableAnnotation.NotAnnotated).ToDisplayString(TypeFormat);
-            var writer = new GenWriter(syntaxContext.SemanticModel.Compilation);
-            var expression = writer.Write(type, "$", isNullable: false, ImmutableHashSet<ITypeSymbol>.Empty.WithComparer(SymbolEqualityComparer.Default));
+            if (!isGenCreate)
+            {
+                return CreateRequest.Reflection(
+                    $"Create<{typeName}>() on a factory with a registration builds the generator by reflection");
+            }
+
+            if (invocation.ArgumentList.Arguments.Count == 1 && !IsNullConstant(
+                    model.GetConstantValue(invocation.ArgumentList.Arguments[0].Expression, cancellationToken)))
+            {
+                return CreateRequest.Reflection(
+                    $"Create<{typeName}>() with a NullabilityInfo builds the generator by reflection");
+            }
+
+            // The run time has one generator for each run-time type, and Address? and Address are one type.
+            var rootType = type.WithNullableAnnotation(NullableAnnotation.NotAnnotated);
+            var typeKey = rootType.ToDisplayString(TypeFormat);
+            var writer = new GenWriter(model.Compilation);
+            var expression = writer.Write(rootType, "$", isNullable: false, ImmutableHashSet<ITypeSymbol>.Empty.WithComparer(SymbolEqualityComparer.Default));
 
             return expression.Code != null
-                ? new CreateRequest(typeKey, expression.Code, null, null, location)
-                : new CreateRequest(typeKey, null, type.ToDisplayString(), expression.Reason, location);
+                ? new CreateRequest(typeKey, expression.Code, null, null, string.Join("|", writer.ComposedTypes), IsReflectionCall: false)
+                : new CreateRequest(typeKey, null, typeName, expression.Reason, "", IsReflectionCall: false);
         }
+
+        private static bool IsNullConstant(Optional<object?> constant) => constant.HasValue && constant.Value == null;
+
+        /// <summary>True for <c>Gen.Factory().Create&lt;T&gt;()</c>: a factory with no registration uses the generated code.</summary>
+        private static bool IsDefaultFactory(InvocationExpressionSyntax invocation, SemanticModel model, CancellationToken cancellationToken) =>
+            invocation.Expression is MemberAccessExpressionSyntax { Expression: InvocationExpressionSyntax receiver } &&
+            receiver.ArgumentList.Arguments.Count == 0 &&
+            model.GetSymbolInfo(receiver, cancellationToken).Symbol is IMethodSymbol { Name: "Factory", Parameters.Length: 0 } factory &&
+            factory.ContainingType?.ToDisplayString() == "GalaxyCheck.Gen";
 
         private static bool ContainsTypeParameter(ITypeSymbol type) => type switch
         {
@@ -104,11 +170,6 @@ namespace GalaxyCheck.SourceGeneration
 
         private static void Emit(SourceProductionContext output, ImmutableArray<CreateRequest> requests, bool canRegister)
         {
-            foreach (var request in requests.Where(r => r.Code == null))
-            {
-                output.ReportDiagnostic(Diagnostic.Create(UnsupportedType, request.Location.ToLocation(), request.TypeName, request.Reason));
-            }
-
             var generated = requests
                 .Where(r => r.Code != null)
                 .GroupBy(r => r.TypeKey)
@@ -131,6 +192,18 @@ namespace GalaxyCheck.SourceGeneration
             source.AppendLine("    internal static class GalaxyCheckGeneratedGens");
             source.AppendLine("    {");
             source.AppendLine("        [global::System.Runtime.CompilerServices.ModuleInitializer]");
+            // The failure report reads the members and the constructor of a value. Keep them in a trimmed app.
+            foreach (var composedType in generated
+                         .SelectMany(r => r.ComposedTypes.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries))
+                         .Distinct()
+                         .OrderBy(t => t, StringComparer.Ordinal))
+            {
+                source.Append("        [global::System.Diagnostics.CodeAnalysis.DynamicDependency(")
+                    .Append("global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | ")
+                    .Append("global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors, typeof(")
+                    .Append(composedType).AppendLine("))]");
+            }
+
             source.AppendLine("        internal static void Register()");
             source.AppendLine("        {");
             foreach (var request in generated)
@@ -192,11 +265,15 @@ namespace GalaxyCheck.SourceGeneration
             };
 
             private readonly Compilation _compilation;
+            private readonly SortedSet<string> _composedTypes = new SortedSet<string>(StringComparer.Ordinal);
 
             public GenWriter(Compilation compilation)
             {
                 _compilation = compilation;
             }
+
+            /// <summary>The types that the generated code makes by a constructor, as C# type names.</summary>
+            public IEnumerable<string> ComposedTypes => _composedTypes;
 
             public GenExpression Write(ITypeSymbol type, string path, bool isNullable, ImmutableHashSet<ITypeSymbol> visiting)
             {
@@ -211,6 +288,9 @@ namespace GalaxyCheck.SourceGeneration
                     var inner = Write(type, path, isNullable: false, visiting);
                     return inner.Map(code => $"{GenType}.Nullable({code})");
                 }
+
+                // The generated code names the type with no annotation: "new Address?(...)" does not compile.
+                type = type.WithNullableAnnotation(NullableAnnotation.NotAnnotated);
 
                 if (RegisteredGens.TryGetValue(MetadataName(type), out var registered))
                 {
@@ -230,6 +310,19 @@ namespace GalaxyCheck.SourceGeneration
                 if (type is not INamedTypeSymbol named)
                 {
                     return GenExpression.Unsupported("only classes, records, structs, and enums are supported");
+                }
+
+                var blocked = BlockedReason(named);
+                if (blocked != null)
+                {
+                    return GenExpression.Unsupported(blocked);
+                }
+
+                if (HasReferenceTypeArgument(named))
+                {
+                    // The run time has one generator for Box<string> and Box<string?>, and the reflection path reads
+                    // the nullability of a member from the open type. The generated code cannot match both.
+                    return GenExpression.Unsupported("a generic type with a reference type argument is not supported");
                 }
 
                 if (named.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "System.Runtime.CompilerServices.UnionAttribute"))
@@ -289,6 +382,17 @@ namespace GalaxyCheck.SourceGeneration
                 }
 
                 var constructor = candidates[0];
+                if (IsBlockedMember(constructor))
+                {
+                    return GenExpression.Unsupported("the constructor is obsolete with an error, or experimental");
+                }
+
+                if (HasRequiredMember(named) && !constructor.GetAttributes().Any(a =>
+                        a.AttributeClass?.ToDisplayString() == "System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute"))
+                {
+                    return GenExpression.Unsupported("a type with a required member is not supported");
+                }
+
                 var nextVisiting = visiting.Add(named);
                 var memberCodes = new List<string>();
                 var casts = new List<string>();
@@ -312,9 +416,66 @@ namespace GalaxyCheck.SourceGeneration
                     casts.Add($"({parameter.Type.ToDisplayString(TypeFormat)})values[{i}]");
                 }
 
+                var typeName = named.ToDisplayString(TypeFormat);
+                _composedTypes.Add(typeName);
                 return GenExpression.Of(
                     $"{HelpersType}.Members({string.Join(", ", memberCodes)})" +
-                    $".Select(static values => new {named.ToDisplayString(TypeFormat)}({string.Join(", ", casts)}))");
+                    $".Select(static values => new {typeName}({string.Join(", ", casts)}))");
+            }
+
+            /// <summary>The reason that generated code cannot name the type, or null.</summary>
+            private static string? BlockedReason(INamedTypeSymbol named)
+            {
+                for (var current = named; current != null; current = current.ContainingType)
+                {
+                    if (current.IsFileLocal)
+                    {
+                        return "a file-local type is not supported";
+                    }
+
+                    if (IsBlockedMember(current))
+                    {
+                        return "a type that is obsolete with an error, or experimental, is not supported";
+                    }
+                }
+
+                return null;
+            }
+
+            /// <summary>True for a symbol whose use is a compile error: obsolete with an error, or experimental.</summary>
+            private static bool IsBlockedMember(ISymbol symbol) => symbol.GetAttributes().Any(a =>
+                (a.AttributeClass?.ToDisplayString() == "System.ObsoleteAttribute" &&
+                 a.ConstructorArguments.Length >= 2 && a.ConstructorArguments[1].Value is true) ||
+                a.AttributeClass?.ToDisplayString() == "System.Diagnostics.CodeAnalysis.ExperimentalAttribute");
+
+            private static bool HasRequiredMember(INamedTypeSymbol named)
+            {
+                for (var current = named; current != null; current = current.BaseType)
+                {
+                    if (current.GetMembers().Any(m => m is IPropertySymbol { IsRequired: true } or IFieldSymbol { IsRequired: true }))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            private static bool HasReferenceTypeArgument(INamedTypeSymbol named)
+            {
+                for (var current = named; current != null; current = current.ContainingType)
+                {
+                    foreach (var argument in current.TypeArguments)
+                    {
+                        if (!argument.IsValueType ||
+                            (argument is INamedTypeSymbol namedArgument && HasReferenceTypeArgument(namedArgument)))
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
             }
 
             private static string MetadataName(ITypeSymbol type) =>
@@ -343,14 +504,17 @@ namespace GalaxyCheck.SourceGeneration
         }
 
         /// <summary>The plan of one call. It holds only strings, so that the incremental pipeline can compare it.</summary>
-        private sealed record CreateRequest(string TypeKey, string? Code, string? TypeName, string? Reason, LocationInfo Location);
-
-        private sealed record LocationInfo(string FilePath, TextSpan Span, LinePositionSpan LineSpan)
+        internal sealed record CreateRequest(
+            string TypeKey,
+            string? Code,
+            string? TypeName,
+            string? Reason,
+            string ComposedTypes,
+            bool IsReflectionCall)
         {
-            public static LocationInfo From(Location location) =>
-                new LocationInfo(location.SourceTree?.FilePath ?? "", location.SourceSpan, location.GetLineSpan().Span);
-
-            public Location ToLocation() => Location.Create(FilePath, Span, LineSpan);
+            /// <summary>A call that always takes the reflection path. It gets GCSG002 and no generated code.</summary>
+            public static CreateRequest Reflection(string reason) =>
+                new CreateRequest("", null, null, reason, "", IsReflectionCall: true);
         }
     }
 }

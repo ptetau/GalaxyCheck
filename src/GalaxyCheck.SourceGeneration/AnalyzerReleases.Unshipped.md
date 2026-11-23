@@ -5,4 +5,5 @@
 
 Rule ID | Category | Severity | Notes
 --------|----------|----------|-------
-GCSG001 | GalaxyCheck.SourceGeneration | Warning | GenCreateGenerator
+GCSG001 | GalaxyCheck.SourceGeneration | Warning | GenCreateAnalyzer
+GCSG002 | GalaxyCheck.SourceGeneration | Warning | GenCreateAnalyzer

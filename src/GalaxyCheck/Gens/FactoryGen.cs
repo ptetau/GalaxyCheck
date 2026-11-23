@@ -293,10 +293,12 @@ namespace GalaxyCheck.Gens
             }
         }
 
-        // The source generator reports GCSG001 at compile time for each Gen.Create<T>() that it cannot write, so a
-        // trimmed or NativeAOT app learns there that a type takes this path.
-        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "The source generator reports GCSG001 for a type that takes the reflection path.")]
-        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The source generator reports GCSG001 for a type that takes the reflection path.")]
+        // The source generator reports a diagnostic at compile time for each call that takes this path: GCSG001 for a
+        // Gen.Create<T>() that it cannot write, and GCSG002 for a type parameter, a factory with a registration,
+        // OverrideMember, and a NullabilityInfo argument. So a trimmed or NativeAOT app learns there that a call
+        // takes this path.
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "The source generator reports GCSG001 or GCSG002 for each call that takes the reflection path.")]
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The source generator reports GCSG001 or GCSG002 for each call that takes the reflection path.")]
         private IGen<T> BuildByReflection()
         {
             var context = ReflectedGenHandlerContext.Create(typeof(T), NullabilityInfo);
