@@ -46,6 +46,10 @@ A filter that discards a value tries again at other sizes. The filter learns the
 the next retries start near those sizes. Thus, a filter that passes only for large values, or only for small
 values, finds a value fast. A precondition uses the same search.
 
+An integer generator makes its bounds, such as `int.MinValue` and `int.MaxValue`, more often at large sizes. When a
+filter rejects a bound, its retries in the rest of the run do not make that bound again, until the filter keeps it.
+Thus, a filter such as `x > 1_000_000 && x % 2 == 0` does not waste its retries on `int.MaxValue`.
+
 ```csharp
 using GalaxyCheck;
 
@@ -55,12 +59,13 @@ var result = Property.ForAll(bigNumbers, x => x > 1_000_000).Check(seed: 0);
 Console.WriteLine($"{result.Iterations} test cases, {result.Discards} discards");
 ```
 
-The program writes `100 test cases, 206 discards`. A small size gives small values, so the filter discards
+The program writes `100 test cases, 154 discards`. A small size gives small values, so the filter discards
 values until it finds the sizes that pass. A shrunk value obeys the filter too.
 
 ## Too many discards
 
 When more than 90% of the generated values are discarded, the property fails with the health check
-`TooManyDiscards`. Read [Health checks](health-checks.md). A filter that keeps few values is slow, so build the
+`TooManyDiscards`. A filter that keeps several percent of the values adapts, and does not trip the check. A filter
+that can almost never pass, such as `x == 123456789`, trips it. Read [Health checks](health-checks.md). A filter that keeps few values is slow, so build the
 value directly when you can. For example, `Gen.Int32().Between(0, 100).Select(x => x * 2)` makes even values with
 no discard.

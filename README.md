@@ -436,7 +436,7 @@ Counterexample as C#:
 Property function returned false
 
 <galaxycheck-failure>
-{"counterexample":["(Item1 = 10, Item2 = 15)"],"csharp":["(10, 15)"],"replay":"ArHH1ZcECgIJAA==","seed":1123378097,"size":10,"iterations":11,"shrinks":1,"test":"AboutShrinking.MyProperty","rerun":"dotnet test --filter FullyQualifiedName=AboutShrinking.MyProperty"}
+{"counterexample":["(Item1 = 10, Item2 = 15)"],"csharp":["(10, 15)"],"replay":"ArHH1ZcECgIJAA==","seed":1123378097,"size":10,"iterations":11,"shrinks":1,"kind":"generated","test":"AboutShrinking.MyProperty","rerun":"dotnet test --filter FullyQualifiedName=AboutShrinking.MyProperty"}
 </galaxycheck-failure>
 ```
 

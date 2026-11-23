@@ -54,8 +54,9 @@ expression compiles, and it equals the value, for these types:
 - Collections.
 - A type with a public constructor or settable properties.
 
-For any other value, the section holds the normal text of the value. In the JSON block, the expression of such a
-value is `null`.
+The section holds only valid C#. When a value has no expression, for example a function, the commands of a
+stateful test, or a tuple that holds such a value, the message has no section, and the `Counterexample` line
+shows the values. In the JSON block, the expression of such a value is `null`.
 
 ```csharp
 using GalaxyCheck;

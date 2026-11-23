@@ -313,20 +313,6 @@ namespace GalaxyCheck.Runners
             public string Render(object? obj, IExampleRendererHandler renderer, ImmutableList<object?> path) => "...";
         }
 
-        /// <summary>
-        /// True when the renderer shows the value by its ToString(), because it cannot read a public member of the
-        /// value. Then the text is no C# expression.
-        /// </summary>
-        internal static bool HasNoReadableMembers(object? value)
-        {
-            if (value is null) return false;
-            var type = value.GetType();
-            return !type.IsPrimitive && !type.IsEnum && value is not string && value is not decimal && value is not DateTime &&
-                   value is not Delegate && value is not IEnumerable && value is not Stateful.IStatefulCommand &&
-                   type.GetInterface("System.Runtime.CompilerServices.ITuple") == null &&
-                   type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Length == 0;
-        }
-
         private static bool IsClassTupleInstance(object? value)
         {
             return

@@ -60,4 +60,14 @@ This program writes this line:
 ---- Cover not met: label "zero" requires 50% of the test cases, but only 10% (1 of 10) had it.
 ```
 
+A coverage failure has no counterexample, because no test case failed. The message has no `Counterexample`
+line, no `Counterexample as C#:` section, and no replay string. `CheckResult.Counterexample` is null,
+`CheckResult.Falsified` is true, and `CheckResult.CoverageFailure` holds the label, the required share, and the
+actual share. In the JSON block, `counterexample`, `csharp`, and `replay` are `null`, `kind` is `"coverage"`, and
+`cover` holds the label and the two shares:
+
+```
+{"counterexample":null,"csharp":null,"replay":null,"seed":1596632944,"size":null,"iterations":10,"shrinks":0,"kind":"coverage","cover":{"label":"zero","required":50,"actual":10}}
+```
+
 `Label` and `Cover` work on `Property<T>` and on `AsyncProperty<T>`.

@@ -314,8 +314,8 @@ namespace GalaxyCheck.Internal
         /// </returns>
         /// <param name="example">
         /// The attribute of a failed example, for example <c>[Example(20)]</c>, or null for a generated failure. An
-        /// example has no replay string, seed, or size, so the block holds null for each, and the attribute in
-        /// <c>example</c>.
+        /// example has no replay string, seed, or size, so the block holds null for each, the kind <c>example</c>,
+        /// and the attribute in <c>example</c>.
         /// </param>
         public static string Complete(string message, FailedTestIdentity? identity, string? example = null)
         {
@@ -350,6 +350,7 @@ namespace GalaxyCheck.Internal
                         record["replay"] = null;
                         record["seed"] = null;
                         record["size"] = null;
+                        record["kind"] = "example";
                         record["example"] = example;
                     }
 

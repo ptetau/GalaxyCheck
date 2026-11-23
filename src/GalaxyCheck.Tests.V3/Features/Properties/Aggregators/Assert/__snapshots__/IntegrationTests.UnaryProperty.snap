@@ -7,5 +7,5 @@ Counterexample as C#:
 Property function returned false
 
 <galaxycheck-failure>
-{"counterexample":["1000"],"csharp":["1000"],"replay":"AgAjAugHAA==","seed":0,"size":35,"iterations":36,"shrinks":5}
+{"counterexample":["1000"],"csharp":["1000"],"replay":"AgAjAugHAA==","seed":0,"size":35,"iterations":36,"shrinks":5,"kind":"generated"}
 </galaxycheck-failure>

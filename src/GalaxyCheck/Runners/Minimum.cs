@@ -40,9 +40,9 @@ namespace GalaxyCheck
             // The search for a minimum has no exhaustive run and no health checks.
             var result = CheckRunner.Run(property, iterations, seed, size, null, null, deepMinimum, recordChecks: false);
 
-            if (result.Falsified)
+            if (result.Counterexample != null)
             {
-                return new MinimumWithMetrics<T>(result.Counterexample!.Value, result.Shrinks);
+                return new MinimumWithMetrics<T>(result.Counterexample.Value, result.Shrinks);
             }
 
             throw new Exceptions.NoMinimalFoundException();

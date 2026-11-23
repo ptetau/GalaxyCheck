@@ -55,7 +55,7 @@ Counterexample as C#:
 ---- Negating the minimum value of a twos complement number is invalid.
 ```
 
-The JSON block of the message holds `"replay":null` and `"example":"[Example(int.MinValue)]"`. Read
+The JSON block of the message holds `"kind":"example"`, `"replay":null`, and `"example":"[Example(int.MinValue)]"`. Read
 [Use by LLM agents](agents.md).
 
 In TUnit, put `[Example]` beside `[Test, PropertyTest]`. In MSTest, the method returns `void` or `Task`.

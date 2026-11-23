@@ -76,8 +76,9 @@ AgAMAgoA
 1
 ```
 
-The result also has `Labels`, `Exhaustive`, and `Report`. Read [Labels and cover](labels-and-cover.md) and
-[Exhaustive runs](exhaustive-runs.md).
+The result also has `Labels`, `Exhaustive`, `Report`, and `CoverageFailure`. A run that does not meet a cover rule
+is falsified with no counterexample: `Counterexample` is null, and `CoverageFailure` holds the rule. Read
+[Labels and cover](labels-and-cover.md) and [Exhaustive runs](exhaustive-runs.md).
 
 ## The options of a run
 

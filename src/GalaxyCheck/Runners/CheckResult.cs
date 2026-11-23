@@ -23,8 +23,15 @@ namespace GalaxyCheck.Runners.Check
         GenParameters NextParameters,
         TerminationReason TerminationReason)
     {
-        /// <summary>True when the run found a counterexample.</summary>
-        public bool Falsified => Counterexample != null;
+        /// <summary>True when the run found a counterexample, or when a cover rule was not met.</summary>
+        public bool Falsified => Counterexample != null || CoverageFailure != null;
+
+        /// <summary>
+        /// The cover rule that the run did not meet, or null. A coverage failure has no counterexample: no test case
+        /// failed, and the run as a whole did not reach the share of a label.
+        /// </summary>
+        [System.Runtime.Serialization.IgnoreDataMember]
+        public CoverageFailure? CoverageFailure { get; init; }
 
         /// <summary>The share of test cases with each label, as a percentage.</summary>
         [System.Runtime.Serialization.IgnoreDataMember]
@@ -74,6 +81,17 @@ namespace GalaxyCheck.Runners.Check
         /// <summary>True when the test case failed.</summary>
         public bool IsCounterexample => Exception != null;
     }
+
+    /// <summary>A cover rule that a run did not meet.</summary>
+    /// <param name="Label">The label of the rule.</param>
+    /// <param name="RequiredPercent">The share of the test cases that the rule requires, as a percentage.</param>
+    /// <param name="ActualPercent">The share of the test cases that had the label, as a percentage.</param>
+    /// <param name="Message">The text that states the label, the required share, and the share that was reached.</param>
+    public record CoverageFailure(
+        string Label,
+        double RequiredPercent,
+        double ActualPercent,
+        string Message);
 
     /// <summary>An input for which the property fails, after shrinking.</summary>
     /// <param name="Value">The input value.</param>
@@ -134,6 +152,11 @@ namespace GalaxyCheck.Runners
         public static string Build<T>(CheckResult<T> result)
         {
             var labelLines = LabelLines(result.LabelShares);
+
+            if (result.CoverageFailure != null)
+            {
+                return PropertyFailedException.BuildCoverageReport(result.CoverageFailure, result.Iterations, labelLines);
+            }
 
             if (result.Counterexample != null)
             {

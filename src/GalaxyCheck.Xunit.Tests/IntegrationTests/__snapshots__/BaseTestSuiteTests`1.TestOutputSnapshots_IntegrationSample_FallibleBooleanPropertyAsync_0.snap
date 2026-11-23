@@ -14,5 +14,5 @@ Counterexample as C#:
 ---- Failed!
 
 <galaxycheck-failure>
-{"counterexample":["0"],"csharp":["0"],"replay":"AioAAQA=","seed":42,"size":0,"iterations":1,"shrinks":0,"test":"IntegrationSample.AsyncTests.FallibleBooleanPropertyAsync","rerun":"dotnet test --filter FullyQualifiedName=IntegrationSample.AsyncTests.FallibleBooleanPropertyAsync"}
+{"counterexample":["0"],"csharp":["0"],"replay":"AioAAQA=","seed":42,"size":0,"iterations":1,"shrinks":0,"kind":"generated","test":"IntegrationSample.AsyncTests.FallibleBooleanPropertyAsync","rerun":"dotnet test --filter FullyQualifiedName=IntegrationSample.AsyncTests.FallibleBooleanPropertyAsync"}
 </galaxycheck-failure>

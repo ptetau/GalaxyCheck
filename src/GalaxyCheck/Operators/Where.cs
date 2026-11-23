@@ -54,12 +54,16 @@ namespace GalaxyCheck.Gens.Internal
         {
             var gen = Source.Advanced;
             var size = source.Size;
+            var avoid = source.AvoidExtremes;
+            var made = source.ExtremesMade;
+            var rejected = 0;
 
             try
             {
                 var start = source.BeginSpan();
                 for (var attempt = 0; attempt < MaxConsecutiveDiscards; attempt++)
                 {
+                    source.ExtremesMade = 0;
                     var value = gen.Generate(source);
 
                     if (Predicate(value))
@@ -67,10 +71,21 @@ namespace GalaxyCheck.Gens.Internal
                         source.EndSpan(start);
                         source.Kept++;
                         if (attempt > 0) source.RememberGoodSize(Predicate.Method, source.Size);
+                        if (rejected != 0 || source.ExtremesMade != 0)
+                        {
+                            source.LearnBounds(Predicate.Method, rejected, source.ExtremesMade);
+                        }
+
+                        made |= source.ExtremesMade;
                         return value;
                     }
 
                     source.Discards++;
+                    // A retry does not draw again a bound of an integer that the filter rejected, in this value or
+                    // in an earlier value of the run (see GenSource.AvoidExtremes).
+                    if (attempt == 0) rejected = source.RejectedBounds(Predicate.Method);
+                    rejected |= source.ExtremesMade;
+                    source.AvoidExtremes = avoid | rejected;
                     // An exhaustive run gives each value of the domain one time, so the filter does not retry.
                     if (source.IsWalking) break;
                     if (attempt + 1 >= MaxReplayDiscards && source.ReplayExhausted) break;
@@ -82,6 +97,8 @@ namespace GalaxyCheck.Gens.Internal
             finally
             {
                 source.Size = size;
+                source.AvoidExtremes = avoid;
+                source.ExtremesMade = made;
             }
 
             throw new Exceptions.GenExhaustionException();

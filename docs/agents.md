@@ -17,24 +17,30 @@ A failed xunit v2 test gives this block:
 
 ```
 <galaxycheck-failure>
-{"counterexample":["(Item1 = 10, Item2 = 15)"],"csharp":["(10, 15)"],"replay":"ArHH1ZcECgIJAA==","seed":1123378097,"size":10,"iterations":11,"shrinks":1,"test":"AboutShrinking.MyProperty","rerun":"dotnet test --filter FullyQualifiedName=AboutShrinking.MyProperty"}
+{"counterexample":["(Item1 = 10, Item2 = 15)"],"csharp":["(10, 15)"],"replay":"ArHH1ZcECgIJAA==","seed":1123378097,"size":10,"iterations":11,"shrinks":1,"kind":"generated","test":"AboutShrinking.MyProperty","rerun":"dotnet test --filter FullyQualifiedName=AboutShrinking.MyProperty"}
 </galaxycheck-failure>
 ```
 
 | Field | Value |
 | --- | --- |
-| `counterexample` | The text of each counterexample value, one string for each parameter. |
-| `csharp` | The C# expression of each value, or `null` for a value with no expression. |
-| `replay` | The replay string. Put it in `[Replay("...")]` or pass it as `replay:`. |
+| `counterexample` | The text of each counterexample value, one string for each parameter. `null` for a coverage failure. |
+| `csharp` | The C# expression of each value, or `null` for a value with no expression. `null` for a coverage failure. |
+| `replay` | The replay string. Put it in `[Replay("...")]` or pass it as `replay:`. `null` for a coverage failure. |
 | `seed` | The seed of the failing test case. |
 | `size` | The size of the failing test case. |
 | `iterations` | The count of test cases that ran. |
 | `shrinks` | The count of shrinks. |
+| `kind` | The kind of failure: `"generated"` (a generated test case failed), `"example"` (an `[Example]` failed), or `"coverage"` (a cover rule was not met). |
+| `cover` | The `label`, the `required` share, and the `actual` share, as percentages. Only for a coverage failure. |
 | `test` | The full name of the test. Only in a test framework. |
 | `rerun` | One command line that runs only that test. Only in a test framework. |
 | `example` | The `[Example(...)]` attribute of a failed example. Only for an example. |
 
-A failed `[Example]` has no replay string. Its block holds `"replay":null`, `"seed":null`, and `"size":null`.
+A failed `[Example]` has no replay string. Its block holds `"kind":"example"`, `"replay":null`, `"seed":null`, and
+`"size":null`.
+
+A coverage failure has no counterexample. Its block holds `"kind":"coverage"`, `"counterexample":null`,
+`"csharp":null`, `"replay":null`, and `"size":null`. Read [Labels and cover](labels-and-cover.md).
 
 The `rerun` command is one bash command. Run it in the folder of the test project. For xunit, NUnit, and MSTest,
 it is a `dotnet test --filter` command. For TUnit, it is a `dotnet run` command with `--treenode-filter`. MSTest

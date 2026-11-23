@@ -78,8 +78,6 @@ The message of this program starts with these lines:
 Falsified after 45 tests (4 shrinks)
 Reproduction: AgAsCwEAAQABAAEAAQEA
 Counterexample: [Increment, Increment, Increment, Increment, Read]
-Counterexample as C#:
-    [Increment, Increment, Increment, Increment, Read]
 
 ---- The postcondition of command 5 failed.
 Commands:
@@ -90,7 +88,9 @@ Commands:
 5. Read <- failed
 ```
 
-The report lists the commands of the shrunk sequence in order, and it marks the command that failed.
+The report lists the commands of the shrunk sequence in order, and it marks the command that failed. A sequence
+of commands has no C# expression, so the message has no `Counterexample as C#:` section, and the `csharp` field of
+the JSON block is `null`.
 
 ## The rules of a run
 
