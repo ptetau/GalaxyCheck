@@ -79,7 +79,7 @@ public class AboutShrinking
 }
 ```
 
-The value `x` is sometimes less than 10, but `y` is never less than `x`. Thus, the property fails. GalaxyCheck
+The value `x` is sometimes less than 10, but `y` is always at least `x + 5`. Thus, the property fails. GalaxyCheck
 gives the smallest counterexample, a replay string, and a C# expression of the counterexample:
 
 ```
@@ -123,7 +123,7 @@ public static class Points
 }
 ```
 
-To keep the points out of the negative space, add a bound to each generator:
+To make only points with no negative coordinate, add a bound to each generator:
 
 ```csharp
 using GalaxyCheck;
@@ -229,21 +229,18 @@ using System;
 public class AboutGenerators
 {
     [Property]
-    public bool RoundTripsThroughText([MemberGen(nameof(Prices))] decimal price) =>
-        decimal.Parse(price.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            System.Globalization.CultureInfo.InvariantCulture) == price;
-
-    public static IGen<decimal> Prices => Gen.Decimal().Between(0m, 1000m);
-
-    [Property]
-    public bool DatesAreInRange([MemberGen(nameof(Dates))] DateOnly date) => date.Year >= 2020;
-
-    public static IGen<DateOnly> Dates => Gen.DateOnly().From(new DateOnly(2020, 1, 1));
+    public Property PricesRoundTripThroughText() =>
+        Gen.Decimal().Between(0m, 1000m).ForAll(price =>
+            decimal.Parse(price.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                System.Globalization.CultureInfo.InvariantCulture) == price);
 
     [Property]
-    public bool CodesHaveTheFormat([MemberGen(nameof(Codes))] string code) => code.Length == 6;
+    public Property DatesAreInRange() =>
+        Gen.DateOnly().From(new DateOnly(2020, 1, 1)).ForAll(date => date.Year >= 2020);
 
-    public static IGen<string> Codes => Gen.StringMatching("[A-Z]{2}-[0-9]{3}");
+    [Property]
+    public Property CodesHaveTheFormat() =>
+        Gen.StringMatching("[A-Z]{2}-[0-9]{3}").ForAll(code => code.Length == 6);
 }
 ```
 
@@ -284,3 +281,5 @@ The [documentation index](docs/index.md) lists each page:
 - [Performance](docs/performance.md)
 - [Migration from an older GalaxyCheck](docs/migration.md)
 - [Generator reference](docs/generators.md) and the compact reference [llms.txt](docs/llms.txt)
+- [Decisions](docs/decisions.md), [deprecated features](docs/deprecated-features.md), and the
+  [reference suite](docs/reference-suite.md)

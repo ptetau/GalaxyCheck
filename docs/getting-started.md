@@ -111,6 +111,7 @@ Platform. The test code is the same as for xunit v2:
 
 ```csharp
 using GalaxyCheck;
+using Xunit;
 
 public class ReverseTestsV3
 {
@@ -160,7 +161,7 @@ public class ReverseTestsTUnit
 }
 ```
 
-These are the rules for TUnit:
+The rules for TUnit are:
 
 - A data row is `[PropertyArguments(...)]`. Each attribute is one row for the first parameters. TUnit refuses
   its own data rows when a row does not give each parameter.
@@ -168,7 +169,7 @@ These are the rules for TUnit:
 - The package keeps `PropertyAttribute`. To use `[Property]` in a file, add
   `using PropertyAttribute = GalaxyCheck.PropertyAttribute;` to that file.
 
-TUnit tests run with `dotnet run`, or with `dotnet test` on the Microsoft Testing Platform.
+Run TUnit tests with `dotnet run`.
 
 ## NUnit
 
@@ -202,7 +203,7 @@ public class ReverseTestsNUnit
 }
 ```
 
-These are the rules for NUnit:
+The rules for NUnit are:
 
 - Put `[NUnit.Framework.TestFixture]` on each test class. NUnit loads a test assembly only when the assembly
   refers to NUnit, and the attribute makes that reference.
@@ -247,7 +248,7 @@ public class ReverseTestsMSTest
 }
 ```
 
-These are the rules for MSTest:
+The rules for MSTest are:
 
 - Put `[TestClass]` on each test class.
 - A method that returns `bool`, `Property`, or a generator is not a test in MSTest. To run a `Property`, call

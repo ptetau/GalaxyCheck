@@ -79,8 +79,8 @@ Fix: give a minimum that is not above the maximum, for example .GreaterThanEqual
 `Gen.Half()`, `Gen.Single()`, `Gen.Double()`, and `Gen.Decimal()` make values with a fraction part, negative
 and positive values, and values over the full range of the type.
 
-With no option, a binary floating-point generator also makes the special values: NaN, positive infinity, negative
-infinity, negative zero, the smallest positive value, the minimum, and the maximum. Most seeds give each special
+With no option, a binary floating-point generator also makes the special values. The special values are NaN,
+positive infinity, negative infinity, negative zero, the smallest positive value, the minimum, and the maximum. Most seeds give each special
 value in the first 100 values. The special values of `Gen.Decimal()` are zero, the minimum, and the maximum.
 
 Each of these generators has these options:
@@ -89,10 +89,11 @@ Each of these generators has these options:
 - `ShrinkTowards(origin)`: the value that a failing value shrinks to.
 - `WithoutSpecialValues()`: no special values. A binary floating-point generator then makes only finite values.
 
-A generator with a bound never makes NaN or an infinity, and never makes a special value outside the bounds.
+A generator with a bound does not make NaN or an infinity. A generator does not make a special value outside its
+bounds.
 
-A failing value shrinks to the simplest value that still fails. Zero is simpler than a whole number, and a whole
-number is simpler than a value with a fraction part. A special value shrinks to a finite value when a finite
+A failing value shrinks to the simplest value that still fails. Zero is simpler than an integer, and an integer is
+simpler than a value with a fraction part. A special value shrinks to a finite value when a finite
 value also fails.
 
 ```csharp

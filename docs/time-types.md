@@ -9,7 +9,7 @@ type, and each generator has an inclusive lower bound and an inclusive upper bou
 | `DateTimeOffset` | `Gen.DateTimeOffset()` | `2000-01-01T00:00:00+00:00` |
 | `DateOnly` | `Gen.DateOnly()` | `2000-01-01` |
 | `TimeOnly` | `Gen.TimeOnly()` | `00:00` |
-| `DateTime` | `Gen.DateTime()` | the lower bound |
+| `DateTime` | `Gen.DateTime()` | `DateTime.MinValue`, or the lower bound |
 
 When the bounds do not hold the origin, a failing value shrinks to the bound that is nearest to the origin.
 
