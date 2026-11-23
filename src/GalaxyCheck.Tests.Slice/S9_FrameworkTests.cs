@@ -1,4 +1,6 @@
 using System.IO.Compression;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Text.RegularExpressions;
 using FluentAssertions;
 using GalaxyCheck.Runners;
@@ -74,6 +76,9 @@ public static class S12_Support
 
     private static S12_Run Run(S12_Framework fw, string folder)
     {
+        // A saved failure is tried first (R38), so a rerun prints another failure text. Each run starts with no memory.
+        var memory = Path.Combine(folder, ".galaxycheck");
+        if (Directory.Exists(memory)) Directory.Delete(memory, recursive: true);
         var (results, run) = Trx.RunProject(folder, fw.Trx);
         return new S12_Run(results, run);
     }
@@ -153,7 +158,10 @@ public static class S12_Support
     public static void FalsifiedPropertyFailsWithCounterexampleAndReplay(S12_Framework fw)
     {
         // The property of the sample, with the seed of its attribute, run through the library.
-        var property = Property.ForAll(Gen.Int32(), x => x < 10);
+        // MSTest has a void method that throws (D21), so the library runs the same function.
+        var property = fw.Name == "MSTest"
+            ? Property.ForAll(Gen.Int32(), (int x) => { if (!(x < 10)) throw new Exception("the int is not below 10"); })
+            : Property.ForAll(Gen.Int32(), x => x < 10);
         var check = property.Check(seed: 1234);
         check.Falsified.Should().BeTrue("the property 'the int is below 10' is falsified");
         var replay = check.Counterexample!.Replay;
@@ -185,7 +193,10 @@ public static class S12_Support
     public static void EachFormHoldsOrFails(S12_Framework fw)
     {
         var run = MainRuns[fw.Prefix].Value;
-        var forms = new[] { "Void", "Bool", "Property", "Gen", "AsyncVoid", "AsyncBool", "AsyncProperty", "AsyncGen" };
+        // D21: MSTest has the void and the Task form only.
+        var forms = fw.Name == "MSTest"
+            ? new[] { "Void", "AsyncVoid" }
+            : new[] { "Void", "Bool", "Property", "Gen", "AsyncVoid", "AsyncBool", "AsyncProperty", "AsyncGen" };
         var problems = new List<string>();
         foreach (var form in forms)
         {
@@ -263,6 +274,37 @@ public static class S12_Support
         var changed = Run(fw, folder);
         var result = changed.Single("Snapshot");
         result.Outcome.Should().Be("Failed", $"a generator with other values must fail the snapshot.\n{changed.Output}");
+    }
+
+    /// <summary>The names of the public types of the package, read from its metadata without loading the assembly.</summary>
+    public static IReadOnlyList<string> PublicTypeNames(S12_Framework fw)
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "galaxycheck-slice", "types-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        var result = Cli.Dotnet($"pack \"{Path.Combine(Repo.Src, fw.Package)}\" -c Release -o \"{folder}\"");
+        var names = new List<string>();
+        foreach (var file in Directory.GetFiles(folder, "*.nupkg").Where(f => !f.EndsWith(".symbols.nupkg")))
+        {
+            using var zip = ZipFile.OpenRead(file);
+            var entry = zip.Entries.FirstOrDefault(e =>
+                e.FullName.StartsWith("lib/net10.0/") && e.Name.StartsWith(fw.Package) && e.Name.EndsWith(".dll"));
+            if (entry is null) continue;
+            using var stream = new MemoryStream();
+            using (var source = entry.Open()) source.CopyTo(stream);
+            stream.Position = 0;
+            using var pe = new PEReader(stream);
+            var reader = pe.GetMetadataReader();
+            foreach (var handle in reader.TypeDefinitions)
+            {
+                var type = reader.GetTypeDefinition(handle);
+                var visibility = type.Attributes & System.Reflection.TypeAttributes.VisibilityMask;
+                if (visibility != System.Reflection.TypeAttributes.Public) continue;
+                names.Add(reader.GetString(type.Namespace) + "." + reader.GetString(type.Name));
+            }
+        }
+
+        names.Should().Contain("GalaxyCheck.PropertyAttribute", $"the public types of the package must be readable.\n{result.Output}");
+        return names;
     }
 
     // R28: data rows.
@@ -363,7 +405,12 @@ public class S12_MSTestTests
     public void test_001_S9_R26_mstest_sample_fails_and_lists_sampled_values() => S12_Support.SampleFailsAndListsValues(Fw);
 
     [Fact]
-    public void test_001_S9_R27_mstest_snapshot_fails_only_when_values_change() => S12_Support.SnapshotFailsOnlyWhenValuesChange(Fw);
+    public void test_001_S9_R27_mstest_has_no_gen_snapshot_attribute()
+    {
+        // D21: the MSTest package has no GenSnapshotAttribute.
+        var names = S12_Support.PublicTypeNames(Fw);
+        names.Should().NotContain(n => n.EndsWith("GenSnapshotAttribute"), "the MSTest package must have no GenSnapshotAttribute");
+    }
 
     [Fact]
     public void test_001_S9_R28_mstest_data_rows_run_one_property_for_each_row() => S12_Support.DataRowsRunOnePropertyForEachRow(Fw);
