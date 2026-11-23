@@ -146,6 +146,16 @@ namespace GalaxyCheck.Internal
                 return keyword;
             }
 
+            return GenericTypeName(type, type.GetGenericArguments());
+        }
+
+        /// <summary>
+        /// The name of a type with the given type arguments. The arguments of a nested type include those of its outer
+        /// types, and reflection gives an open outer type (Outer&lt;T&gt; for Outer&lt;int&gt;.Inner), so the outer type gets
+        /// its share of the arguments of the nested type.
+        /// </summary>
+        private static string GenericTypeName(Type type, Type[] arguments)
+        {
             var name = type.Name;
             var tick = name.IndexOf('`');
             if (tick >= 0)
@@ -153,35 +163,17 @@ namespace GalaxyCheck.Internal
                 name = name.Substring(0, tick);
             }
 
+            var outerCount = 0;
             if (type.IsNested && type.DeclaringType != null && !type.IsGenericParameter)
             {
-                name = $"{TypeName(ClosedDeclaringType(type))}.{name}";
+                outerCount = Math.Min(type.DeclaringType.GetGenericArguments().Length, arguments.Length);
+                name = $"{GenericTypeName(type.DeclaringType, arguments.Take(outerCount).ToArray())}.{name}";
             }
 
-            // The type arguments of a nested type include those of its outer type; only the own arguments go here.
-            var ownArguments = type.GetGenericArguments()
-                .Skip(type.IsNested && type.DeclaringType != null ? type.DeclaringType.GetGenericArguments().Length : 0)
-                .ToArray();
+            var ownArguments = arguments.Skip(outerCount).ToArray();
             return ownArguments.Length == 0 || tick < 0
                 ? name
                 : $"{name}<{string.Join(", ", ownArguments.Select(TypeName))}>";
-        }
-
-        /// <summary>
-        /// The outer type of a nested type, with the type arguments of the nested type: reflection gives the open outer
-        /// type, for example Outer&lt;T&gt; for Outer&lt;int&gt;.Inner.
-        /// </summary>
-        private static Type ClosedDeclaringType(Type type)
-        {
-            var outer = type.DeclaringType!;
-            if (!outer.IsGenericTypeDefinition || type.IsGenericTypeDefinition || !type.IsGenericType)
-            {
-                return outer;
-            }
-
-            var count = outer.GetGenericArguments().Length;
-            var arguments = type.GetGenericArguments();
-            return arguments.Length < count ? outer : outer.MakeGenericType(arguments.Take(count).ToArray());
         }
 
         private static readonly Dictionary<Type, string> Keywords = new()
