@@ -11,7 +11,7 @@ namespace GalaxyCheck
         /// <summary>More than 90% of the generated values were discarded.</summary>
         TooManyDiscards,
 
-        /// <summary>One value took longer than one second to generate.</summary>
+        /// <summary>Two values of one run each took longer than one second to generate.</summary>
         SlowGenerator,
 
         /// <summary>No test case reached the test function.</summary>

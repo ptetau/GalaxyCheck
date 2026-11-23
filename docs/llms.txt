@@ -162,7 +162,7 @@ gen.ForAll(f): a property from a generator. Example: Gen.Int32().ForAll(x => x >
 Property.Precondition(condition): discards a test case when false. Example: Property.ForAll(Gen.Int32(), x => { Property.Precondition(x != 0); return x / x == 1; })
 Label(label, when): counts the share of test cases with a label. Example: Property.ForAll(Gen.Int32(), x => true).Label("negative", x => x < 0)
 Cover(label, minPercent, when): fails the run when the share is below minPercent. Example: Property.ForAll(Gen.Int32(), x => true).Cover("positive", 30, x => x > 0)
-HealthCheck: TooManyDiscards, SlowGenerator, TestFunctionNeverRuns; a tripped check throws HealthCheckException. Example: property.Check(suppressHealthChecks: new[] { HealthCheck.TooManyDiscards })
+HealthCheck: TooManyDiscards, SlowGenerator (two values of a run each took over 1 s), TestFunctionNeverRuns; a tripped check throws HealthCheckException. Example: property.Check(suppressHealthChecks: new[] { HealthCheck.TooManyDiscards })
 CSharpExpression.TryFormat(value, out expression): the C# expression of a value. Example: CSharpExpression.TryFormat(new[] { 1, 2 }, out var expression)
 
 == Arguments of Check, CheckAsync, Assert, AssertAsync ==

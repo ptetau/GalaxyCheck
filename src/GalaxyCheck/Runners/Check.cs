@@ -384,6 +384,7 @@ namespace GalaxyCheck.Runners
     internal sealed class CheckRun<T>
     {
         private const long SlowGeneratorMs = 1000;
+        private int _slowValues;
         private const long EarlyDiscardTotal = 1000;
 
         private readonly int _iterations;
@@ -546,11 +547,13 @@ namespace GalaxyCheck.Runners
         /// </summary>
         public bool Complete(in TestCaseOutcome<T> outcome, IReadOnlyList<object?>? presentedInput)
         {
-            if (_watchSlow && outcome.GenerationMs > SlowGeneratorMs)
+            // The clock also counts a pause of the machine (a first JIT compile, a garbage collection, a busy build
+            // agent). Such a pause does not repeat, and a slow generator does, so the second slow value trips the check.
+            if (_watchSlow && outcome.GenerationMs > SlowGeneratorMs && ++_slowValues >= 2)
             {
                 throw HealthMessages.Exception(
                     HealthCheck.SlowGenerator,
-                    $"one value took {outcome.GenerationMs} ms to generate, and the limit is {SlowGeneratorMs} ms.");
+                    $"one value took {outcome.GenerationMs} ms to generate, and the limit is {SlowGeneratorMs} ms. It is the second slow value of this run.");
             }
 
             if (outcome.Discarded)
