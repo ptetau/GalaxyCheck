@@ -27,7 +27,8 @@ namespace GalaxyCheck.Internal
             object?[]? testMethodArguments,
             IPropertyFactory propertyFactory,
             IGlobalPropertyConfiguration config,
-            IGlobalFailureMemoryConfiguration? failureMemory = null) =>
+            IGlobalFailureMemoryConfiguration? failureMemory = null,
+            string? rowIndex = null) =>
                 InitializeWithInstance(
                     testClassType,
                     testMethodInfo,
@@ -35,13 +36,16 @@ namespace GalaxyCheck.Internal
                     testMethodArguments,
                     propertyFactory,
                     config,
-                    failureMemory);
+                    failureMemory,
+                    rowIndex: rowIndex);
 
         /// <summary>Builds the property of a test method on an instance of its class that the framework made.</summary>
         /// <param name="testClassInstance">The instance of the test class, or null for a static test method.</param>
         /// <param name="testMethodArguments">The values of a data row for the first parameters, or null.</param>
         /// <param name="failureMemory">The failure memory of the test assembly, or null for no failure memory.</param>
         /// <param name="testClassArguments">The arguments of a parameterized test class, or null.</param>
+        /// <param name="rowIndex">The stable index of the data row among the rows of the test, or null.</param>
+        /// <param name="fixtureIndex">The stable index of the fixture among the fixtures of the class, or null.</param>
         public static PropertyInitializationResult InitializeWithInstance(
             Type testClassType,
             MethodInfo testMethodInfo,
@@ -50,7 +54,9 @@ namespace GalaxyCheck.Internal
             IPropertyFactory propertyFactory,
             IGlobalPropertyConfiguration config,
             IGlobalFailureMemoryConfiguration? failureMemory = null,
-            object?[]? testClassArguments = null)
+            object?[]? testClassArguments = null,
+            string? rowIndex = null,
+            string? fixtureIndex = null)
         {
             var propertyAttribute = testMethodInfo.GetCustomAttributes<PropertyAttribute>(inherit: true).Single();
 
@@ -70,7 +76,7 @@ namespace GalaxyCheck.Internal
 
             // A [Replay] attribute takes precedence over a saved failure.
             var savedFailure = replay == null && failureMemory != null
-                ? SavedFailure.For(testClassType, testMethodInfo, testMethodArguments, failureMemory, testClassArguments)
+                ? SavedFailure.For(testClassType, testMethodInfo, testMethodArguments, failureMemory, testClassArguments, rowIndex, fixtureIndex)
                 : null;
             Func<string?>? takeFailureMemoryNote = replay == null && savedFailure == null && failureMemory?.Enabled == true
                 ? () => FailureFile.TakeMissingFolderNote(testClassType.Assembly)

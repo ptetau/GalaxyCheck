@@ -33,9 +33,26 @@ namespace GalaxyCheck.Internal.Infrastructure.XunitV3
             object?[]? testMethodArguments,
             string? sourceFilePath,
             int? sourceLineNumber,
-            int? timeout)
+            int? timeout,
+            string? rowIndex = null)
             : base(testMethod, testCaseDisplayName, uniqueID, @explicit, testLabel, disableParallelization, skipExceptions, skipReason, skipType, skipUnless, skipWhen, traits, testMethodArguments, sourceFilePath, sourceLineNumber, timeout)
         {
+            RowIndex = rowIndex;
+        }
+
+        /// <summary>The index of the data row among the rows of the method, in the declared order, or null.</summary>
+        public string? RowIndex { get; private set; }
+
+        protected override void Serialize(IXunitSerializationInfo info)
+        {
+            base.Serialize(info);
+            info.AddValue(nameof(RowIndex), RowIndex, typeof(string));
+        }
+
+        protected override void Deserialize(IXunitSerializationInfo info)
+        {
+            base.Deserialize(info);
+            RowIndex = info.GetValue(nameof(RowIndex)) as string;
         }
 
         public ValueTask<RunSummary> Run(

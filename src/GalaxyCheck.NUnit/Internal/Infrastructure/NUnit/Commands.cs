@@ -113,6 +113,33 @@ namespace GalaxyCheck.Internal.Infrastructure.NUnit
             return null;
         }
 
+        /// <summary>
+        /// The index of a data row among the rows of its method, for example 1 for the second [TestCase] or the second
+        /// row of a [TestCaseSource]. NUnit builds the rows in the declared order, so the index is stable between runs.
+        /// </summary>
+        public static string? RowIndex(Test test) =>
+            test.Parent is ParameterizedMethodSuite suite ? IndexIn(suite, test) : null;
+
+        /// <summary>The index of the parameterized fixture of a test among the fixtures of its class, or null.</summary>
+        public static string? FixtureIndex(Test test)
+        {
+            for (var parent = test.Parent; parent != null; parent = parent.Parent)
+            {
+                if (parent is TestFixture fixture)
+                {
+                    return fixture.Parent is ParameterizedFixtureSuite suite ? IndexIn(suite, fixture) : null;
+                }
+            }
+
+            return null;
+        }
+
+        private static string? IndexIn(TestSuite suite, ITest test)
+        {
+            var index = suite.Tests.IndexOf(test);
+            return index < 0 ? null : index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
         public static Type ClassType(Test test) =>
             test.TypeInfo?.Type ?? test.Method?.MethodInfo.DeclaringType
                 ?? throw new InvalidOperationException($"The test '{test.FullName}' has no class.");
@@ -140,7 +167,9 @@ namespace GalaxyCheck.Internal.Infrastructure.NUnit
                 new DefaultPropertyFactory(),
                 globalConfiguration.Properties,
                 globalConfiguration.FailureMemory,
-                NUnitAdapter.FixtureArguments(test));
+                NUnitAdapter.FixtureArguments(test),
+                NUnitAdapter.RowIndex(test),
+                NUnitAdapter.FixtureIndex(test));
 
             await initialization.Runner.Run(initialization.Parameters);
         });

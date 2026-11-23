@@ -9,6 +9,10 @@ namespace GalaxyCheck.Internal.Infrastructure.Xunit
     {
         private readonly IMessageSink _messageSink;
 
+        /// <summary>The count of data rows that the discovery of the current method has seen, in the declared order.</summary>
+        [System.ThreadStatic]
+        private static int _rowCount;
+
         public PropertyDiscoverer(IMessageSink messageSink) : base(messageSink)
         {
             _messageSink = messageSink;
@@ -21,7 +25,10 @@ namespace GalaxyCheck.Internal.Infrastructure.Xunit
         {
             if (testMethod.Method.GetCustomAttributes(typeof(DataAttribute)).Any())
             {
-                foreach (var testCase in base.Discover(discoveryOptions, testMethod, factAttribute))
+                // The base reads the rows in the declared order, in this call, so the count gives each row its index.
+                _rowCount = 0;
+                var testCases = base.Discover(discoveryOptions, testMethod, factAttribute).ToList();
+                foreach (var testCase in testCases)
                 {
                     yield return testCase;
                 }
@@ -48,7 +55,8 @@ namespace GalaxyCheck.Internal.Infrastructure.Xunit
                 discoveryOptions.MethodDisplayOrDefault(),
                 discoveryOptions.MethodDisplayOptionsOrDefault(),
                 testMethod,
-                dataRow);
+                dataRow,
+                (_rowCount++).ToString(System.Globalization.CultureInfo.InvariantCulture));
         }
     }
 }

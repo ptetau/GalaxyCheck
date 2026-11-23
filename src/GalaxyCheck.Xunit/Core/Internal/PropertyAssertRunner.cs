@@ -68,14 +68,40 @@ namespace GalaxyCheck.Internal
                 // The saved failure still falsifies the property: it fails the test, and the entry stays.
                 throw;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 // The saved replay is stale: it does not decode, no longer fits the generators, discards, or hits a
                 // generator error. Drop the entry and run the property as normal. A real generator error throws
-                // again in the generated run, with its own message.
+                // again in the generated run, with its own message. A shared key loses its entry only when the
+                // replay does not decode, as the replay can fit the row or fixture that saved it.
+                if (!savedFailure.IsShared || IsDecodeError(ex))
+                {
+                    TryChange(savedFailure.Remove);
+                }
+
+                return;
             }
 
-            TryChange(savedFailure.Remove);
+            // The saved replay passes. A shared key keeps its entry, as the replay can be the failure of another row
+            // or fixture of the test.
+            if (!savedFailure.IsShared)
+            {
+                TryChange(savedFailure.Remove);
+            }
+        }
+
+        private static bool IsDecodeError(Exception? ex)
+        {
+            for (; ex != null; ex = ex.InnerException)
+            {
+                if (ex is Exceptions.GenErrorException &&
+                    ex.Message.StartsWith("Error decoding replay string", StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static Task Assert(

@@ -46,6 +46,85 @@ namespace GalaxyCheck.Internal.Infrastructure.TUnit
             }
         }
 
+        /// <summary>
+        /// The index of the method data row, from the test id of TUnit, for example <c>0.1</c> for the second row of
+        /// the first data source. The id has the form
+        /// <c>Class(Types).{class source}.{class row}.Method(Types).{method source}.{method row}.{repeat}</c>, with
+        /// indexes from 1 in the declared order, so the index is stable between runs. Null when the id has another form.
+        /// </summary>
+        public static string? RowIndex(TestDetails testDetails) =>
+            ParseTestId(testDetails) is { } indexes ? indexes.Row : null;
+
+        /// <summary>The index of the class data row, from the test id of TUnit, or null.</summary>
+        public static string? ClassDataIndex(TestDetails testDetails) =>
+            ParseTestId(testDetails) is { } indexes ? indexes.Class : null;
+
+        private static readonly System.Text.RegularExpressions.Regex TrailingMethodIndexes =
+            new(@"\.(\d+)\.(\d+)\.(\d+)$", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+
+        private static readonly System.Text.RegularExpressions.Regex TrailingClassIndexes =
+            new(@"\.(\d+)\.(\d+)$", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+
+        private static (string Class, string Row)? ParseTestId(TestDetails testDetails)
+        {
+            var id = testDetails.TestId;
+            if (string.IsNullOrEmpty(id))
+            {
+                return null;
+            }
+
+            var method = TrailingMethodIndexes.Match(id);
+            if (!method.Success)
+            {
+                return null;
+            }
+
+            // The rest ends with the method name and its parameter types: drop them to reach the class indexes.
+            var rest = StripTrailingGroup(StripTrailingGroup(id.Substring(0, method.Index), '(', ')'), '<', '>');
+            var methodName = "." + testDetails.MethodName;
+            if (!rest.EndsWith(methodName, StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            var classPart = TrailingClassIndexes.Match(rest.Substring(0, rest.Length - methodName.Length));
+            if (!classPart.Success)
+            {
+                return null;
+            }
+
+            return (
+                ZeroBased(classPart.Groups[1].Value, classPart.Groups[2].Value),
+                ZeroBased(method.Groups[1].Value, method.Groups[2].Value));
+        }
+
+        /// <summary>Removes a bracketed group at the end of the text, with the groups inside it.</summary>
+        private static string StripTrailingGroup(string text, char open, char close)
+        {
+            if (text.Length == 0 || text[text.Length - 1] != close)
+            {
+                return text;
+            }
+
+            var depth = 0;
+            for (var i = text.Length - 1; i >= 0; i--)
+            {
+                if (text[i] == close)
+                {
+                    depth++;
+                }
+                else if (text[i] == open && --depth == 0)
+                {
+                    return text.Substring(0, i);
+                }
+            }
+
+            return text;
+        }
+
+        private static string ZeroBased(string source, string row) =>
+            $"{long.Parse(source, System.Globalization.CultureInfo.InvariantCulture) - 1}.{long.Parse(row, System.Globalization.CultureInfo.InvariantCulture) - 1}";
+
         public static MethodInfo GetTestMethod(TestDetails testDetails) =>
             FindMethod(testDetails.ClassType, testDetails.MethodName, testDetails.MethodMetadata.Parameters)
                 ?? throw new InvalidOperationException($"Could not find method '{testDetails.MethodName}' on type '{testDetails.ClassType.FullName}'");
@@ -74,7 +153,9 @@ namespace GalaxyCheck.Internal.Infrastructure.TUnit
                 new DefaultPropertyFactory(),
                 GlobalConfiguration.GetInstance(testClassType.Assembly).Properties,
                 GlobalConfiguration.GetInstance(testClassType.Assembly).FailureMemory,
-                testDetails.TestClassArguments is { Length: > 0 } classArguments ? classArguments : null);
+                testDetails.TestClassArguments is { Length: > 0 } classArguments ? classArguments : null,
+                TUnitAdapter.RowIndex(testDetails),
+                TUnitAdapter.ClassDataIndex(testDetails));
 
             await initialization.Runner.Run(initialization.Parameters);
         }

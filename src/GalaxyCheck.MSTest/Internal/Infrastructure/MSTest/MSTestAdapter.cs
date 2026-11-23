@@ -35,11 +35,56 @@ namespace GalaxyCheck.Internal.Infrastructure.MSTest
                     arguments is { Length: > 0 } ? arguments : null,
                     new InvokingPropertyFactory(testMethod, output),
                     globalConfiguration.Properties,
-                    globalConfiguration.FailureMemory);
+                    globalConfiguration.FailureMemory,
+                    rowIndex: RowIndex(methodInfo, arguments));
 
                 await initialization.Runner.Run(initialization.Parameters);
             });
         }
+
+        /// <summary>
+        /// The index of the data row among the rows of the data sources of the method, in the declared order, or
+        /// null when no row equals the arguments. The failure memory needs it only for a value that enters its key as
+        /// a type name, so a row of plain values reads no data source.
+        /// </summary>
+        private static string? RowIndex(MethodInfo methodInfo, object?[]? arguments)
+        {
+            if (arguments is not { Length: > 0 } || arguments.All(HasPlainValue))
+            {
+                return null;
+            }
+
+            try
+            {
+                var index = 0;
+                foreach (var source in methodInfo.GetCustomAttributes(inherit: true).OfType<ITestDataSource>())
+                {
+                    foreach (var row in source.GetData(methodInfo))
+                    {
+                        if (row != null && row.Length == arguments.Length && row.Zip(arguments, SameValue).All(same => same))
+                        {
+                            return index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                        }
+
+                        index++;
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // A data source that throws here gives no index: the key then holds the type name alone.
+            }
+
+            return null;
+        }
+
+        private static bool HasPlainValue(object? value) =>
+            value is null or string or Type or Enum or decimal || value.GetType().IsPrimitive;
+
+        private static bool SameValue(object? left, object? right) =>
+            left is System.Collections.IStructuralEquatable || right is System.Collections.IStructuralEquatable
+                ? System.Collections.StructuralComparisons.StructuralEqualityComparer.Equals(left, right)
+                : Equals(left, right);
 
         private static async Task<TestResult[]> Run(InvocationOutput output, Func<Task> body)
         {

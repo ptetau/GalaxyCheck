@@ -22,10 +22,11 @@ namespace GalaxyCheck.Internal
     /// </summary>
     internal sealed class SavedFailure
     {
-        private SavedFailure(string filePath, string testName)
+        private SavedFailure(string filePath, string testName, bool isShared)
         {
             FilePath = filePath;
             TestName = testName;
+            IsShared = isShared;
         }
 
         public string FilePath { get; }
@@ -33,13 +34,22 @@ namespace GalaxyCheck.Internal
         /// <summary>The full name of the test. It is a key of the JSON object, never a path.</summary>
         public string TestName { get; }
 
+        /// <summary>
+        /// True when the key can belong to several rows or fixtures of the test: a value entered the key as its type
+        /// name, and the framework gave no index of its row or fixture. A saved replay that passes then stays, as it
+        /// can be the failure of another row.
+        /// </summary>
+        public bool IsShared { get; }
+
         /// <returns>The saved failure of the test, or null when the memory is off or the project has no folder.</returns>
         public static SavedFailure? For(
             Type testClassType,
             MethodInfo testMethodInfo,
             object?[]? testMethodArguments,
             IGlobalFailureMemoryConfiguration config,
-            object?[]? testClassArguments = null)
+            object?[]? testClassArguments = null,
+            string? rowIndex = null,
+            string? fixtureIndex = null)
         {
             if (!config.Enabled)
             {
@@ -52,38 +62,52 @@ namespace GalaxyCheck.Internal
                 return null;
             }
 
+            var isShared = false;
+            var testName = FullTestName(
+                testClassType, testMethodInfo, testMethodArguments, testClassArguments, rowIndex, fixtureIndex, () => isShared = true);
             return new SavedFailure(
                 Path.Combine(projectFolder, FailureFile.FolderName, FailureFile.FileName),
-                FullTestName(testClassType, testMethodInfo, testMethodArguments, testClassArguments));
+                testName,
+                isShared);
         }
 
         /// <summary>
         /// The key of a test: <c>Namespace.Class.Method</c>, with the arguments of a parameterized class after the
         /// class, and the values of a data row after the method, for example <c>Ns.Fixture(5).Method(1, "a")</c>.
+        /// A value that enters as its type name also holds the index of its row or fixture, when the framework gives
+        /// one, for example <c>Ns.Class.Method(Ns.Db#1)</c>.
         /// </summary>
+        /// <param name="rowIndex">The stable index of the data row among the rows of the test, or null.</param>
+        /// <param name="fixtureIndex">The stable index of the fixture among the fixtures of the class, or null.</param>
+        /// <param name="onShared">Called when a value enters as its type name with no index.</param>
         public static string FullTestName(
             Type testClassType,
             MethodInfo testMethodInfo,
             object?[]? testMethodArguments,
-            object?[]? testClassArguments = null) =>
-            $"{testClassType.FullName ?? testClassType.Name}{Arguments(testClassArguments)}.{testMethodInfo.Name}{Arguments(testMethodArguments)}";
+            object?[]? testClassArguments = null,
+            string? rowIndex = null,
+            string? fixtureIndex = null,
+            Action? onShared = null) =>
+            $"{testClassType.FullName ?? testClassType.Name}{Arguments(testClassArguments, fixtureIndex, onShared)}" +
+            $".{testMethodInfo.Name}{Arguments(testMethodArguments, rowIndex, onShared)}";
 
-        private static string Arguments(object?[]? arguments)
+        private static string Arguments(object?[]? arguments, string? index, Action? onShared)
         {
             if (arguments == null || arguments.Length == 0)
             {
                 return "";
             }
 
-            return $"({string.Join(", ", arguments.Select(KeyText))})";
+            return $"({string.Join(", ", arguments.Select(argument => KeyText(argument, index, onShared)))})";
         }
 
         /// <summary>
         /// The text of one argument in the key. Only a value with a stable text enters the key: null, a bool, a
         /// number, a char, a string, an enum, or a type. Any other value enters as its type name, as its text can
-        /// change between runs (for example a record that holds a random port), and the key must not change.
+        /// change between runs (for example a record that holds a random port), and the key must not change. The
+        /// type name holds the index of the row or fixture, so that two rows with values of one type keep two keys.
         /// </summary>
-        private static string KeyText(object? argument)
+        private static string KeyText(object? argument, string? index, Action? onShared)
         {
             if (argument is Type type)
             {
@@ -95,7 +119,14 @@ namespace GalaxyCheck.Internal
                 return expression;
             }
 
-            return TypeKeyName(argument!.GetType());
+            var typeName = TypeKeyName(argument!.GetType());
+            if (index == null)
+            {
+                onShared?.Invoke();
+                return typeName;
+            }
+
+            return $"{typeName}#{index}";
         }
 
         private static bool HasStableText(object? argument) => argument switch
