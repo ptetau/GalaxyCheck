@@ -7,8 +7,9 @@ public class UnitProperties
     // The bound keeps each result finite: the largest ratio of two units (light years to centimetres) is about 1e18.
     public static IGen<double> Distance => PhysicsGen.Between(-1e200, 1e200);
 
+    // A result below about 2e-308 is subnormal: it has fewer significant bits, so it gets an absolute tolerance.
     private static bool Close(double expected, double actual, double relative) =>
-        Math.Abs(expected - actual) <= relative * Math.Abs(expected);
+        Math.Abs(expected - actual) <= relative * Math.Abs(expected) + 1e-300;
 
     // Round trip: to convert and convert back gives the start value, to a few units in the last place.
     [Test, PropertyTest]
@@ -30,11 +31,15 @@ public class UnitProperties
         [MemberGen(nameof(Distance))] double value, LengthUnit from, LengthUnit via, LengthUnit to) =>
         Close(Units.Convert(value, from, to), Units.Convert(Units.Convert(value, from, via), via, to), 1e-14);
 
-    // Metamorphic: conversion keeps the order of two values.
+    // Metamorphic: conversion never swaps the order of two values. Two values can become equal, because a
+    // subnormal value such as 5e-324 underflows to 0.
     [Test, PropertyTest]
-    public bool ConversionKeepsTheOrder(
-        [MemberGen(nameof(Distance))] double a, [MemberGen(nameof(Distance))] double b, LengthUnit from, LengthUnit to) =>
-        (a <= b) == (Units.Convert(a, from, to) <= Units.Convert(b, from, to));
+    public bool ConversionNeverSwapsTheOrder(
+        [MemberGen(nameof(Distance))] double a, [MemberGen(nameof(Distance))] double b, LengthUnit from, LengthUnit to)
+    {
+        var (low, high) = a <= b ? (a, b) : (b, a);
+        return Units.Convert(low, from, to) <= Units.Convert(high, from, to);
+    }
 
     public static IGen<double> Special => Gen.Element(new[] { double.NaN, double.PositiveInfinity, double.NegativeInfinity, 0.0 });
 

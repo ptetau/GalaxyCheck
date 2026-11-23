@@ -23,16 +23,24 @@ public static class Kinematics
             return 0;
         }
 
+        // From rest, the time is sqrt(2d / a). The general formula below would square tiny values and underflow.
+        if (v0 == 0)
+        {
+            return a > 0 ? Finite(Math.Sqrt(2 * distance / a)) : null;
+        }
+
         var discriminant = v0 * v0 + 2 * a * distance;
         if (discriminant < 0)
         {
             return null;
         }
 
-        // The form 2d / (v0 + sqrt(D)) of the quadratic root has no cancellation, and works for a = 0.
-        var denominator = v0 + Math.Sqrt(discriminant);
-        return denominator == 0 ? null : 2 * distance / denominator;
+        // The form 2d / (v0 + sqrt(D)) of the quadratic root has no cancellation, and works for a = 0. A speed so
+        // small that the time overflows to infinity counts as no movement.
+        return Finite(2 * distance / (v0 + Math.Sqrt(discriminant)));
     }
+
+    private static double? Finite(double time) => double.IsFinite(time) ? time : null;
 }
 
 /// <summary>A point mass.</summary>

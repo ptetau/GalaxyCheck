@@ -60,7 +60,8 @@ public class VectorProperties
         [MemberGen(nameof(Everyday))] Vector3 b)
     {
         var cross = a.Cross(b);
-        var tolerance = 1e-12 * a.Length * b.Length * Math.Max(a.Length, b.Length);
+        // The absolute part of the tolerance covers subnormal products, such as 100 * 5e-324.
+        var tolerance = 1e-12 * a.Length * b.Length * Math.Max(a.Length, b.Length) + 1e-300;
         return Math.Abs(cross.Dot(a)) <= tolerance && Math.Abs(cross.Dot(b)) <= tolerance;
     }
 
