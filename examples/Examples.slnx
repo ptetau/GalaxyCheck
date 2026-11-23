@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/Banking/">
+    <Project Path="Banking/Banking/Banking.csproj" />
+    <Project Path="Banking/Banking.Tests/Banking.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Crm/">
+    <Project Path="Crm/Crm/Crm.csproj" />
+    <Project Path="Crm/Crm.Tests/Crm.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Physics/">
+    <Project Path="Physics/Physics/Physics.csproj" />
+    <Project Path="Physics/Physics.Tests/Physics.Tests.csproj" />
+  </Folder>
+</Solution>
