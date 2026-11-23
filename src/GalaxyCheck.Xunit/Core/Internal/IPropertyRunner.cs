@@ -16,7 +16,8 @@ namespace GalaxyCheck.Internal
         bool Exhaustive = true,
         HealthCheck[]? SuppressHealthChecks = null,
         IReadOnlyList<PropertyExample>? Examples = null,
-        SavedFailure? SavedFailure = null);
+        SavedFailure? SavedFailure = null,
+        Func<string?>? TakeFailureMemoryNote = null);
 
     internal interface IPropertyRunner
     {

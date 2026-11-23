@@ -33,7 +33,11 @@ namespace GalaxyCheck.Internal
             string? newReplay = null;
             try
             {
-                await Assert(parameters, replay: null, onReplay: replay => newReplay = replay);
+                await Assert(
+                    parameters,
+                    replay: null,
+                    onReplay: replay => newReplay = replay,
+                    formatMessage: message => FormatMessage(message) + FailureMemoryNote(parameters));
             }
             catch (PropertyFailedException)
             {
@@ -59,21 +63,25 @@ namespace GalaxyCheck.Internal
             {
                 await Assert(parameters, savedReplay, onReplay: null);
             }
-            catch (PropertyFailedException)
+            catch (GalaxyCheck.Exceptions.GenErrorException)
             {
-                // The saved failure still fails: keep it, and report it.
-                throw;
-            }
-            catch (Exception ex)
-            {
+                // The saved replay does not decode, or no longer fits the generators: the parameters of the test or
+                // the version of GalaxyCheck changed. Drop the stale entry and run the property as normal. A real
+                // generator error throws again in the generated run, with its own message.
                 TryChange(savedFailure.Remove);
-                throw new SavedFailureException(savedFailure, ex);
+                return;
             }
 
+            // A PropertyFailedException means the saved failure still fails: it propagates, and the entry stays.
+            // Any other error propagates with its own message.
             TryChange(savedFailure.Remove);
         }
 
-        private static Task Assert(PropertyRunParameters parameters, string? replay, Action<string>? onReplay) =>
+        private static Task Assert(
+            PropertyRunParameters parameters,
+            string? replay,
+            Action<string>? onReplay,
+            Func<string, string>? formatMessage = null) =>
             parameters.Property.AssertAsync(
                 replay: replay,
                 seed: replay == null ? parameters.Seed : null,
@@ -88,7 +96,13 @@ namespace GalaxyCheck.Internal
                     onReplay?.Invoke(newReplay);
                     return $"{Environment.NewLine}    [Replay(\"{newReplay}\")]";
                 },
-                formatMessage: FormatMessage);
+                formatMessage: formatMessage ?? FormatMessage);
+
+        /// <summary>The note, one time for each assembly, that the failure memory has no folder to save to.</summary>
+        private static string FailureMemoryNote(PropertyRunParameters parameters) =>
+            parameters.TakeFailureMemoryNote?.Invoke() is { } note
+                ? Environment.NewLine + Environment.NewLine + note
+                : "";
 
         private static string FormatMessage(string message) => Environment.NewLine + Environment.NewLine + message;
 
@@ -102,19 +116,6 @@ namespace GalaxyCheck.Internal
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
             {
             }
-        }
-    }
-
-    /// <summary>Thrown when the saved replay string of a test does not run, for example when it does not decode.</summary>
-    internal sealed class SavedFailureException : Exception
-    {
-        public SavedFailureException(SavedFailure savedFailure, Exception inner)
-            : base(
-                $"The saved failure of '{savedFailure.TestName}' in {FailureFile.FolderName}/{FailureFile.FileName} did not run: {inner.Message}" +
-                Environment.NewLine +
-                "Fix: the entry is now removed; run the test again.",
-                inner)
-        {
         }
     }
 }

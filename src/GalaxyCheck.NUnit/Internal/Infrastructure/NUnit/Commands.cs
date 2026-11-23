@@ -99,6 +99,20 @@ namespace GalaxyCheck.Internal.Infrastructure.NUnit
             return context.CurrentResult;
         }
 
+        /// <summary>The arguments of a parameterized fixture, for example 5 of <c>[TestFixture(5)]</c>, or null.</summary>
+        public static object?[]? FixtureArguments(Test test)
+        {
+            for (var parent = test.Parent; parent != null; parent = parent.Parent)
+            {
+                if (parent is TestFixture fixture)
+                {
+                    return fixture.Arguments is { Length: > 0 } arguments ? arguments : null;
+                }
+            }
+
+            return null;
+        }
+
         public static Type ClassType(Test test) =>
             test.TypeInfo?.Type ?? test.Method?.MethodInfo.DeclaringType
                 ?? throw new InvalidOperationException($"The test '{test.FullName}' has no class.");
@@ -125,7 +139,8 @@ namespace GalaxyCheck.Internal.Infrastructure.NUnit
                 arguments.Length == 0 ? null : arguments,
                 new DefaultPropertyFactory(),
                 globalConfiguration.Properties,
-                globalConfiguration.FailureMemory);
+                globalConfiguration.FailureMemory,
+                NUnitAdapter.FixtureArguments(test));
 
             await initialization.Runner.Run(initialization.Parameters);
         });

@@ -41,6 +41,7 @@ namespace GalaxyCheck.Internal
         /// <param name="testClassInstance">The instance of the test class, or null for a static test method.</param>
         /// <param name="testMethodArguments">The values of a data row for the first parameters, or null.</param>
         /// <param name="failureMemory">The failure memory of the test assembly, or null for no failure memory.</param>
+        /// <param name="testClassArguments">The arguments of a parameterized test class, or null.</param>
         public static PropertyInitializationResult InitializeWithInstance(
             Type testClassType,
             MethodInfo testMethodInfo,
@@ -48,7 +49,8 @@ namespace GalaxyCheck.Internal
             object?[]? testMethodArguments,
             IPropertyFactory propertyFactory,
             IGlobalPropertyConfiguration config,
-            IGlobalFailureMemoryConfiguration? failureMemory = null)
+            IGlobalFailureMemoryConfiguration? failureMemory = null,
+            object?[]? testClassArguments = null)
         {
             var propertyAttribute = testMethodInfo.GetCustomAttributes<PropertyAttribute>(inherit: true).Single();
 
@@ -68,7 +70,10 @@ namespace GalaxyCheck.Internal
 
             // A [Replay] attribute takes precedence over a saved failure.
             var savedFailure = replay == null && failureMemory != null
-                ? SavedFailure.For(testClassType, testMethodInfo, testMethodArguments, failureMemory)
+                ? SavedFailure.For(testClassType, testMethodInfo, testMethodArguments, failureMemory, testClassArguments)
+                : null;
+            Func<string?>? takeFailureMemoryNote = replay == null && savedFailure == null && failureMemory?.Enabled == true
+                ? () => FailureFile.TakeMissingFolderNote(testClassType.Assembly)
                 : null;
 
             var propertyRunParameters = new PropertyRunParameters(
@@ -84,7 +89,8 @@ namespace GalaxyCheck.Internal
                 Exhaustive: propertyAttribute.NullableExhaustive ?? true,
                 SuppressHealthChecks: SuppressedHealthChecks(testClassType, testMethodInfo),
                 Examples: examples,
-                SavedFailure: savedFailure);
+                SavedFailure: savedFailure,
+                TakeFailureMemoryNote: takeFailureMemoryNote);
 
             return new PropertyInitializationResult(
                 propertyAttribute.Runner,
@@ -110,9 +116,19 @@ namespace GalaxyCheck.Internal
             var result = new Dictionary<int, IGen>(customGens);
             for (var i = 0; i < testMethodArguments.Length && i < parameters.Length; i++)
             {
+                var parameter = parameters[i];
+                var input = testMethodArguments[i];
+                if (!PropertyExamples.TryConvert(input, parameter.ParameterType, out var value))
+                {
+                    throw new PropertyConfigurationException(
+                        $"The data row gives the value {PropertyExamples.Format(input)} ({input?.GetType().Name ?? "null"}) for parameter '{parameter.Name}', which has the type {parameter.ParameterType.Name}." +
+                        Environment.NewLine +
+                        $"Fix: give a value of type {parameter.ParameterType.Name} for parameter '{parameter.Name}' in the row.");
+                }
+
                 result[i] = (IGen)ConstantMethod
-                    .MakeGenericMethod(parameters[i].ParameterType)
-                    .Invoke(null, new[] { testMethodArguments[i] })!;
+                    .MakeGenericMethod(parameter.ParameterType)
+                    .Invoke(null, new[] { value })!;
             }
 
             return result;

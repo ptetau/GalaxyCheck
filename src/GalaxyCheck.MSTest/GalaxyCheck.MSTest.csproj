@@ -28,4 +28,9 @@
     <Compile Remove="..\GalaxyCheck.Xunit\Core\Internal\GenSnapshotRunner.cs" />
   </ItemGroup>
 
+  <!-- The build file that records the folder of the test project for the failure memory. -->
+  <ItemGroup>
+    <None Include="..\build\GalaxyCheck.ProjectFolder.props" Pack="true" PackagePath="buildTransitive\$(PackageId).props" Visible="false" />
+  </ItemGroup>
+
 </Project>

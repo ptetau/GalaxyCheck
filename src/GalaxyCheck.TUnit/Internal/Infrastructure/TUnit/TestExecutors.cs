@@ -73,7 +73,8 @@ namespace GalaxyCheck.Internal.Infrastructure.TUnit
                 arguments.Length == 0 ? null : arguments,
                 new DefaultPropertyFactory(),
                 GlobalConfiguration.GetInstance(testClassType.Assembly).Properties,
-                GlobalConfiguration.GetInstance(testClassType.Assembly).FailureMemory);
+                GlobalConfiguration.GetInstance(testClassType.Assembly).FailureMemory,
+                testDetails.TestClassArguments is { Length: > 0 } classArguments ? classArguments : null);
 
             await initialization.Runner.Run(initialization.Parameters);
         }

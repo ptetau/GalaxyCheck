@@ -53,10 +53,16 @@ namespace GalaxyCheck.Internal
             }
 
             // A token parameter is not an input, as it is not generated.
-            var parameters = testMethodInfo.GetParameters()
+            var allParameters = testMethodInfo.GetParameters();
+            var inputParameters = allParameters
                 .Select((parameter, index) => (parameter, index))
                 .Where(x => x.parameter.ParameterType != typeof(CancellationToken))
                 .ToList();
+
+            // A data row fixes the first parameters. Its values win: an example gives the inputs of the other
+            // parameters, or an input for each parameter, of which the row values replace the first ones.
+            var rowCount = Math.Min(testMethodArguments?.Length ?? 0, allParameters.Length);
+            var freeParameters = inputParameters.Where(x => x.index >= rowCount).ToList();
 
             return attributes
                 .Select(attribute =>
@@ -64,15 +70,28 @@ namespace GalaxyCheck.Internal
                     var inputs = attribute.Inputs ?? new object?[] { null };
                     var display = Display(inputs);
                     var customGens = new Dictionary<int, IGen>();
+                    for (var i = 0; i < rowCount; i++)
+                    {
+                        customGens[i] = Constant(allParameters[i].ParameterType, testMethodArguments![i]);
+                    }
+
+                    var parameters = rowCount > 0 && inputs.Length == inputParameters.Count && inputs.Length != freeParameters.Count
+                        ? inputParameters
+                        : freeParameters;
                     for (var i = 0; i < parameters.Count; i++)
                     {
                         var (parameter, index) = parameters[i];
                         if (i >= inputs.Length)
                         {
                             throw new ExampleConfigurationException(
-                                $"{display} gives {Count(inputs.Length)}, but the method has {parameters.Count} parameters: parameter '{parameter.Name}' ({TypeName(parameter.ParameterType)}) has no input." +
+                                $"{display} gives {Count(inputs.Length)}, but the method has {parameters.Count} parameters{RowNote(rowCount)}: parameter '{parameter.Name}' ({TypeName(parameter.ParameterType)}) has no input." +
                                 Environment.NewLine +
                                 $"Fix: give one input for each parameter, in order, with an input for '{parameter.Name}'.");
+                        }
+
+                        if (index < rowCount)
+                        {
+                            continue;
                         }
 
                         if (!TryConvert(inputs[i], parameter.ParameterType, out var value))
@@ -83,15 +102,13 @@ namespace GalaxyCheck.Internal
                                 $"Fix: give a value of type {TypeName(parameter.ParameterType)} for parameter '{parameter.Name}'.");
                         }
 
-                        customGens[index] = (IGen)ConstantMethod
-                            .MakeGenericMethod(parameter.ParameterType)
-                            .Invoke(null, new[] { value })!;
+                        customGens[index] = Constant(parameter.ParameterType, value);
                     }
 
                     if (inputs.Length > parameters.Count)
                     {
                         throw new ExampleConfigurationException(
-                            $"{display} gives {Count(inputs.Length)}, but the method has only {parameters.Count} parameters." +
+                            $"{display} gives {Count(inputs.Length)}, but the method has only {parameters.Count} parameters{RowNote(rowCount)}." +
                             Environment.NewLine +
                             "Fix: give one input for each parameter, in order.");
                     }
@@ -134,7 +151,13 @@ namespace GalaxyCheck.Internal
             }
         }
 
-        private static bool TryConvert(object? input, Type parameterType, out object? value)
+        private static IGen Constant(Type type, object? value) =>
+            (IGen)ConstantMethod.MakeGenericMethod(type).Invoke(null, new[] { value })!;
+
+        private static string RowNote(int rowCount) =>
+            rowCount == 0 ? "" : $" after the {Count(rowCount).Replace("input", "value")} of the data row";
+
+        internal static bool TryConvert(object? input, Type parameterType, out object? value)
         {
             value = input;
             var underlyingType = Nullable.GetUnderlyingType(parameterType) ?? parameterType;
@@ -186,7 +209,7 @@ namespace GalaxyCheck.Internal
 
         private static string Display(object?[] inputs) => $"[Example({string.Join(", ", inputs.Select(Format))})]";
 
-        private static string Format(object? value) =>
+        internal static string Format(object? value) =>
             CSharpExpression.TryFormat(value, out var expression) ? expression : value?.ToString() ?? "null";
 
         private static string TypeName(Type type) => type switch

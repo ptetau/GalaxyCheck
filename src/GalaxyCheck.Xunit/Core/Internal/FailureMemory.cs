@@ -38,7 +38,8 @@ namespace GalaxyCheck.Internal
             Type testClassType,
             MethodInfo testMethodInfo,
             object?[]? testMethodArguments,
-            IGlobalFailureMemoryConfiguration config)
+            IGlobalFailureMemoryConfiguration config,
+            object?[]? testClassArguments = null)
         {
             if (!config.Enabled)
             {
@@ -53,20 +54,30 @@ namespace GalaxyCheck.Internal
 
             return new SavedFailure(
                 Path.Combine(projectFolder, FailureFile.FolderName, FailureFile.FileName),
-                FullTestName(testClassType, testMethodInfo, testMethodArguments));
+                FullTestName(testClassType, testMethodInfo, testMethodArguments, testClassArguments));
         }
 
-        public static string FullTestName(Type testClassType, MethodInfo testMethodInfo, object?[]? testMethodArguments)
+        /// <summary>
+        /// The key of a test: <c>Namespace.Class.Method</c>, with the arguments of a parameterized class after the
+        /// class, and the values of a data row after the method, for example <c>Ns.Fixture(5).Method(1, "a")</c>.
+        /// </summary>
+        public static string FullTestName(
+            Type testClassType,
+            MethodInfo testMethodInfo,
+            object?[]? testMethodArguments,
+            object?[]? testClassArguments = null) =>
+            $"{testClassType.FullName ?? testClassType.Name}{Arguments(testClassArguments)}.{testMethodInfo.Name}{Arguments(testMethodArguments)}";
+
+        private static string Arguments(object?[]? arguments)
         {
-            var name = $"{testClassType.FullName ?? testClassType.Name}.{testMethodInfo.Name}";
-            if (testMethodArguments == null || testMethodArguments.Length == 0)
+            if (arguments == null || arguments.Length == 0)
             {
-                return name;
+                return "";
             }
 
-            var arguments = testMethodArguments.Select(argument =>
+            var formatted = arguments.Select(argument =>
                 CSharpExpression.TryFormat(argument, out var expression) ? expression : argument?.ToString() ?? "null");
-            return $"{name}({string.Join(", ", arguments)})";
+            return $"({string.Join(", ", formatted)})";
         }
 
         /// <returns>The saved replay string, or null.</returns>
@@ -103,14 +114,43 @@ namespace GalaxyCheck.Internal
         private static readonly ConcurrentDictionary<Assembly, string?> ProjectFolders = new();
         private static readonly object Gate = new();
 
+        /// <summary>The key of the assembly metadata that the build of a GalaxyCheck package records.</summary>
+        public const string ProjectFolderMetadataKey = "GalaxyCheck.ProjectFolder";
+
+        private static readonly ConcurrentDictionary<Assembly, bool> ReportedMissingFolders = new();
+
         /// <summary>
-        /// The folder of the test project: the nearest folder above the test assembly that holds the project file of
-        /// the assembly, or else the nearest folder that holds a project file.
+        /// The folder of the test project: the folder that the build recorded in the assembly metadata, or else the
+        /// nearest folder above the test assembly that holds the project file of the assembly. Never the folder of
+        /// another project.
         /// </summary>
         public static string? ProjectFolder(Assembly assembly) => ProjectFolders.GetOrAdd(assembly, FindProjectFolder);
 
+        /// <returns>
+        /// The note that the failure memory found no project folder for the assembly, the first time only; else null.
+        /// </returns>
+        public static string? TakeMissingFolderNote(Assembly assembly)
+        {
+            if (ProjectFolder(assembly) != null || !ReportedMissingFolders.TryAdd(assembly, true))
+            {
+                return null;
+            }
+
+            return $"GalaxyCheck did not save this failure: it found no project folder for the assembly " +
+                $"'{assembly.GetName().Name}', so the failure memory ({FolderName}/{FileName}) is off." +
+                Environment.NewLine +
+                "Fix: reference a GalaxyCheck package with its build files (they record the project folder), or put " +
+                "the test assembly below the folder of its project file.";
+        }
+
         private static string? FindProjectFolder(Assembly assembly)
         {
+            var recorded = RecordedProjectFolder(assembly);
+            if (recorded != null)
+            {
+                return recorded;
+            }
+
             string? location;
             try
             {
@@ -127,34 +167,40 @@ namespace GalaxyCheck.Internal
             }
 
             var assemblyName = assembly.GetName().Name;
-            string? firstFolderWithProject = null;
             for (var folder = new FileInfo(location).Directory; folder != null; folder = folder.Parent)
             {
-                string[] projectFiles;
                 try
                 {
-                    projectFiles = folder.EnumerateFiles()
-                        .Where(file => ProjectFileExtensions.Contains(file.Extension, StringComparer.OrdinalIgnoreCase))
-                        .Select(file => Path.GetFileNameWithoutExtension(file.Name))
-                        .ToArray();
+                    var holdsProject = folder.EnumerateFiles()
+                        .Any(file =>
+                            ProjectFileExtensions.Contains(file.Extension, StringComparer.OrdinalIgnoreCase) &&
+                            string.Equals(Path.GetFileNameWithoutExtension(file.Name), assemblyName, StringComparison.OrdinalIgnoreCase));
+                    if (holdsProject)
+                    {
+                        return folder.FullName;
+                    }
                 }
                 catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is System.Security.SecurityException)
                 {
-                    continue;
-                }
-
-                if (projectFiles.Contains(assemblyName, StringComparer.OrdinalIgnoreCase))
-                {
-                    return folder.FullName;
-                }
-
-                if (projectFiles.Length > 0)
-                {
-                    firstFolderWithProject ??= folder.FullName;
                 }
             }
 
-            return firstFolderWithProject;
+            return null;
+        }
+
+        /// <summary>The folder that the build recorded, when it exists on this machine.</summary>
+        private static string? RecordedProjectFolder(Assembly assembly)
+        {
+            try
+            {
+                var recorded = assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
+                    .LastOrDefault(attribute => attribute.Key == ProjectFolderMetadataKey)?.Value;
+                return !string.IsNullOrWhiteSpace(recorded) && Directory.Exists(recorded) ? Path.GetFullPath(recorded) : null;
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is System.Security.SecurityException || ex is ArgumentException || ex is NotSupportedException)
+            {
+                return null;
+            }
         }
 
         public static IReadOnlyDictionary<string, string> Read(string filePath)
