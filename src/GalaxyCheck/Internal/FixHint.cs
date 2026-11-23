@@ -20,6 +20,10 @@ namespace GalaxyCheck.Internal
         public static readonly string NumericMinAboveMax = Environment.NewLine + Prefix +
             "give a minimum that is not above the maximum, for example .GreaterThanEqual(4).LessThanEqual(5), or swap the two bounds.";
 
+        /// <summary>The fix line of Gen.Half() whose minimum is above its maximum. An int converts to Half only with a cast.</summary>
+        public static readonly string HalfMinAboveMax = Environment.NewLine + Prefix +
+            "give a minimum that is not above the maximum, for example .GreaterThanEqual((Half)4).LessThanEqual((Half)5), or swap the two bounds.";
+
         // A rule names only a method that each generator with the error has. A generator whose error needs a method of
         // its own type writes its fix line where it throws, and the rule here stays general.
 
@@ -151,7 +155,7 @@ namespace GalaxyCheck.Internal
 
             if (type.IsNested && type.DeclaringType != null && !type.IsGenericParameter)
             {
-                name = $"{TypeName(type.DeclaringType)}.{name}";
+                name = $"{TypeName(ClosedDeclaringType(type))}.{name}";
             }
 
             // The type arguments of a nested type include those of its outer type; only the own arguments go here.
@@ -161,6 +165,23 @@ namespace GalaxyCheck.Internal
             return ownArguments.Length == 0 || tick < 0
                 ? name
                 : $"{name}<{string.Join(", ", ownArguments.Select(TypeName))}>";
+        }
+
+        /// <summary>
+        /// The outer type of a nested type, with the type arguments of the nested type: reflection gives the open outer
+        /// type, for example Outer&lt;T&gt; for Outer&lt;int&gt;.Inner.
+        /// </summary>
+        private static Type ClosedDeclaringType(Type type)
+        {
+            var outer = type.DeclaringType!;
+            if (!outer.IsGenericTypeDefinition || type.IsGenericTypeDefinition || !type.IsGenericType)
+            {
+                return outer;
+            }
+
+            var count = outer.GetGenericArguments().Length;
+            var arguments = type.GetGenericArguments();
+            return arguments.Length < count ? outer : outer.MakeGenericType(arguments.Take(count).ToArray());
         }
 
         private static readonly Dictionary<Type, string> Keywords = new()

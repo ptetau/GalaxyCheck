@@ -133,7 +133,8 @@ namespace GalaxyCheck.Runners
             IReadOnlyList<string>? labelLines,
             bool withRecord)
         {
-            var text = string.Join(Environment.NewLine, BuildLines(counterexample, iterations, shrinks, formatReproduction, labelLines));
+            var text = RenameMarkerLines(
+                string.Join(Environment.NewLine, BuildLines(counterexample, iterations, shrinks, formatReproduction, labelLines)));
             if (!withRecord)
             {
                 return text;
@@ -275,14 +276,16 @@ namespace GalaxyCheck.Runners
             };
         }
 
+        private static string ExceptionLine(Exception ex) => $"---- {ex.Message}";
+
         /// <summary>
-        /// The message of the exception of the counterexample. The message can hold the JSON block of another failure,
-        /// for example of a property that the test asserts inside. Its marker lines get other names, so that the
-        /// message holds only the block of this failure.
+        /// Gives other names to the marker lines of the readable text: the text of a value, an example, a label, or an
+        /// exception can hold a line <c>&lt;galaxycheck-failure&gt;</c>, for example the block of a property that the
+        /// test asserts inside. So the message holds one real block, the last one.
         /// </summary>
-        private static string ExceptionLine(Exception ex)
+        private static string RenameMarkerLines(string text)
         {
-            var lines = $"---- {ex.Message}".Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+            var lines = text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
             var inInnerBlock = false;
             for (var i = 0; i < lines.Length; i++)
             {

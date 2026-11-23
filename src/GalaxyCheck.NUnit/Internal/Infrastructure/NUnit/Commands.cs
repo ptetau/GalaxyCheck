@@ -142,9 +142,10 @@ namespace GalaxyCheck.Internal.Infrastructure.NUnit
 
         /// <summary>
         /// The <c>dotnet test</c> filter that runs the test: an exact match on its full name, which holds the values
-        /// of its row and fixture. A name that the command line cannot carry (a string value with a quote or a space
-        /// outside a pair of quotes) gets the rows of its method in place of the row, and then the method in each
-        /// fixture of its class in place of its fixture. NUnit runs each test of a suite that the filter names.
+        /// of its row and fixture. A name that the command line cannot carry (a backslash before a quote, as in a
+        /// string value with a quote in it) gets the rows of its method in place of the row, then the method in each
+        /// fixture of its class in place of its fixture, and then the class. NUnit runs each test of a suite that the
+        /// filter names.
         /// </summary>
         public static string RerunFilter(Test test)
         {
@@ -165,8 +166,10 @@ namespace GalaxyCheck.Internal.Infrastructure.NUnit
                 {
                     if (FailureMessage.CanFilterExactly(parent.FullName))
                     {
-                        return FailureMessage.FilterEquals("FullyQualifiedName", parent.FullName) + "&" +
-                               FailureMessage.FilterEquals("Name", methodName);
+                        return FailureMessage.CanFilterExactly(methodName)
+                            ? FailureMessage.FilterEquals("FullyQualifiedName", parent.FullName) + "&" +
+                              FailureMessage.FilterEquals("Name", methodName)
+                            : FailureMessage.FilterEquals("FullyQualifiedName", parent.FullName);
                     }
                 }
                 else if (parent is not ParameterizedMethodSuite)
@@ -175,7 +178,10 @@ namespace GalaxyCheck.Internal.Infrastructure.NUnit
                 }
             }
 
-            return FailureMessage.FilterContainsAll("FullyQualifiedName", test.FullName);
+            var classType = test.TypeInfo?.Type ?? test.Method?.MethodInfo.DeclaringType;
+            return classType != null
+                ? FailureMessage.ClassFilter(classType.FullName ?? classType.Name)
+                : FailureMessage.FilterContainsAll("FullyQualifiedName", test.FullName);
         }
 
         public static Type ClassType(Test test) =>

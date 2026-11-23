@@ -75,7 +75,12 @@ namespace GalaxyCheck.Internal.Infrastructure.Xunit
                     new DefaultPropertyFactory(),
                     GlobalConfiguration.GetInstance(TestCase.TestMethod.TestClass.Class.ToRuntimeType().Assembly).Properties,
                     GlobalConfiguration.GetInstance(TestCase.TestMethod.TestClass.Class.ToRuntimeType().Assembly).FailureMemory,
-                    TestCase.RowIndex);
+                    TestCase.RowIndex,
+                    FailureMessage.XunitFilter(
+                        TestCase.TestMethod.TestClass.Class.ToRuntimeType(),
+                        TestCase.TestMethod.Method.ToRuntimeMethod(),
+                        isDataRow: _testMethodArguments is { Length: > 0 },
+                        TestCase.DisplayName));
             }
             catch (Exception exception)
             {

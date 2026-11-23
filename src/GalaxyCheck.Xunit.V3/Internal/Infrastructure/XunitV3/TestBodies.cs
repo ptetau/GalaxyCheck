@@ -30,7 +30,9 @@ namespace GalaxyCheck.Internal.Infrastructure.XunitV3
                 new DefaultPropertyFactory(),
                 GlobalConfiguration.GetInstance(testClassType.Assembly).Properties,
                 GlobalConfiguration.GetInstance(testClassType.Assembly).FailureMemory,
-                rowIndex: rowIndex);
+                rowIndex: rowIndex,
+                dotnetTestFilter: FailureMessage.XunitFilter(
+                    testClassType, test.TestMethod.Method, isDataRow: arguments.Length > 0, test.TestDisplayName));
 
             await initialization.Runner.Run(initialization.Parameters);
         }

@@ -91,42 +91,55 @@ namespace GalaxyCheck.Internal
 
         /// <summary>
         /// The filter of a test of xunit or MSTest: an exact match on <c>Namespace.Class.Method</c>. Each row of a
-        /// method has that name, so the filter selects the rows of that method, and no other method.
+        /// method has that name, so the filter selects the rows of that method, and no other method. A name that the
+        /// command line cannot carry selects each test of the class.
         /// </summary>
         private static string MethodFilter(Type testClassType, MethodInfo testMethodInfo)
         {
-            var name = $"{testClassType.FullName ?? testClassType.Name}.{testMethodInfo.Name}";
-            return CanFilterExactly(name) ? FilterEquals("FullyQualifiedName", name) : FilterContainsAll("FullyQualifiedName", name);
+            var className = testClassType.FullName ?? testClassType.Name;
+            var name = $"{className}.{testMethodInfo.Name}";
+            return CanFilterExactly(name) ? FilterEquals("FullyQualifiedName", name) : ClassFilter(className);
         }
 
         /// <summary>
-        /// True when <c>dotnet test --filter</c> can carry the value in an exact match. The test host reads the filter
-        /// as a command line argument: a space splits it unless it is between two quotes, and the quotes stay in the
-        /// value. So a value can hold a quote only in pairs and with no backslash before it, and a space only between
-        /// the two quotes of a pair.
+        /// The filter of an xunit test: the method filter, and for a data row an exact match on the display name of
+        /// the row, so that it selects only that row. A display name that the command line cannot carry gets the rows
+        /// of the method.
+        /// </summary>
+        public static string XunitFilter(Type testClassType, MethodInfo testMethodInfo, bool isDataRow, string? displayName)
+        {
+            var methodFilter = MethodFilter(testClassType, testMethodInfo);
+            var name = $"{testClassType.FullName ?? testClassType.Name}.{testMethodInfo.Name}";
+            return isDataRow && displayName != null && CanFilterExactly(name) && CanFilterExactly(displayName)
+                ? methodFilter + "&" + FilterEquals("DisplayName", displayName)
+                : methodFilter;
+        }
+
+        /// <summary>
+        /// The filter of each test of a class, for a test name that the command line cannot carry: the full name
+        /// contains <c>Namespace.Class.</c>.
+        /// </summary>
+        public static string ClassFilter(string classFullName) =>
+            CanFilterExactly(classFullName)
+                ? $"FullyQualifiedName~{EscapeFilterValue(classFullName + ".", VsTestSpecial)}"
+                : FilterContainsAll("FullyQualifiedName", classFullName);
+
+        /// <summary>
+        /// True when <c>dotnet test --filter</c> can carry the value in an exact match. The test host reads a
+        /// backslash before a quote as an escape of the quote, so such a value matches no test. Each other value,
+        /// also with a space or a single quote, matches exactly.
         /// </summary>
         public static bool CanFilterExactly(string value)
         {
-            var inQuotes = false;
-            for (var i = 0; i < value.Length; i++)
+            for (var i = 1; i < value.Length; i++)
             {
-                var c = value[i];
-                if (c == '"')
-                {
-                    if (i > 0 && value[i - 1] == '\\')
-                    {
-                        return false;
-                    }
-
-                    inQuotes = !inQuotes;
-                }
-                else if (char.IsWhiteSpace(c) && !inQuotes)
+                if (value[i] == '"' && value[i - 1] == '\\')
                 {
                     return false;
                 }
             }
 
-            return !inQuotes;
+            return true;
         }
 
         /// <summary>An exact match of a filter property, with each special char of the filter syntax escaped.</summary>
@@ -134,9 +147,9 @@ namespace GalaxyCheck.Internal
             $"{property}={EscapeFilterValue(value, VsTestSpecial)}";
 
         /// <summary>
-        /// The filter for a name that <see cref="CanFilterExactly"/> rejects: the name must contain each part of the
-        /// name between a quote or a space. It selects the test, but it can also select a test whose name holds all
-        /// of the parts.
+        /// The filter for a class name that <see cref="CanFilterExactly"/> rejects: the name must contain each part of
+        /// the name between a quote or a space. It selects the tests of the class, and it can also select a test whose
+        /// name holds all of the parts.
         /// </summary>
         public static string FilterContainsAll(string property, string value)
         {

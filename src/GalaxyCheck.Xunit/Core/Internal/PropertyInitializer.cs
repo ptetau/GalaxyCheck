@@ -28,7 +28,8 @@ namespace GalaxyCheck.Internal
             IPropertyFactory propertyFactory,
             IGlobalPropertyConfiguration config,
             IGlobalFailureMemoryConfiguration? failureMemory = null,
-            string? rowIndex = null) =>
+            string? rowIndex = null,
+            string? dotnetTestFilter = null) =>
                 InitializeWithInstance(
                     testClassType,
                     testMethodInfo,
@@ -37,7 +38,8 @@ namespace GalaxyCheck.Internal
                     propertyFactory,
                     config,
                     failureMemory,
-                    rowIndex: rowIndex);
+                    rowIndex: rowIndex,
+                    dotnetTestFilter: dotnetTestFilter);
 
         /// <summary>Builds the property of a test method on an instance of its class that the framework made.</summary>
         /// <param name="testClassInstance">The instance of the test class, or null for a static test method.</param>
