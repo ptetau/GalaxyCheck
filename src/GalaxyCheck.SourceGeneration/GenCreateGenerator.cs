@@ -98,7 +98,8 @@ namespace GalaxyCheck.SourceGeneration
                     "OverrideMember always builds the generator by reflection; write the generator with Gen.Select or Gen.Zip instead");
             }
 
-            if (method.Name != "Create" || method.TypeArguments.Length != 1 || method.Parameters.Length != 1)
+            if (method.Name != "Create" || method.TypeArguments.Length != 1 || method.Parameters.Length != 1 ||
+                method.Parameters[0].Type.ToDisplayString(NullableFlowState.None) is not ("System.Reflection.NullabilityInfo" or "System.Reflection.NullabilityInfo?"))
             {
                 return null;
             }
