@@ -140,6 +140,44 @@ namespace GalaxyCheck.Internal.Infrastructure.NUnit
             return index < 0 ? null : index.ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
 
+        /// <summary>
+        /// The <c>dotnet test</c> filter that runs the test: an exact match on its full name, which holds the values
+        /// of its row and fixture. A name that the command line cannot carry (a string value with a quote or a space
+        /// outside a pair of quotes) gets the rows of its method in place of the row, and then the method in each
+        /// fixture of its class in place of its fixture. NUnit runs each test of a suite that the filter names.
+        /// </summary>
+        public static string RerunFilter(Test test)
+        {
+            if (FailureMessage.CanFilterExactly(test.FullName))
+            {
+                return FailureMessage.FilterEquals("FullyQualifiedName", test.FullName);
+            }
+
+            if (test.Parent is ParameterizedMethodSuite rows && FailureMessage.CanFilterExactly(rows.FullName))
+            {
+                return FailureMessage.FilterEquals("FullyQualifiedName", rows.FullName);
+            }
+
+            var methodName = test.Method?.Name ?? test.Name;
+            for (var parent = test.Parent; parent != null; parent = parent.Parent)
+            {
+                if (parent is TestFixture || parent is ParameterizedFixtureSuite)
+                {
+                    if (FailureMessage.CanFilterExactly(parent.FullName))
+                    {
+                        return FailureMessage.FilterEquals("FullyQualifiedName", parent.FullName) + "&" +
+                               FailureMessage.FilterEquals("Name", methodName);
+                    }
+                }
+                else if (parent is not ParameterizedMethodSuite)
+                {
+                    break;
+                }
+            }
+
+            return FailureMessage.FilterContainsAll("FullyQualifiedName", test.FullName);
+        }
+
         public static Type ClassType(Test test) =>
             test.TypeInfo?.Type ?? test.Method?.MethodInfo.DeclaringType
                 ?? throw new InvalidOperationException($"The test '{test.FullName}' has no class.");
@@ -169,7 +207,9 @@ namespace GalaxyCheck.Internal.Infrastructure.NUnit
                 globalConfiguration.FailureMemory,
                 NUnitAdapter.FixtureArguments(test),
                 NUnitAdapter.RowIndex(test),
-                NUnitAdapter.FixtureIndex(test));
+                NUnitAdapter.FixtureIndex(test),
+                frameworkTestName: test.FullName,
+                dotnetTestFilter: NUnitAdapter.RerunFilter(test));
 
             await initialization.Runner.Run(initialization.Parameters);
         });

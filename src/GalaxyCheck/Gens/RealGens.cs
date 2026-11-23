@@ -107,7 +107,7 @@ namespace GalaxyCheck.Gens
 
             if (lo > hi)
             {
-                throw new GenErrorSignal("'min' cannot be greater than 'max'");
+                throw new GenErrorSignal("'min' cannot be greater than 'max'" + global::GalaxyCheck.Internal.FixHint.NumericMinAboveMax);
             }
 
             if (Origin is { } o && !(o >= lo && o <= hi))

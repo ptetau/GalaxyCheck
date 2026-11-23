@@ -60,6 +60,14 @@ namespace GalaxyCheck.Internal
             }
         }
 
+        /// <param name="frameworkTestName">
+        /// The full name of the test as the framework reports it to the test host, or null to build it from the
+        /// class and the method. NUnit gives it, as its name holds the values of a row or a fixture.
+        /// </param>
+        /// <param name="dotnetTestFilter">
+        /// The <c>dotnet test</c> filter that selects the test, before the shell quoting, or null to build it from the
+        /// class and the method. NUnit gives it, from <see cref="FilterEquals"/> and <see cref="FilterContainsAll"/>.
+        /// </param>
         public static FailedTestIdentity Identify(
             RerunStyle style,
             Type testClassType,
@@ -67,56 +75,150 @@ namespace GalaxyCheck.Internal
             object?[]? testMethodArguments,
             object?[]? testClassArguments,
             string? rowIndex,
-            string? fixtureIndex)
+            string? fixtureIndex,
+            string? frameworkTestName = null,
+            string? dotnetTestFilter = null)
         {
-            var test = SavedFailure.FullTestName(
+            var test = frameworkTestName ?? SavedFailure.FullTestName(
                 testClassType, testMethodInfo, testMethodArguments, testClassArguments, rowIndex, fixtureIndex);
-            var hasRow = testMethodArguments is { Length: > 0 };
-            var hasFixture = testClassArguments is { Length: > 0 };
 
             var rerun = style == RerunStyle.TUnitTreeNodeFilter
                 ? TUnitRerun(testClassType, testMethodInfo)
-                : DotnetTestRerun(testClassType, testMethodInfo, hasRow, hasFixture);
+                : DotnetTestRerun(dotnetTestFilter ?? MethodFilter(testClassType, testMethodInfo));
 
             return new FailedTestIdentity(test, rerun);
         }
 
         /// <summary>
-        /// The command for a VSTest adapter. The fully qualified name of a test is <c>Namespace.Class.Method</c>. NUnit
-        /// adds the values of a row or a fixture, so such a test matches by a part of the name.
+        /// The filter of a test of xunit or MSTest: an exact match on <c>Namespace.Class.Method</c>. Each row of a
+        /// method has that name, so the filter selects the rows of that method, and no other method.
         /// </summary>
-        private static string DotnetTestRerun(Type testClassType, MethodInfo testMethodInfo, bool hasRow, bool hasFixture)
+        private static string MethodFilter(Type testClassType, MethodInfo testMethodInfo)
         {
-            var className = testClassType.FullName ?? testClassType.Name;
-            var filter = hasFixture
-                ? $"FullyQualifiedName~{className}&FullyQualifiedName~.{testMethodInfo.Name}"
-                : hasRow
-                    ? $"FullyQualifiedName~{className}.{testMethodInfo.Name}"
-                    : $"FullyQualifiedName={className}.{testMethodInfo.Name}";
-
-            return $"dotnet test --filter {Quote(filter)}";
+            var name = $"{testClassType.FullName ?? testClassType.Name}.{testMethodInfo.Name}";
+            return CanFilterExactly(name) ? FilterEquals("FullyQualifiedName", name) : FilterContainsAll("FullyQualifiedName", name);
         }
 
         /// <summary>
-        /// The command for TUnit, whose tree node path is <c>/Assembly/Namespace/Class/Method</c>. The framework of the
-        /// running test assembly picks the target of a project with several targets.
+        /// True when <c>dotnet test --filter</c> can carry the value in an exact match. The test host reads the filter
+        /// as a command line argument: a space splits it unless it is between two quotes, and the quotes stay in the
+        /// value. So a value can hold a quote only in pairs and with no backslash before it, and a space only between
+        /// the two quotes of a pair.
+        /// </summary>
+        public static bool CanFilterExactly(string value)
+        {
+            var inQuotes = false;
+            for (var i = 0; i < value.Length; i++)
+            {
+                var c = value[i];
+                if (c == '"')
+                {
+                    if (i > 0 && value[i - 1] == '\\')
+                    {
+                        return false;
+                    }
+
+                    inQuotes = !inQuotes;
+                }
+                else if (char.IsWhiteSpace(c) && !inQuotes)
+                {
+                    return false;
+                }
+            }
+
+            return !inQuotes;
+        }
+
+        /// <summary>An exact match of a filter property, with each special char of the filter syntax escaped.</summary>
+        public static string FilterEquals(string property, string value) =>
+            $"{property}={EscapeFilterValue(value, VsTestSpecial)}";
+
+        /// <summary>
+        /// The filter for a name that <see cref="CanFilterExactly"/> rejects: the name must contain each part of the
+        /// name between a quote or a space. It selects the test, but it can also select a test whose name holds all
+        /// of the parts.
+        /// </summary>
+        public static string FilterContainsAll(string property, string value)
+        {
+            var parts = value
+                .Split(new[] { '"' }, StringSplitOptions.None)
+                .SelectMany(part => part.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+                .Where(part => part.Length > 0)
+                .ToList();
+
+            return parts.Count == 0
+                ? $"{property}~{EscapeFilterValue(value.Trim(), VsTestSpecial)}"
+                : string.Join("&", parts.Select(part => $"{property}~{EscapeFilterValue(part, VsTestSpecial)}"));
+        }
+
+        private const string VsTestSpecial = "\\()&|=!~";
+
+        /// <summary>
+        /// The command for a VSTest adapter. <c>dotnet test</c> passes the filter to MSBuild, which reads <c>%</c>,
+        /// <c>;</c>, <c>"</c>, <c>$</c>, and <c>@</c>, so each of them is written as its <c>%XX</c> escape.
+        /// </summary>
+        private static string DotnetTestRerun(string filter)
+        {
+            var forMsBuild = new System.Text.StringBuilder(filter.Length);
+            foreach (var c in filter)
+            {
+                forMsBuild.Append(c switch
+                {
+                    '%' => "%25",
+                    ';' => "%3B",
+                    '"' => "%22",
+                    '$' => "%24",
+                    '@' => "%40",
+                    _ => c.ToString(),
+                });
+            }
+
+            return $"dotnet test --filter {Quote(forMsBuild.ToString())}";
+        }
+
+        /// <summary>
+        /// The command for TUnit, whose tree node path is <c>/Assembly/Namespace/Class/Method</c>, with
+        /// <c>Outer+Inner</c> for a nested class. TUnit cannot select one data row, so the command runs the rows of
+        /// that method. The framework of the running test assembly picks the target of a project with several targets.
         /// </summary>
         private static string TUnitRerun(Type testClassType, MethodInfo testMethodInfo)
         {
-            var assembly = testClassType.Assembly.GetName().Name ?? "*";
-            var ns = string.IsNullOrEmpty(testClassType.Namespace) ? "*" : testClassType.Namespace;
-            var filter = $"/{assembly}/{ns}/{ClassName(testClassType)}/{testMethodInfo.Name}";
+            const string Special = "\\/*[]()&|=!";
+            var assembly = EscapeFilterValue(testClassType.Assembly.GetName().Name ?? "*", Special);
+            var ns = string.IsNullOrEmpty(testClassType.Namespace) ? "*" : EscapeFilterValue(testClassType.Namespace!, Special);
+            var filter = $"/{assembly}/{ns}/{EscapeFilterValue(ClassName(testClassType), Special)}/{EscapeFilterValue(testMethodInfo.Name, Special)}";
             var framework = TargetFramework(testClassType.Assembly);
             var frameworkOption = framework == null ? "" : $" -f {framework}";
 
             return $"dotnet run{frameworkOption} -- --treenode-filter {Quote(filter)}";
         }
 
+        /// <summary>The name of a class in the tree of TUnit: the names of its outer classes and its name, joined by <c>+</c>.</summary>
         private static string ClassName(Type type)
         {
             var name = type.Name;
             var tick = name.IndexOf('`');
-            return tick >= 0 ? name.Substring(0, tick) : name;
+            name = tick >= 0 ? name.Substring(0, tick) : name;
+            return type.IsNested && type.DeclaringType != null && !type.IsGenericParameter
+                ? $"{ClassName(type.DeclaringType)}+{name}"
+                : name;
+        }
+
+        /// <summary>Puts a backslash before each char of a filter value that the filter syntax reads.</summary>
+        private static string EscapeFilterValue(string value, string special)
+        {
+            var result = new System.Text.StringBuilder(value.Length);
+            foreach (var c in value)
+            {
+                if (special.IndexOf(c) >= 0)
+                {
+                    result.Append('\\');
+                }
+
+                result.Append(c);
+            }
+
+            return result.ToString();
         }
 
         /// <summary>The target framework moniker of an assembly, for example <c>net11.0</c>, or null.</summary>
@@ -138,25 +240,35 @@ namespace GalaxyCheck.Internal
             return version.All(c => char.IsDigit(c) || c == '.') && version.Length > 0 ? $"net{version}" : null;
         }
 
-        /// <summary>Quotes a filter that holds a char that a shell reads, so that the command runs as it is.</summary>
-        private static string Quote(string value) =>
-            value.All(c => char.IsLetterOrDigit(c) || "_.=~/+-:".Contains(c))
+        /// <summary>
+        /// Quotes one argument of a command for a POSIX shell (bash, zsh): a value of plain chars stays as it is, and
+        /// any other value goes in single quotes, with each <c>'</c> written as <c>'\''</c>. The shell expands nothing
+        /// in single quotes, so no test name can change the command.
+        /// </summary>
+        internal static string Quote(string value) =>
+            value.Length > 0 && value.All(c => (c < 128 && char.IsLetterOrDigit(c)) || "_.=/+-:,".IndexOf(c) >= 0)
                 ? value
-                : "\"" + value.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
+                : "'" + value.Replace("'", "'\\''") + "'";
 
         /// <returns>
         /// The message with <c>test</c> and <c>rerun</c> in its JSON block, cut to the line limit of the quiet mode.
-        /// A message with no block only gets the line limit.
+        /// A message with no block only gets the line limit. The block is the last one of the message: the exception
+        /// text of the counterexample comes before it, and indents each marker line that it holds.
         /// </returns>
-        public static string Complete(string message, FailedTestIdentity? identity)
+        /// <param name="example">
+        /// The attribute of a failed example, for example <c>[Example(20)]</c>, or null for a generated failure. An
+        /// example has no replay string, seed, or size, so the block holds null for each, and the attribute in
+        /// <c>example</c>.
+        /// </param>
+        public static string Complete(string message, FailedTestIdentity? identity, string? example = null)
         {
             var lines = message.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None).ToList();
-            var start = lines.IndexOf(StartLine);
+            var start = lines.LastIndexOf(StartLine);
             var hasBlock = start >= 0 && start + 2 < lines.Count && lines[start + 2] == EndLine;
 
-            if (hasBlock && identity != null)
+            if (hasBlock && (identity != null || example != null))
             {
-                lines[start + 1] = WithIdentity(lines[start + 1], identity);
+                lines[start + 1] = WithIdentity(lines[start + 1], identity, example);
             }
 
             if (AgentModeIsOn && lines.Count > MaxAgentLines)
@@ -167,14 +279,29 @@ namespace GalaxyCheck.Internal
             return string.Join(Environment.NewLine, lines);
         }
 
-        private static string WithIdentity(string json, FailedTestIdentity identity)
+        /// <summary>The message of a failure with no JSON block, for example of a [Sample] test, cut to the line limit of the quiet mode.</summary>
+        public static string Limit(string message) => Complete(message, identity: null);
+
+        private static string WithIdentity(string json, FailedTestIdentity? identity, string? example)
         {
             try
             {
                 if (JsonNode.Parse(json) is JsonObject record)
                 {
-                    record["test"] = identity.Test;
-                    record["rerun"] = identity.Rerun;
+                    if (example != null)
+                    {
+                        record["replay"] = null;
+                        record["seed"] = null;
+                        record["size"] = null;
+                        record["example"] = example;
+                    }
+
+                    if (identity != null)
+                    {
+                        record["test"] = identity.Test;
+                        record["rerun"] = identity.Rerun;
+                    }
+
                     return record.ToJsonString(JsonOptions);
                 }
             }

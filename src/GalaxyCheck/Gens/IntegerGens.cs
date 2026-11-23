@@ -28,7 +28,7 @@ namespace GalaxyCheck
         /// <summary>Generates <c>System.UInt128</c> values over the full range of the type.</summary>
         public static IIntGen<System.UInt128> UInt128() => new IntegerGen<System.UInt128>(System.UInt128.MinValue, System.UInt128.MaxValue);
 
-        /// <summary>Generates <c>System.Numerics.BigInteger</c> values over the full range of the type.</summary>
+        /// <summary>Generates <c>System.Numerics.BigInteger</c> values from -(2^127) to 2^127, both inclusive.</summary>
         public static IIntGen<System.Numerics.BigInteger> BigInteger() =>
             new IntegerGen<System.Numerics.BigInteger>(-(System.Numerics.BigInteger.One << 127), System.Numerics.BigInteger.One << 127);
 
@@ -180,7 +180,7 @@ namespace GalaxyCheck.Gens
 
             if (min > max)
             {
-                throw new GenErrorSignal("'min' cannot be greater than 'max'");
+                throw new GenErrorSignal("'min' cannot be greater than 'max'" + global::GalaxyCheck.Internal.FixHint.NumericMinAboveMax);
             }
 
             if (Origin is { } o && (o < min || o > max))

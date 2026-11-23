@@ -275,6 +275,35 @@ namespace GalaxyCheck.Runners
             };
         }
 
-        private static string ExceptionLine(Exception ex) => $"---- {ex.Message}";
+        /// <summary>
+        /// The message of the exception of the counterexample. The message can hold the JSON block of another failure,
+        /// for example of a property that the test asserts inside. Its marker lines get other names, so that the
+        /// message holds only the block of this failure.
+        /// </summary>
+        private static string ExceptionLine(Exception ex)
+        {
+            var lines = $"---- {ex.Message}".Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+            var inInnerBlock = false;
+            for (var i = 0; i < lines.Length; i++)
+            {
+                var trimmed = lines[i].Trim();
+                if (trimmed == FailureRecord.StartLine)
+                {
+                    lines[i] = "    [inner failure, not of this test]";
+                    inInnerBlock = true;
+                }
+                else if (trimmed == FailureRecord.EndLine)
+                {
+                    lines[i] = "    [end of inner failure]";
+                    inInnerBlock = false;
+                }
+                else if (inInnerBlock)
+                {
+                    lines[i] = "    " + lines[i];
+                }
+            }
+
+            return string.Join(Environment.NewLine, lines);
+        }
     }
 }

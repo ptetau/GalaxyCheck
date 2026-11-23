@@ -13,10 +13,20 @@ namespace GalaxyCheck.Internal
     {
         public const string Prefix = "Fix: ";
 
+        /// <summary>
+        /// The fix line of a numeric generator whose minimum is above its maximum. Each numeric generator has
+        /// GreaterThanEqual and LessThanEqual.
+        /// </summary>
+        public static readonly string NumericMinAboveMax = Environment.NewLine + Prefix +
+            "give a minimum that is not above the maximum, for example .GreaterThanEqual(4).LessThanEqual(5), or swap the two bounds.";
+
+        // A rule names only a method that each generator with the error has. A generator whose error needs a method of
+        // its own type writes its fix line where it throws, and the rule here stays general.
+
         private static readonly IReadOnlyList<(Regex Pattern, Func<Match, string> Fix)> Rules = new (string, Func<Match, string>)[]
         {
             (@"'min' cannot be greater than 'max'",
-                _ => "give a minimum that is not above the maximum, for example .GreaterThanEqual(4).LessThanEqual(5), or swap the two bounds."),
+                _ => "swap the two bounds of the generator, so that the minimum is not above the maximum."),
             (@"'origin' must be between 'min' and 'max'",
                 _ => "give .ShrinkTowards(...) an origin between the minimum and the maximum, or widen the bounds."),
             (@"'(min|max)' must be a number",
@@ -29,18 +39,24 @@ namespace GalaxyCheck.Internal
                 m => $"give a '{m.Groups[1].Value}' of 0 or more, for example .WithLengthBetween(0, 10)."),
             (@"'minLength' cannot be greater than 'maxLength'",
                 _ => "give a minimum length that is not above the maximum length, for example .WithLengthBetween(0, 10)."),
-            (@"Count limit exceeded",
-                _ => "give a count of at most 1000, or call .DisableCountLimitUnsafe() on the list generator."),
+            (@"(Count|Length) limit exceeded",
+                m => $"give a {m.Groups[1].Value.ToLowerInvariant()} of at most 1000."),
             (@"'chars' must not be empty",
                 _ => "give at least one char, for example .FromCharacters(\"abc\")."),
             (@"'charType' was not a valid flag value",
                 _ => "give a value of Gen.CharType, for example Gen.CharType.Alphabetical."),
-            (@"does not support the (\w+)",
-                m => $"remove the {m.Groups[1].Value} from the pattern, or generate with Gen.String() and filter with .Where(...)."),
+            (@"does not support the repeat range with a maximum below its minimum at position (\d+)",
+                m => $"swap the two bounds of the repeat at position {m.Groups[1].Value}, so that the minimum comes first, for example a{{3,5}} in place of a{{5,3}}."),
+            (@"does not support the range in reverse order at position (\d+)",
+                m => $"swap the two ends of the character range at position {m.Groups[1].Value}, for example [a-z] in place of [z-a]."),
+            (@"does not support the (unmatched '\)'|unclosed group|unclosed character class|trailing '\\'|short hexadecimal escape|invalid hexadecimal escape|quantifier without an element|group with no name|character class that matches no character) at position (\d+)",
+                m => $"correct the {m.Groups[1].Value} at position {m.Groups[2].Value} of the pattern, so that the pattern is a valid regular expression."),
+            (@"does not support the (.+?) at position (\d+)",
+                m => $"remove the {m.Groups[1].Value} at position {m.Groups[2].Value} from the pattern, or generate with Gen.String() and filter with .Where(...)."),
             (@"'pattern' must not be null",
                 _ => "give Gen.StringMatching(...) a pattern, for example Gen.StringMatching(\"[a-z]{3}\")."),
             (@"could not resolve type '([^']+)'",
-                m => $"register a concrete type, for example Gen.Factory().RegisterImplementations<{ShortName(m.Groups[1].Value)}>(typeof(MyConcreteType)).Create<{ShortName(m.Groups[1].Value)}>(), or register a generator with .RegisterType(gen)."),
+                m => $"register a generator or a concrete type for '{ShortName(m.Groups[1].Value)}' on the factory that creates the value."),
             (@"candidate type '([^']+)' is not a concrete type",
                 m => $"give RegisterImplementations only concrete types that derive from the registered type, not '{ShortName(m.Groups[1].Value)}'."),
             (@"the union '([^']+)' has no case",
@@ -61,6 +77,8 @@ namespace GalaxyCheck.Internal
                 m => $"give Gen.Enum<T>() an enum type, not '{ShortName(m.Groups[1].Value)}'."),
             (@"'source' must not be empty",
                 _ => "give Gen.Element(...) at least one value."),
+            (@"'choices' must not contain a negatively weighted generator",
+                _ => "give each generator of Gen.Choose() a weight of 0 or more, for example .WithChoice(Gen.Int32(), 1)."),
             (@"'choices' must",
                 _ => "give Gen.Choose() at least one generator with a weight above zero, for example .WithChoice(Gen.Int32(), 1)."),
             (@"'timeout' must be greater than zero",
@@ -105,6 +123,54 @@ namespace GalaxyCheck.Internal
 
             return GenericFix;
         }
+
+        /// <summary>The C# name of a type, for a C# example: <c>int</c>, <c>List&lt;int&gt;</c>, <c>int[]</c>, <c>int?</c>.</summary>
+        public static string TypeName(Type type)
+        {
+            if (type.IsArray)
+            {
+                return $"{TypeName(type.GetElementType()!)}[{new string(',', type.GetArrayRank() - 1)}]";
+            }
+
+            if (Nullable.GetUnderlyingType(type) is { } underlying)
+            {
+                return TypeName(underlying) + "?";
+            }
+
+            if (Keywords.TryGetValue(type, out var keyword))
+            {
+                return keyword;
+            }
+
+            var name = type.Name;
+            var tick = name.IndexOf('`');
+            if (tick >= 0)
+            {
+                name = name.Substring(0, tick);
+            }
+
+            if (type.IsNested && type.DeclaringType != null && !type.IsGenericParameter)
+            {
+                name = $"{TypeName(type.DeclaringType)}.{name}";
+            }
+
+            // The type arguments of a nested type include those of its outer type; only the own arguments go here.
+            var ownArguments = type.GetGenericArguments()
+                .Skip(type.IsNested && type.DeclaringType != null ? type.DeclaringType.GetGenericArguments().Length : 0)
+                .ToArray();
+            return ownArguments.Length == 0 || tick < 0
+                ? name
+                : $"{name}<{string.Join(", ", ownArguments.Select(TypeName))}>";
+        }
+
+        private static readonly Dictionary<Type, string> Keywords = new()
+        {
+            [typeof(bool)] = "bool", [typeof(byte)] = "byte", [typeof(sbyte)] = "sbyte", [typeof(char)] = "char",
+            [typeof(short)] = "short", [typeof(ushort)] = "ushort", [typeof(int)] = "int", [typeof(uint)] = "uint",
+            [typeof(long)] = "long", [typeof(ulong)] = "ulong", [typeof(float)] = "float", [typeof(double)] = "double",
+            [typeof(decimal)] = "decimal", [typeof(string)] = "string", [typeof(object)] = "object",
+            [typeof(nint)] = "nint", [typeof(nuint)] = "nuint",
+        };
 
         /// <summary>The name of a type with no namespace, for a C# example.</summary>
         private static string ShortName(string fullName)

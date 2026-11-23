@@ -16,7 +16,8 @@ namespace GalaxyCheck.Internal
                 size: parameters.Size,
                 iterations: parameters.Iterations);
 
-            throw new SampleException(string.Join(Environment.NewLine, log));
+            // The quiet mode keeps the message of a [Sample] test in the line limit too.
+            throw new SampleException(FailureMessage.Limit(string.Join(Environment.NewLine, log)));
         }
     }
 }

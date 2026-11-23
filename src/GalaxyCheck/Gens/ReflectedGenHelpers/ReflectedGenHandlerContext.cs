@@ -130,6 +130,28 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers
             return Gen.Advanced.Error<T>(message + suffix);
         }
 
+        /// <summary>
+        /// The error of a type that the factory cannot build, with a fix that registers a concrete type and creates
+        /// the type that the factory was called with.
+        /// </summary>
+        [RequiresDynamicCode(ReflectionMessages.Path)]
+        public static IGen UnresolvedTypeError(this ReflectedGenHandlerContext context, Type type, string name)
+        {
+            var typeName = global::GalaxyCheck.Internal.FixHint.TypeName(type);
+            var rootName = global::GalaxyCheck.Internal.FixHint.TypeName(context.TypeHistory.Reverse().First());
+            var registration = type.IsAbstract || type.IsInterface
+                ? $"Gen.Factory().RegisterImplementations<{typeName}>(typeof(MyConcreteType)).Create<{rootName}>()"
+                : $"Gen.Factory().RegisterType(myGenOf{SafeIdentifier(typeName)}).Create<{rootName}>()";
+            return Gen.Advanced.Error(
+                type,
+                $"could not resolve type '{name}'{(context.Members.Count == 1 ? "" : $" at path '{context.MemberPath}'")}" +
+                Environment.NewLine +
+                $"Fix: register a generator or a concrete type for '{typeName}' on the factory, for example {registration}.");
+        }
+
+        private static string SafeIdentifier(string typeName) =>
+            new string(typeName.Where(char.IsLetterOrDigit).ToArray());
+
         [RequiresDynamicCode(ReflectionMessages.Path)]
         public static IGen Error(this ReflectedGenHandlerContext context, Type type, string message)
         {

@@ -53,7 +53,9 @@ namespace GalaxyCheck.Gens.Internal
         {
             if (min > max)
             {
-                throw new GenErrorSignal("'min' cannot be greater than 'max'");
+                throw new GenErrorSignal(
+                    "'min' cannot be greater than 'max'" + Environment.NewLine +
+                    "Fix: give a .From(...) bound that is not after the .Until(...) bound, or call .Within(x, y), which takes its two bounds in either order.");
             }
 
             var origin = Math.Clamp(defaultOrigin, min, max);

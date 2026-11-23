@@ -27,17 +27,27 @@ namespace GalaxyCheck.Runners
 
         /// <summary>
         /// The seed of a run with no seed option: the value of <c>GALAXYCHECK_SEED</c>, else 0 in the quiet mode,
-        /// else null. A value that is not an integer is ignored.
+        /// else null.
         /// </summary>
+        /// <exception cref="Exceptions.GenErrorException">The value of <c>GALAXYCHECK_SEED</c> is not an integer.</exception>
         public static int? DefaultSeed
         {
             get
             {
                 var seedText = Read(SeedVariable);
-                if (seedText != null &&
-                    int.TryParse(seedText.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var seed))
+                if (!string.IsNullOrWhiteSpace(seedText))
                 {
-                    return seed;
+                    if (int.TryParse(seedText.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var seed))
+                    {
+                        return seed;
+                    }
+
+                    // A seed that is ignored gives other values on each run, while the agent believes that it is fixed.
+                    throw new Exceptions.GenErrorException(
+                        $"Error: the environment variable {SeedVariable} has the value '{seedText}', which is not an integer from {int.MinValue} to {int.MaxValue}." +
+                        Environment.NewLine +
+                        $"Fix: set {SeedVariable} to an integer, for example {SeedVariable}=7, or unset it.",
+                        null);
                 }
 
                 return IsOn ? 0 : null;

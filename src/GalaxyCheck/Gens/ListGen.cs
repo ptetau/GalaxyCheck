@@ -137,7 +137,18 @@ namespace GalaxyCheck.Gens
     {
         public const int CountLimit = 1000;
 
-        public static (int minCount, int maxCount) Resolve(RangeIntention count, bool enableCountLimit)
+        /// <summary>The error of a list over the count limit, with the option that lifts the limit.</summary>
+        public static readonly string ListLimitError =
+            "Count limit exceeded. This is a built-in safety mechanism to prevent hanging tests. If generating a list with over 1000 elements was intended, relax this constraint by calling IListGen.DisableCountLimitUnsafe()." +
+            System.Environment.NewLine + "Fix: give a count of at most 1000, for example .WithCountLessThanEqual(1000), or call .DisableCountLimitUnsafe() on the list generator.";
+
+        /// <summary>The error of a dictionary over the count limit, which no option lifts.</summary>
+        public static readonly string DictionaryLimitError =
+            "Count limit exceeded. This is a built-in safety mechanism to prevent hanging tests: a dictionary has at most 1000 entries." +
+            System.Environment.NewLine + "Fix: give a count of at most 1000, for example .WithCountLessThanEqual(1000).";
+
+        /// <param name="limitError">The error when a count is over the limit, for the kind of collection.</param>
+        public static (int minCount, int maxCount) Resolve(RangeIntention count, bool enableCountLimit, string? limitError = null)
         {
             var (minCount, maxCount) = count.Match(
                 onUnspecified: () => (0, 20),
@@ -160,7 +171,7 @@ namespace GalaxyCheck.Gens
 
             if (enableCountLimit && (minCount > CountLimit || maxCount > CountLimit))
             {
-                throw new GenErrorSignal($"Count limit exceeded. This is a built-in safety mechanism to prevent hanging tests. If generating a list with over 1000 elements was intended, relax this constraint by calling {nameof(IListGen<object>)}.{nameof(IListGen<object>.DisableCountLimitUnsafe)}().");
+                throw new GenErrorSignal(limitError ?? ListLimitError);
             }
 
             return (minCount, maxCount);

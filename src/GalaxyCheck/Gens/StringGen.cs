@@ -361,7 +361,9 @@ namespace GalaxyCheck.Gens
         {
             if (minLength > CountRange.CountLimit || maxLength > CountRange.CountLimit)
             {
-                throw new GenErrorSignal($"Count limit exceeded. This is a built-in safety mechanism to prevent hanging tests. If generating a list with over 1000 elements was intended, relax this constraint by calling {nameof(IListGen<object>)}.{nameof(IListGen<object>.DisableCountLimitUnsafe)}().");
+                throw new GenErrorSignal(
+                    "Length limit exceeded. This is a built-in safety mechanism to prevent hanging tests: a string has at most 1000 chars." +
+                    System.Environment.NewLine + "Fix: give a length of at most 1000, for example .WithLength(1000) or .WithLengthLessThanEqual(1000).");
             }
 
             return (minLength, maxLength);

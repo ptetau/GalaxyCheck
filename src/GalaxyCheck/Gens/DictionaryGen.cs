@@ -63,7 +63,7 @@ namespace GalaxyCheck.Gens.Internal
 
         public override IReadOnlyDictionary<TKey, TValue> Generate(GenSource source)
         {
-            var (minCount, maxCount) = CountRange.Resolve(Count, enableCountLimit: true);
+            var (minCount, maxCount) = CountRange.Resolve(Count, enableCountLimit: true, CountRange.DictionaryLimitError);
             var keyGen = KeyGen.Advanced;
             var valueGen = ValueGen.Advanced;
 

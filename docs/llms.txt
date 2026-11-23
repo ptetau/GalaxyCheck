@@ -104,7 +104,7 @@ From(min): inclusive minimum. Example: Gen.TimeSpan().From(TimeSpan.Zero)
 Until(max): inclusive maximum. Example: Gen.DateOnly().Until(new DateOnly(2030, 12, 31))
 Within(x, y): both bounds inclusive. Example: Gen.TimeOnly().Within(new TimeOnly(9, 0), new TimeOnly(17, 0))
 
-== Options of list and set generators (IListGen<T>, ISetGen<T>) ==
+== Options of list and set generators (IListGen<T>, ISetGen<T>); a list or a dictionary has at most 1000 elements, a set has no limit ==
 WithCount(count): an exact count of 0 or more. Example: Gen.Int32().ListOf().WithCount(3)
 WithCountGreaterThanEqual(min): inclusive minimum count. Example: Gen.List(Gen.Int32()).WithCountGreaterThanEqual(1)
 WithCountLessThanEqual(max): inclusive maximum count. Example: Gen.Set(Gen.Int32()).WithCountLessThanEqual(5)
@@ -112,7 +112,7 @@ WithCountBetween(x, y): both counts inclusive. Example: Gen.Int32().ListOf().Wit
 WithCountGreaterThan(min): exclusive minimum count. Example: Gen.Int32().SetOf().WithCountGreaterThan(0)
 WithCountLessThan(max): exclusive maximum count. Example: Gen.Int32().ListOf().WithCountLessThan(10)
 WithCountBias(bias): the bias of the count. Example: Gen.Int32().ListOf().WithCountBias(Gen.Bias.None)
-DisableCountLimitUnsafe(): allows more than 1000 elements. Example: Gen.Int32().ListOf().WithCount(5000).DisableCountLimitUnsafe()
+DisableCountLimitUnsafe(): IListGen<T> only (not ISetGen<T>); allows more than 1000 elements. Example: Gen.Int32().ListOf().WithCount(5000).DisableCountLimitUnsafe()
 
 == Options of dictionary generators (IDictionaryGen<TKey, TValue>) ==
 WithCount(count): an exact count. Example: Gen.Dictionary(Gen.Int32(), Gen.String()).WithCount(2)
@@ -170,7 +170,7 @@ iterations: the count of test cases (default 100). Example: property.Check(itera
 seed: the seed of the run; GALAXYCHECK_SEED and GALAXYCHECK_AGENT set it when it is null. Example: property.Check(seed: 42)
 size: a fixed size from 0 to 100. Example: property.Check(size: 50)
 shrinkLimit: the most shrinks (default 500). Example: property.Check(shrinkLimit: 100)
-replay: runs one test case from a replay string. Example: property.Check(replay: "H4sIAAAAAAAACjMx0jPQAwCnieL5BQAAAA==")
+replay: runs one test case from a replay string; copy it from a failure. Example: Property.ForAll(Gen.Int32(), x => x < 10).Check(replay: "AgAMAgoA")
 deepCheck: false stops at the first counterexample size. Example: property.Check(deepCheck: false)
 timeout: the time limit of one test case; a slower case fails. Example: property.Check(timeout: TimeSpan.FromMilliseconds(100))
 exhaustive: true (default) tries each value one time when the input space is small. Example: property.Check(exhaustive: false)
@@ -188,9 +188,10 @@ StatefulProperty.Create(newSystem, newModel, nextCommand): a property over comma
 [Property] options Iterations, ShrinkLimit, Seed, Size, TimeoutMilliseconds, Exhaustive. Example: [Property(Iterations = 500, Seed = 7, TimeoutMilliseconds = 100, Exhaustive = false)]
 [Test, PropertyTest] (PropertyTestAttribute): a property in TUnit, with the options of [Property]. Example: [Test, PropertyTest(Iterations = 200)] public bool P(int x) => x == x;
 [PropertyArguments] (PropertyArgumentsAttribute): a TUnit data row for the first parameters. Example: [Test, PropertyTest, PropertyArguments(5)] public bool P(int fixedX, int y) => fixedX + y - y == fixedX;
-[Sample] (SampleAttribute): fails with a list of sampled inputs, to look at a generator. Example: [Sample] public void S(int x) { }
-[GenSnapshot] (GenSnapshotAttribute): compares sampled values with a stored snapshot (not in MSTest). Example: [GenSnapshot(Iterations = 10)] public int Snap(int x) => x;
-[Replay] (ReplayAttribute): runs the test case of a replay string. Example: [Property, Replay("H4sIAAAAAAAACjMx0jPQAwCnieL5BQAAAA==")] public bool P(int x) => x < 10;
+[Sample] (SampleAttribute): fails with a list of sampled inputs, to look at a generator. Example: [Sample] public void S(int x) { } (TUnit: [Test, Sample])
+[GenSnapshot] (GenSnapshotAttribute): compares sampled values with a stored snapshot (not in MSTest); it needs c.GenSnapshots.AssertSnapshotMatches in an IConfigureGlobal class, else it fails with "Configuration value AssertSnapshotMatches needs to be set". Example: [GenSnapshot(Iterations = 10)] public int Snap(int x) => x; (TUnit: [Test, GenSnapshot])
+AssertSnapshotMatches: a Func<ISnapshot, Task> that compares the snapshot (Input, Output, TestClassName, TestMethodName, Seed) with a stored one and throws when they differ. Example: c.GenSnapshots.AssertSnapshotMatches = s => { var f = $"{s.TestClassName}.{s.TestMethodName}.{s.Seed}.snap"; var t = System.Text.Json.JsonSerializer.Serialize(s.Output); if (!System.IO.File.Exists(f)) System.IO.File.WriteAllText(f, t); else if (System.IO.File.ReadAllText(f) != t) throw new System.Exception("snapshot " + f + " differs"); return System.Threading.Tasks.Task.CompletedTask; };
+[Replay] (ReplayAttribute): runs the test case of a replay string; copy it from a failure. Example: [Property, Replay("AgAMAgoA")] public bool P(int x) => x < 10;
 [MemberGen] (MemberGenAttribute): a static property or field of the test class gives the generator of a parameter. Example: public static IGen<int> Small => Gen.Int32().Between(0, 9); [Property] public bool P([MemberGen(nameof(Small))] int x) => x < 10;
 [Example] (ExampleAttribute): fixed inputs that run before the generated ones, one per parameter. Example: [Property, Example(0, 0), Example(-1, 1)] public bool P(int x, int y) => x + y == y + x;
 [SuppressHealthCheck] (SuppressHealthCheckAttribute): turns off health checks for a method or class. Example: [Property, SuppressHealthCheck(HealthCheck.TooManyDiscards)]
@@ -199,13 +200,15 @@ StatefulProperty.Create(newSystem, newModel, nextCommand): a property over comma
 [Between] (Gens.Injection.Int32.BetweenAttribute): an int parameter in a range. Example: [Property] public bool P([Between(1, 6)] int die) => die is >= 1 and <= 6;
 [GreaterThanEqual] (Gens.Injection.Int32.GreaterThanEqualAttribute): an int parameter at or above a minimum. Example: [Property] public bool P([GreaterThanEqual(0)] int x) => x >= 0;
 [LessThanEqual] (Gens.Injection.Int32.LessThanEqualAttribute): an int parameter at or below a maximum. Example: [Property] public bool P([LessThanEqual(0)] int x) => x <= 0;
-Framework rules: TUnit uses [Test, PropertyTest]; NUnit rows use [TestCase], and a [GalaxyCheck.Property] file does not import NUnit.Framework; MSTest methods return void or Task in a [TestClass].
+Framework rules: in TUnit each test attribute of GalaxyCheck comes after [Test]: [Test, PropertyTest], [Test, Sample], [Test, GenSnapshot], and [Test, PropertyTest] in place of [Property] in each example above; NUnit rows use [TestCase], and a [GalaxyCheck.Property] file does not import NUnit.Framework; MSTest methods return void or Task in a [TestClass].
 Global configuration: a class that implements IConfigureGlobal. Example: public class Config : GalaxyCheck.Configuration.IConfigureGlobal { public void Configure(GalaxyCheck.Configuration.IGlobalConfiguration c) => c.Properties.DefaultIterations = 200; }
 
 == Failures, errors, and the quiet mode ==
-Failure block: each failure message holds a line <galaxycheck-failure>, one JSON object, and a line </galaxycheck-failure>. Example: {"counterexample":["10"],"csharp":["10"],"replay":"...","seed":0,"size":0,"iterations":31,"shrinks":5,"test":"Ns.Class.Method","rerun":"dotnet test --filter FullyQualifiedName=Ns.Class.Method"}
-rerun: one command, run in the folder of the test project, that runs only the failed test. Example: dotnet run -f net11.0 -- --treenode-filter /MyTests/Ns/Class/Method
+Failure block: each failure message holds one line <galaxycheck-failure>, one JSON object, and a line </galaxycheck-failure>; seed and size give the failing test case at the first iteration. Example: {"counterexample":["10"],"csharp":["10"],"replay":"AgAMAgoA","seed":0,"size":12,"iterations":13,"shrinks":1,"test":"Ns.Class.Method","rerun":"dotnet test --filter FullyQualifiedName=Ns.Class.Method"}
+Example failure: a failed [Example] has no replay, so its block holds "replay":null, "seed":null, "size":null, and the attribute. Example: {"counterexample":["20"],"csharp":["20"],"replay":null,"seed":null,"size":null,"iterations":1,"shrinks":0,"example":"[Example(20)]","test":"Ns.Class.Method","rerun":"..."}
+Inner assert: when a test calls .Assert() inside, the block is of the test, and the inner failure stays in the text between [inner failure, not of this test] and [end of inner failure]. Example: [Property] public void P(int x) => Property.ForAll(Gen.Int32(), y => y < 3).Assert();
+rerun: one bash command, run in the folder of the test project; an argument with a special char is in single quotes. It runs only the failed test; when the framework cannot select one data row or fixture (xunit, MSTest, TUnit, and an NUnit name that dotnet test cannot carry, such as a string with a quote in it), it runs each row of that method and no other method. Example: dotnet run -f net11.0 -- --treenode-filter /MyTests/Ns/Outer+Inner/Method
 Fix line: each generator error and each error of [Replay], [MemberGen], and [Example] ends with a line that starts with "Fix: ". Example: Fix: give a minimum that is not above the maximum, for example .GreaterThanEqual(4).LessThanEqual(5), or swap the two bounds.
 Failure memory: a failed test saves its replay in .galaxycheck/failures.json, and the next run tries it first. Example: c.FailureMemory.Enabled = false;
-GALAXYCHECK_AGENT=1: seed 0 for each property with no seed option, no output for a passed property, at most 40 lines for a failure. Example: GALAXYCHECK_AGENT=1 dotnet test
-GALAXYCHECK_SEED=n: the seed of each property with no seed option; a seed option wins. Example: GALAXYCHECK_SEED=7 dotnet test
+GALAXYCHECK_AGENT=1: seed 0 for each property with no seed option, no output for a passed property, and at most 40 lines for the failure of a [Property] or [Sample] test (a framework can add a line or two). Example: GALAXYCHECK_AGENT=1 dotnet test
+GALAXYCHECK_SEED=n: the seed of each property with no seed option; a seed option wins; a value that is not an int fails the run. Example: GALAXYCHECK_SEED=7 dotnet test

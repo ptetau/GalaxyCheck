@@ -27,7 +27,9 @@ namespace GalaxyCheck.Internal
 
             foreach (var example in parameters.Examples ?? Array.Empty<PropertyExample>())
             {
-                await PropertyExamples.Run(example, message => Complete(parameters, FormatMessage(message)));
+                await PropertyExamples.Run(
+                    example,
+                    (message, display) => FailureMessage.Complete(FormatMessage(message), parameters.Identity, example: display));
             }
 
             string? newReplay = null;

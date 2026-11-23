@@ -66,6 +66,7 @@ namespace GalaxyCheck.Runners
                     new AbbreviationRendererHandler(),
                     new StringExampleRendererHandler(),
                     new PrimitiveExampleRendererHandler(),
+                    new ScalarExampleRendererHandler(),
                     new StatefulCommandRendererHandler(),
                     new EnumerableExampleRendererHandler(elementLimit: BreadthLimit),
                     new ClassTupleRendererHandler(),
@@ -149,6 +150,39 @@ namespace GalaxyCheck.Runners
                 obj is Delegate;
 
             public string Render(object? obj, IExampleRendererHandler renderer, ImmutableList<object?> path) => obj?.ToString() ?? "null";
+        }
+
+        /// <summary>
+        /// Renders a value of .NET that is one thing by its text, for example a <c>Guid</c>, <c>BigInteger</c>,
+        /// <c>Rune</c>, <c>Version</c>, or <c>TimeSpan</c>: a struct or a sealed class of a <c>System</c> namespace,
+        /// with no type arguments, that is not a collection and that writes its own text. Its member list does not
+        /// show the value. A formattable value uses the invariant culture.
+        /// </summary>
+        private class ScalarExampleRendererHandler : IExampleRendererHandler
+        {
+            public bool CanRender(object? obj) => obj != null && IsScalarLike(obj.GetType());
+
+            public string Render(object? obj, IExampleRendererHandler renderer, ImmutableList<object?> path) =>
+                obj is IFormattable formattable
+                    ? formattable.ToString(null, System.Globalization.CultureInfo.InvariantCulture)
+                    : obj!.ToString() ?? obj.GetType().Name;
+
+            private static bool IsScalarLike(Type type)
+            {
+                if (!(type.IsValueType || type.IsSealed) ||
+                    type.IsGenericType ||
+                    type.Namespace == null ||
+                    !(type.Namespace == "System" || type.Namespace.StartsWith("System.", StringComparison.Ordinal)) ||
+                    typeof(IEnumerable).IsAssignableFrom(type) ||
+                    typeof(Delegate).IsAssignableFrom(type) ||
+                    type.GetInterface("System.Runtime.CompilerServices.ITuple") != null)
+                {
+                    return false;
+                }
+
+                var toString = type.GetMethod(nameof(ToString), Type.EmptyTypes);
+                return toString != null && toString.DeclaringType != typeof(object) && toString.DeclaringType != typeof(ValueType);
+            }
         }
 
         /// <summary>Renders a stateful command by its own text, which holds its inputs, on one line.</summary>
