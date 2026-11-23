@@ -72,6 +72,35 @@ namespace GalaxyCheck.Gens.Parameters
 
         internal int Discards { get; set; }
 
+        /// <summary>
+        /// The bounds (1 for the low bound, 2 for the high bound) that the biased integers drew as an extreme value
+        /// since a filter last cleared it. A filter reads it to learn which bounds a rejected value held.
+        /// </summary>
+        internal int ExtremesMade { get; set; }
+
+        /// <summary>
+        /// The bounds that the biased integers do not draw as an extreme value, in the retries of a filter that
+        /// rejected them. A bound is one fixed value, so a retry that draws it again is wasted.
+        /// </summary>
+        internal int AvoidExtremes { get; set; }
+
+        private System.Collections.Generic.Dictionary<object, int>? _rejectedBounds;
+
+        /// <summary>The bounds that a filter rejected and has not kept since, in the earlier values of the run.</summary>
+        internal int RejectedBounds(object filter) =>
+            _rejectedBounds != null && _rejectedBounds.TryGetValue(filter, out var bounds) ? bounds : 0;
+
+        /// <summary>
+        /// Learns the bounds that a filter rejects, for the retries of its later values. A kept bound is forgotten,
+        /// so a filter that keeps a bound draws it again. The key is the same as for <see cref="RememberGoodSize"/>.
+        /// </summary>
+        internal void LearnBounds(object filter, int rejected, int kept)
+        {
+            if (IsReplaying || (rejected == 0 && _rejectedBounds == null)) return;
+            _rejectedBounds ??= new System.Collections.Generic.Dictionary<object, int>();
+            _rejectedBounds[filter] = (RejectedBounds(filter) | rejected) & ~kept;
+        }
+
         /// <summary>The values that a filter kept. With the discards, it gives the share that the filters discard.</summary>
         internal int Kept { get; set; }
 

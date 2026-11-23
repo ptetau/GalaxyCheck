@@ -24,9 +24,47 @@ namespace GalaxyCheck.Runners
             Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
         };
 
+        /// <summary>The kind of a generated failure: a test case failed.</summary>
+        public const string GeneratedKind = "generated";
+
+        /// <summary>The kind of a coverage failure: the run did not reach the share of a label of a cover rule.</summary>
+        public const string CoverageKind = "coverage";
+
         /// <summary>The three lines of the block for a counterexample.</summary>
         public static IReadOnlyList<string> Lines(Counterexample<object?> counterexample, int iterations, int shrinks) =>
             new[] { StartLine, Json(counterexample, iterations, shrinks), EndLine };
+
+        /// <summary>
+        /// The three lines of the block for a coverage failure. It has no counterexample, so <c>counterexample</c>,
+        /// <c>csharp</c>, <c>replay</c>, and <c>size</c> are null, and <c>cover</c> holds the label and the shares.
+        /// </summary>
+        public static IReadOnlyList<string> CoverageLines(CoverageFailure coverage, int iterations, int seed) =>
+            new[] { StartLine, CoverageJson(coverage, iterations, seed), EndLine };
+
+        private static string CoverageJson(CoverageFailure coverage, int iterations, int seed)
+        {
+            using var stream = new MemoryStream();
+            using (var writer = new Utf8JsonWriter(stream, WriterOptions))
+            {
+                writer.WriteStartObject();
+                writer.WriteNull("counterexample");
+                writer.WriteNull("csharp");
+                writer.WriteNull("replay");
+                writer.WriteNumber("seed", seed);
+                writer.WriteNull("size");
+                writer.WriteNumber("iterations", iterations);
+                writer.WriteNumber("shrinks", 0);
+                writer.WriteString("kind", CoverageKind);
+                writer.WriteStartObject("cover");
+                writer.WriteString("label", coverage.Label);
+                writer.WriteNumber("required", Math.Round(coverage.RequiredPercent, 1));
+                writer.WriteNumber("actual", Math.Round(coverage.ActualPercent, 1));
+                writer.WriteEndObject();
+                writer.WriteEndObject();
+            }
+
+            return System.Text.Encoding.UTF8.GetString(stream.ToArray());
+        }
 
         private static string Json(Counterexample<object?> counterexample, int iterations, int shrinks)
         {
@@ -63,6 +101,7 @@ namespace GalaxyCheck.Runners
                 writer.WriteNumber("size", counterexample.ReplayParameters.Size.Value);
                 writer.WriteNumber("iterations", iterations);
                 writer.WriteNumber("shrinks", shrinks);
+                writer.WriteString("kind", GeneratedKind);
 
                 writer.WriteEndObject();
             }

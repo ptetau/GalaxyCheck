@@ -58,6 +58,27 @@ jobs:
       - name: Test
         run: dotnet test src/GalaxyCheck.Tests.Slice
 
+  examples:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            10.0.x
+            11.0.x
+      - name: Banking
+        working-directory: examples/Banking
+        run: dotnet test Banking.Tests
+      - name: Physics
+        working-directory: examples/Physics
+        run: dotnet test --project Physics.Tests
+      - name: CRM
+        working-directory: examples/Crm
+        run: dotnet test Crm.Tests
+
   pack-prerelease:
     needs: build
     if: github.event_name != 'release'

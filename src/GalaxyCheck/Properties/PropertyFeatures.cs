@@ -27,16 +27,6 @@ namespace GalaxyCheck.Properties
     }
 
     /// <summary>
-    /// The exception of a cover rule that the run did not meet.
-    /// </summary>
-    internal sealed class CoverNotMetException : Exception
-    {
-        public CoverNotMetException(string message) : base(message)
-        {
-        }
-    }
-
-    /// <summary>
     /// The token of the test case that runs now. The runner sets it on the thread that starts the test function.
     /// </summary>
     internal static class TestContext

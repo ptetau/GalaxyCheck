@@ -9,5 +9,5 @@ Counterexample as C#:
 Property function returned false
 
 <galaxycheck-failure>
-{"counterexample":["(Item1 = 1000, Item2 = 1001)"],"csharp":["(1000, 1001)"],"replay":"AgAhA+gHAAA=","seed":0,"size":33,"iterations":34,"shrinks":4}
+{"counterexample":["(Item1 = 1000, Item2 = 1001)"],"csharp":["(1000, 1001)"],"replay":"AgAhA+gHAAA=","seed":0,"size":33,"iterations":34,"shrinks":4,"kind":"generated"}
 </galaxycheck-failure>

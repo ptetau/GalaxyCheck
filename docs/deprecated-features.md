@@ -4,6 +4,11 @@ This doc is intended to capture (experimental) features that were discarded, and
 
 ## Preconditions
 
+Update: preconditions are available again, as `Property.Precondition(condition)`. A false condition discards the
+test case. The current engine uses one search of sizes for a filter in a generator and for a precondition. A
+health check fails a property that discards more than 90% of its test cases. Read
+[Preconditions and filters](preconditions-and-filters.md). The text below is the history of the first version.
+
 This was a convenience feature that allowed you to specify a precondition inside the test body, which simplified the way you would write some properties. Consider the following:
 
 ```

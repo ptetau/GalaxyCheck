@@ -47,6 +47,11 @@ namespace Tests.IntegrationTests
                     .Aggregate(new DirectoryInfo(_currentDirectory), (acc, _) => acc.Parent!);
                 var integrationProjectDir = Path.Combine(currentProjectDir.FullName, "samples", TestSuiteName);
 
+                // The test hosts of net10.0 and net11.0 run at the same time, and each builds and runs the sample
+                // projects. The samples share the library projects, and two builds of one project at once break each
+                // other, so one lock file for all samples lets one host in.
+                using var sampleLock = await AcquireSampleLock(integrationProjectDir);
+
                 // The failure memory of an earlier run changes the messages of this run, so it starts with none.
                 var failureMemoryDir = Path.Combine(integrationProjectDir, ".galaxycheck");
                 if (Directory.Exists(failureMemoryDir))
@@ -64,6 +69,12 @@ namespace Tests.IntegrationTests
 
                 var standardOutput = await testProcess!.StandardOutput.ReadToEndAsync();
                 var standardError = await testProcess!.StandardError.ReadToEndAsync();
+
+                if (!File.Exists(_testReportFileName))
+                {
+                    throw new InvalidOperationException(
+                        $"The run of {integrationProjectDir} wrote no test report.\n{standardOutput}\n{standardError}");
+                }
 
                 TestReport = await File.ReadAllTextAsync(_testReportFileName);
 
@@ -89,6 +100,23 @@ namespace Tests.IntegrationTests
         }
 
         public Task DisposeAsync() => Task.CompletedTask;
+
+        private static async Task<FileStream> AcquireSampleLock(string integrationProjectDir)
+        {
+            var path = Path.Combine(Path.GetTempPath(), "galaxycheck-integration-samples.lock");
+            var deadline = DateTime.UtcNow.AddMinutes(10);
+            while (true)
+            {
+                try
+                {
+                    return new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+                }
+                catch (IOException) when (DateTime.UtcNow < deadline)
+                {
+                    await Task.Delay(250);
+                }
+            }
+        }
 
         private static TestResult ElementToTestResult(XElement element)
         {

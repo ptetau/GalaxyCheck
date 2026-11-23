@@ -404,7 +404,6 @@ namespace GalaxyCheck.Runners
         private readonly string[]? _labelNames;
         private readonly int[]? _ruleGroup;
         private readonly bool[]? _groupSeen;
-        private TestCaseOutcome<T> _last;
 
         private readonly IFiniteGen? _finite;
         private readonly long _finiteCount;
@@ -611,7 +610,6 @@ namespace GalaxyCheck.Runners
 
         private void CountLabels(in TestCaseOutcome<T> outcome)
         {
-            _last = outcome;
             Array.Clear(_groupSeen!);
             for (var i = 0; i < _rules!.Count; i++)
             {
@@ -717,17 +715,12 @@ namespace GalaxyCheck.Runners
                 var coverFailure = CoverFailure(shares);
                 if (coverFailure != null)
                 {
-                    var last = _last;
+                    // A coverage failure has no counterexample and no replay: no test case failed.
                     return new CheckResult<T>(
                         _iteration,
                         discarded,
                         0,
-                        new Counterexample<T>(
-                            last.Input,
-                            GenParameters.Parse(_seed, _currentSize),
-                            ReplayEncoding.Encode(_seed, _currentSize, Source.Choices, Source.Length),
-                            new CoverNotMetException(coverFailure),
-                            present(last)),
+                        null,
                         checks,
                         initialParameters,
                         nextParameters,
@@ -736,7 +729,8 @@ namespace GalaxyCheck.Runners
                         RandomnessConsumption = (int)Math.Min(int.MaxValue, Source.Consumption),
                         LabelShares = shares,
                         IsExhaustive = _finite != null,
-                        ExhaustiveCount = _finite != null ? _finiteCount : 0
+                        ExhaustiveCount = _finite != null ? _finiteCount : 0,
+                        CoverageFailure = coverFailure
                     };
                 }
 
@@ -803,7 +797,7 @@ namespace GalaxyCheck.Runners
             return shares;
         }
 
-        private string? CoverFailure(IReadOnlyDictionary<string, double>? shares)
+        private CoverageFailure? CoverFailure(IReadOnlyDictionary<string, double>? shares)
         {
             if (_rules == null || shares == null || _replay != null) return null;
 
@@ -811,8 +805,13 @@ namespace GalaxyCheck.Runners
             {
                 if (rule.MinPercent is { } required && shares[rule.Label] < required)
                 {
-                    return $"Cover not met: label \"{rule.Label}\" requires {PercentFormat.Format(required)} of the test cases, " +
-                        $"but only {PercentFormat.Format(shares[rule.Label])} ({Math.Round(shares[rule.Label] * _iteration / 100.0)} of {_iteration}) had it.";
+                    var actual = shares[rule.Label];
+                    return new CoverageFailure(
+                        rule.Label,
+                        required,
+                        actual,
+                        $"Cover not met: label \"{rule.Label}\" requires {PercentFormat.Format(required)} of the test cases, " +
+                        $"but only {PercentFormat.Format(actual)} ({Math.Round(actual * _iteration / 100.0)} of {_iteration}) had it.");
                 }
             }
 

@@ -136,9 +136,10 @@ namespace GalaxyCheck.Internal
                 exhaustive: false,
                 suppressHealthChecks: AllHealthChecks);
 
-            if (result.Falsified)
+            // An example is one input, so a cover rule, which judges the share of a label over a run, does not fail it.
+            if (result.Counterexample != null)
             {
-                var counterexample = result.Counterexample!;
+                var counterexample = result.Counterexample;
                 throw new PropertyFailedException(
                     new Counterexample<object?>(
                         counterexample.Value,
