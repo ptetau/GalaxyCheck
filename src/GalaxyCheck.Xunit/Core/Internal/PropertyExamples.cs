@@ -59,8 +59,8 @@ namespace GalaxyCheck.Internal
                 .Where(x => x.parameter.ParameterType != typeof(CancellationToken))
                 .ToList();
 
-            // A data row fixes the first parameters. Its values win: an example gives the inputs of the other
-            // parameters, or an input for each parameter, of which the row values replace the first ones.
+            // A data row fixes the first parameters. An example on a row test gives only the inputs of the
+            // parameters after the row values.
             var rowCount = Math.Min(testMethodArguments?.Length ?? 0, allParameters.Length);
             var freeParameters = inputParameters.Where(x => x.index >= rowCount).ToList();
 
@@ -75,9 +75,16 @@ namespace GalaxyCheck.Internal
                         customGens[i] = Constant(allParameters[i].ParameterType, testMethodArguments![i]);
                     }
 
-                    var parameters = rowCount > 0 && inputs.Length == inputParameters.Count && inputs.Length != freeParameters.Count
-                        ? inputParameters
-                        : freeParameters;
+                    var parameters = freeParameters;
+                    if (rowCount > 0 && inputs.Length != parameters.Count)
+                    {
+                        var testName = $"{testMethodInfo.DeclaringType?.Name}.{testMethodInfo.Name}";
+                        throw new ExampleConfigurationException(
+                            $"{display} on the test '{testName}' gives {Count(inputs.Length)}, but the test has a data row, so an example must give exactly {Count(parameters.Count)}: one for each parameter after the {Count(rowCount).Replace("input", "value")} of the data row." +
+                            Environment.NewLine +
+                            $"Fix: give {Count(parameters.Count)} in the [Example]{(parameters.Count == 0 ? "" : $", for {string.Join(", ", parameters.Select(x => $"'{x.parameter.Name}'"))} in order")}, and let the data row give the other values.");
+                    }
+
                     for (var i = 0; i < parameters.Count; i++)
                     {
                         var (parameter, index) = parameters[i];
@@ -87,11 +94,6 @@ namespace GalaxyCheck.Internal
                                 $"{display} gives {Count(inputs.Length)}, but the method has {parameters.Count} parameters{RowNote(rowCount)}: parameter '{parameter.Name}' ({TypeName(parameter.ParameterType)}) has no input." +
                                 Environment.NewLine +
                                 $"Fix: give one input for each parameter, in order, with an input for '{parameter.Name}'.");
-                        }
-
-                        if (index < rowCount)
-                        {
-                            continue;
                         }
 
                         if (!TryConvert(inputs[i], parameter.ParameterType, out var value))

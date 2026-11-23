@@ -75,9 +75,65 @@ namespace GalaxyCheck.Internal
                 return "";
             }
 
-            var formatted = arguments.Select(argument =>
-                CSharpExpression.TryFormat(argument, out var expression) ? expression : argument?.ToString() ?? "null");
-            return $"({string.Join(", ", formatted)})";
+            return $"({string.Join(", ", arguments.Select(KeyText))})";
+        }
+
+        /// <summary>
+        /// The text of one argument in the key. Only a value with a stable text enters the key: null, a bool, a
+        /// number, a char, a string, an enum, or a type. Any other value enters as its type name, as its text can
+        /// change between runs (for example a record that holds a random port), and the key must not change.
+        /// </summary>
+        private static string KeyText(object? argument)
+        {
+            if (argument is Type type)
+            {
+                return $"typeof({TypeKeyName(type)})";
+            }
+
+            if (HasStableText(argument) && CSharpExpression.TryFormat(argument, out var expression))
+            {
+                return expression;
+            }
+
+            return TypeKeyName(argument!.GetType());
+        }
+
+        private static bool HasStableText(object? argument) => argument switch
+        {
+            null or bool or char or string or Enum => true,
+            sbyte or byte or short or ushort or int or uint or long or ulong => true,
+            float or double or decimal or nint or nuint => true,
+            _ => false
+        };
+
+        /// <summary>The name of a type with its namespace and type arguments, and no assembly version.</summary>
+        private static string TypeKeyName(Type type)
+        {
+            if (type.IsArray)
+            {
+                return $"{TypeKeyName(type.GetElementType()!)}[{new string(',', type.GetArrayRank() - 1)}]";
+            }
+
+            if (type.IsGenericParameter)
+            {
+                return type.Name;
+            }
+
+            var name = type.IsNested && type.DeclaringType != null
+                ? $"{TypeKeyName(type.DeclaringType)}+{type.Name}"
+                : type.Namespace == null ? type.Name : $"{type.Namespace}.{type.Name}";
+
+            if (!type.IsGenericType)
+            {
+                return name;
+            }
+
+            var tick = name.LastIndexOf('`');
+            var baseName = tick >= 0 ? name.Substring(0, tick) : name;
+            var typeArguments = type.IsGenericTypeDefinition
+                ? string.Join(",", type.GetGenericArguments().Select(_ => ""))
+                : string.Join(", ", type.GetGenericArguments().Select(TypeKeyName));
+            return $"{baseName}<{typeArguments}>";
         }
 
         /// <returns>The saved replay string, or null.</returns>
@@ -139,8 +195,11 @@ namespace GalaxyCheck.Internal
             return $"GalaxyCheck did not save this failure: it found no project folder for the assembly " +
                 $"'{assembly.GetName().Name}', so the failure memory ({FolderName}/{FileName}) is off." +
                 Environment.NewLine +
-                "Fix: reference a GalaxyCheck package with its build files (they record the project folder), or put " +
-                "the test assembly below the folder of its project file.";
+                "The build records the project folder in the assembly metadata, but it records nothing when the " +
+                "project sets GenerateAssemblyInfo=false, or when it references GalaxyCheck as a project (not a " +
+                "package) and builds to a custom output folder." + Environment.NewLine +
+                "Fix: remove GenerateAssemblyInfo=false, or reference a GalaxyCheck package, or build the test " +
+                "assembly to a folder below its project file.";
         }
 
         private static string? FindProjectFolder(Assembly assembly)
@@ -166,18 +225,29 @@ namespace GalaxyCheck.Internal
                 return null;
             }
 
+            // The nearest folder with the project file of the assembly. Else, for a project whose assembly name
+            // differs from its file name, the first folder above the assembly that holds any project file, when it
+            // holds exactly one. Never a folder above that first one.
             var assemblyName = assembly.GetName().Name;
+            string? fallback = null;
+            var passedFirstProjectFolder = false;
             for (var folder = new FileInfo(location).Directory; folder != null; folder = folder.Parent)
             {
                 try
                 {
-                    var holdsProject = folder.EnumerateFiles()
-                        .Any(file =>
-                            ProjectFileExtensions.Contains(file.Extension, StringComparer.OrdinalIgnoreCase) &&
-                            string.Equals(Path.GetFileNameWithoutExtension(file.Name), assemblyName, StringComparison.OrdinalIgnoreCase));
-                    if (holdsProject)
+                    var projectFiles = folder.EnumerateFiles()
+                        .Where(file => ProjectFileExtensions.Contains(file.Extension, StringComparer.OrdinalIgnoreCase))
+                        .ToList();
+                    if (projectFiles.Any(file =>
+                            string.Equals(Path.GetFileNameWithoutExtension(file.Name), assemblyName, StringComparison.OrdinalIgnoreCase)))
                     {
                         return folder.FullName;
+                    }
+
+                    if (projectFiles.Count > 0 && !passedFirstProjectFolder)
+                    {
+                        passedFirstProjectFolder = true;
+                        fallback = projectFiles.Count == 1 ? folder.FullName : null;
                     }
                 }
                 catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is System.Security.SecurityException)
@@ -185,7 +255,7 @@ namespace GalaxyCheck.Internal
                 }
             }
 
-            return null;
+            return fallback;
         }
 
         /// <summary>The folder that the build recorded, when it exists on this machine.</summary>
