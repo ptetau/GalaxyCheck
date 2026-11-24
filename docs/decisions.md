@@ -20,6 +20,9 @@ This is less useful than applying any shrink function to any generator at any po
 
 2021-01-01
 
+Update: the current engine does not build example spaces. A generator records its choices, and the shrinker
+works on the recorded choices. Thus, this decision no longer applies. Read [Performance](performance.md).
+
 ## Use FsCheck over Hedgehog for property tests requiring "arbitrary" values
 
 FsCheck just seems easier to use with the `[Property]` attribute. However, I'm not sure how it flies when you're creating higher-order generators.
@@ -27,6 +30,9 @@ FsCheck just seems easier to use with the `[Property]` attribute. However, I'm n
 FsCheck is good for now, for terseness. But will experiment with Hedgehog further down the line. GalaxyCheck will be used when stable enough.
 
 2021-01-01
+
+Update: the test projects no longer use FsCheck or Hedgehog. The tests of the library use the current
+GalaxyCheck for their own properties, through a project reference.
 
 ## Randomness is treated with prudence, and its consumption measured
 
@@ -39,6 +45,10 @@ The metric also gives some nice introspection into how generators behave, for te
 The RNG model in GalaxyCheck should therefore behave like a single linked-list. The seed that an RNG uses is not only used to generate values from that RNG, but also to create the next RNG. For contrast, in other frameworks, to ensure distribution of values, the RNG is split and then one part of it is handed off to a generator, whether or not the generator needs to consume that randomness or not. The other part is used to seed the next RNG.
 
 2021-01-03
+
+Update: in the current engine, a generator reads each choice from a source of choices (`GenSource`). In a
+random run, the source draws each choice and records it. In a replay, the source reads the recorded choices.
+The replay string holds the recorded choices. Thus, the RNG model of this decision no longer applies.
 
 ## Test generators through an aggregation function
 
@@ -68,11 +78,18 @@ This means we need to place an error signal into the stream, so that the consume
 
 2021-01-03
 
+Update: in the current engine, a generator error stops the generation of one value, and the run throws
+`GalaxyCheck.Exceptions.GenErrorException`. The message of the error ends with a line that starts with `Fix:`.
+
 ## Generators should never terminate
 
 It's a feature that generators produce streams rather than single values. It enables infinite loop handling (we can write discard tokens into the stream, then the consumer can give up after seeing a certain density of discards). Because a generator needs to produce an arbitrary amount of iterations whenever it's called, then consumers should be prepared for excruciatingly large amounts of iterations. To ensure they can handle excruciatingly large streams, then we should always be generating infinite streams. For the stream aggregating code to be regular, then streams should always be infinite. This includes when streams terminate by error - rather than terminating they should repeat the error token.
 
 2021-01-03
+
+Update: the current engine makes one value at a time from a source of choices, not an infinite stream. A
+filter that discards too many values trips the health check `TooManyDiscards`. Read
+[Health checks](health-checks.md).
 
 ## Properties are generators
 
