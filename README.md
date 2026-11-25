@@ -1,5 +1,7 @@
 # GalaxyCheck
 
+> **Fork notice:** This repository is a fork of [nth-commit/GalaxyCheck](https://github.com/nth-commit/GalaxyCheck) by [@nth-commit](https://github.com/nth-commit). All original architecture, API design, and foundational implementation belong to upstream `nth-commit/GalaxyCheck`; this fork adds `.NET 10`/`.NET 11` targeting, a rewritten `GenSource`/`Shrinker` core, additional generators and framework integrations (`xUnit v3`, `TUnit`, `NUnit`, `MSTest`), AOT source generation, agent diagnostics, and compile-time formal verification via [Verifiable.NET](https://github.com/ptetau/Verifiable.NET).
+
 GalaxyCheck is a property-based testing library for .NET, in the style of
 [FsCheck](https://github.com/fscheck/FsCheck). The design of GalaxyCheck comes more directly from
 [fast-check](https://github.com/dubzzz/fast-check), [jqwik](https://github.com/jlink/jqwik), and

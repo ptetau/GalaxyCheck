@@ -1,5 +1,7 @@
 # GalaxyCheck documentation
 
+> **Fork notice:** `ptetau/GalaxyCheck` is a fork of [nth-commit/GalaxyCheck](https://github.com/nth-commit/GalaxyCheck) by [@nth-commit](https://github.com/nth-commit).
+
 This index lists each page of the documentation. Start with [Getting started](getting-started.md) and
 [Writing properties](writing-properties.md).
 
