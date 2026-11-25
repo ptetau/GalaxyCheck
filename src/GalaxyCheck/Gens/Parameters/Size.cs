@@ -5,7 +5,7 @@ namespace GalaxyCheck.Gens.Parameters
 {
     /// <summary>Refined size value constrained to [0, 100].</summary>
     [TypeAlias<int>("Test case size must stay between 0 and 100 so generator magnitude scaling remains bounded.")]
-    public readonly partial record struct BoundedSize
+    internal readonly partial record struct BoundedSize
     {
         /// <summary>Returns true when <paramref name="value"/> is in [0, 100].</summary>
         public static bool IsValid(int value) => value >= 0 && value <= 100;
@@ -40,7 +40,7 @@ namespace GalaxyCheck.Gens.Parameters
 
         /// <summary>Creates a size from a verified <see cref="BoundedSize"/>.</summary>
         [Verifiable]
-        public static Size From(BoundedSize value) => new Size(value, true);
+        internal static Size From(BoundedSize value) => new Size(value, true);
 
         private Size(BoundedSize value, bool _)
         {
