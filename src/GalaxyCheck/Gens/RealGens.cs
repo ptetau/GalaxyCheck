@@ -66,6 +66,7 @@ namespace GalaxyCheck.Gens
     /// near one are common. A value that the bounds do not hold is the bound, so that a larger choice never gives a
     /// value closer to the origin.
     /// </summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed record RealGen<T>(
         RealFormat<T> Format,
         T? Min = null,
@@ -307,6 +308,7 @@ namespace GalaxyCheck.Gens
         }
     }
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed record ComplexGen(bool NoSpecials = false) : BaseGen<Complex>, IComplexGen
     {
         private static readonly IGenAdvanced<double> Parts = Gen.Double().Advanced;

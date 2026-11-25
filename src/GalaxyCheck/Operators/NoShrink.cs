@@ -21,6 +21,7 @@ namespace GalaxyCheck.Gens.Internal
     /// Records one frozen choice, a seed, and generates the value from a private source with that seed. The shrinker
     /// does not change a frozen choice, so the value does not shrink.
     /// </summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed record NoShrinkGen<T>(IGen<T> Source) : BaseGen<T>
     {
         public override T Generate(GenSource source)

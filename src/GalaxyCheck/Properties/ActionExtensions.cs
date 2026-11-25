@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 
 namespace GalaxyCheck.Properties
 {
+    [global::Verifiable.Contracts.Unverifiable]
     internal static class ActionExtensions
     {
         public static Func<bool> AsTrueFunc(this Action action) => () =>

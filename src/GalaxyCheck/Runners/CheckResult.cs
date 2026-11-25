@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+using Verifiable.Contracts;
 using System;
 using System.Collections.Generic;
 using GalaxyCheck.Gens.Parameters;
@@ -13,6 +15,7 @@ namespace GalaxyCheck.Runners.Check
     /// <param name="InitialParameters">The seed and size of the first test case.</param>
     /// <param name="NextParameters">The seed and size that a next run would start from.</param>
     /// <param name="TerminationReason">Why the run stopped.</param>
+    [Verifiable]
     public record CheckResult<T>(
         int Iterations,
         int Discards,
@@ -44,10 +47,13 @@ namespace GalaxyCheck.Runners.Check
 
         /// <summary>The text of the run.</summary>
         [System.Runtime.Serialization.IgnoreDataMember]
-        public string Report => ReportBuilder.Build(this);
-
+        public string Report
+        {
+            [Unverifiable]
+            get => ReportBuilder.Build(this);
+        }
         private static readonly System.Collections.Generic.IReadOnlyDictionary<string, double> EmptyLabels =
-            new System.Collections.Generic.Dictionary<string, double>();
+            ImmutableDictionary<string, double>.Empty;
 
         internal System.Collections.Generic.IReadOnlyDictionary<string, double>? LabelShares { get; init; }
 
@@ -56,7 +62,12 @@ namespace GalaxyCheck.Runners.Check
         /// <summary>The count of the values of the input space of an exhaustive run.</summary>
         internal long ExhaustiveCount { get; init; }
 
+        /// <summary>The verified invariant that run counts cannot be negative.</summary>
+        [Invariant("Run iterations, discards, and shrinks cannot be negative.")]
+        public bool HasValidCounts() => Iterations >= 0 && Discards >= 0 && Shrinks >= 0;
+
         /// <summary>Writes the iterations and whether the run falsified the property.</summary>
+        [Unverifiable]
         protected virtual bool PrintMembers(System.Text.StringBuilder builder)
         {
             builder.Append("Iterations = ").Append(Iterations).Append(", Falsified = ").Append(Falsified);
@@ -87,6 +98,7 @@ namespace GalaxyCheck.Runners.Check
     /// <param name="RequiredPercent">The share of the test cases that the rule requires, as a percentage.</param>
     /// <param name="ActualPercent">The share of the test cases that had the label, as a percentage.</param>
     /// <param name="Message">The text that states the label, the required share, and the share that was reached.</param>
+    [Verifiable]
     public record CoverageFailure(
         string Label,
         double RequiredPercent,
@@ -99,6 +111,7 @@ namespace GalaxyCheck.Runners.Check
     /// <param name="Replay">The replay string. Pass it as the replay argument, or in [Replay], to run this test case again.</param>
     /// <param name="Exception">The exception of the test function, or null when it returned false.</param>
     /// <param name="PresentedInput">The input values as a report shows them, one for each parameter.</param>
+    [Verifiable]
     public record Counterexample<T>(
         T Value,
         GenParameters ReplayParameters,
@@ -132,6 +145,23 @@ namespace GalaxyCheck.Runners
 {
     using GalaxyCheck.Runners.Check;
 
+    [Verifiable]
+    internal static class ReportFormatter
+    {
+        public static string FormatPassedHeadline(int iterations)
+        {
+            Spec.Requires(iterations >= 0, "Iteration count cannot be negative.");
+            return iterations == 1 ? "Passed after 1 test" : $"Passed after {iterations} tests";
+        }
+
+        public static string FormatExhaustiveLine(long count)
+        {
+            Spec.Requires(count >= 0, "Exhaustive input count cannot be negative.");
+            return $"Exhaustive: the run was exhaustive, and each of the {count} possible inputs ran one time";
+        }
+    }
+
+    [Unverifiable]
     internal static class ReportBuilder
     {
         /// <summary>The lines that list each label with its share.</summary>
@@ -175,14 +205,13 @@ namespace GalaxyCheck.Runners
 
             var lines = new System.Collections.Generic.List<string>
             {
-                result.Iterations == 1 ? "Passed after 1 test" : $"Passed after {result.Iterations} tests"
+                ReportFormatter.FormatPassedHeadline(result.Iterations)
             };
 
             if (result.IsExhaustive)
             {
-                lines.Add($"Exhaustive: the run was exhaustive, and each of the {result.ExhaustiveCount} possible inputs ran one time");
+                lines.Add(ReportFormatter.FormatExhaustiveLine(result.ExhaustiveCount));
             }
-
             if (labelLines.Count > 0)
             {
                 lines.Add("Labels:");

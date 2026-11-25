@@ -10,6 +10,7 @@ namespace GalaxyCheck.Gens.Generated
     /// reflection path. Do not call it from your own code.
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
+    [global::Verifiable.Contracts.Unverifiable]
     public static class GeneratedGens
     {
         private static readonly ConcurrentDictionary<Type, Func<IGen>> CreatesByType = new();
@@ -41,6 +42,7 @@ namespace GalaxyCheck.Gens.Generated
     /// Do not call them from your own code.
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
+    [global::Verifiable.Contracts.Unverifiable]
     public static class GeneratedGenHelpers
     {
         /// <summary>

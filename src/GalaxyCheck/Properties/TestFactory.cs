@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 
 namespace GalaxyCheck.Properties
 {
+    [global::Verifiable.Contracts.Unverifiable]
     internal static class TestFactory
     {
         private record TestOutputImpl(Property.TestResult Result, Exception? Exception) : Property.TestOutput;

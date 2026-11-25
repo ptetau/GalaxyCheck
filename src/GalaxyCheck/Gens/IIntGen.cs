@@ -37,6 +37,7 @@ namespace GalaxyCheck.Gens
         IIntGen<T> WithBias(Gen.Bias bias);
     }
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal record FatalIntGen<T> : GenProvider<T>, IIntGen<T>
     {
         private readonly Exception _ex;

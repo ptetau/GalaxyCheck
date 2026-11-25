@@ -1,3 +1,4 @@
+using Verifiable.Contracts;
 using GalaxyCheck.Gens.Parameters;
 using System.Numerics;
 
@@ -7,6 +8,28 @@ namespace GalaxyCheck.Gens.Internal
     /// Generates integers as choices. An integer is a side (above or below the origin) and a distance from the
     /// origin, so that the smallest choices are the values nearest to the origin.
     /// </summary>
+    [Verifiable]
+    internal static class IntCoreMath
+    {
+        public static long InferOrigin(long min, long max)
+        {
+            Spec.Requires(min <= max, "Range minimum cannot exceed range maximum when inferring origin.");
+            Spec.Ensures<long>(origin => origin >= min && origin <= max, "Inferred origin lies within [min, max].");
+            if (min > 0) return min;
+            if (max < 0) return max;
+            return 0;
+        }
+
+        public static int AllowedBitWidth(int size, int totalBits)
+        {
+            Spec.Requires(size >= 0 && size <= 100 && totalBits >= 0 && totalBits <= 64, "Size is 0..100 and bit width is 0..64.");
+            Spec.Ensures<int>(bits => bits >= 0 && bits <= totalBits, "Scaled bit width never exceeds the full bit width.");
+            return (size * totalBits + 99) / 100;
+        }
+    }
+
+    // Hot-path pooled choice-tape integer generator; kept [Unverifiable] for zero-allocation GenSource mutation.
+    [Unverifiable]
     internal static class IntCore
     {
         /// <summary>
@@ -144,16 +167,11 @@ namespace GalaxyCheck.Gens.Internal
         {
             if (full == 0 || size >= 100) return full;
             var bits = 64 - BitOperations.LeadingZeroCount(full);
-            var allowedBits = (size * bits + 99) / 100;
+            var allowedBits = IntCoreMath.AllowedBitWidth(size <= 0 ? 0 : size, bits);
             var limit = allowedBits >= 64 ? ulong.MaxValue : (1UL << allowedBits) - 1;
             return limit < full ? limit : full;
         }
 
-        public static long InferOrigin(long min, long max)
-        {
-            if (min > 0) return min;
-            if (max < 0) return max;
-            return 0;
-        }
+        public static long InferOrigin(long min, long max) => IntCoreMath.InferOrigin(min, max);
     }
 }

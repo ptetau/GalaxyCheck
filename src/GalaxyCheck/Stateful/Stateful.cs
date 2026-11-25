@@ -18,6 +18,7 @@ namespace GalaxyCheck.Stateful
     /// One step of a stateful test, against a real system and a model of it. The report shows a command by its
     /// <c>ToString()</c>, on one line (see <see cref="CommandText"/>).
     /// </summary>
+    [global::Verifiable.Contracts.Unverifiable]
     public abstract class Command<TSystem, TModel> : IStatefulCommand
     {
         /// <summary>True if the command may run when the model is <paramref name="model"/>. The generator and the
@@ -46,6 +47,7 @@ namespace GalaxyCheck.Stateful
     /// becomes <c>\u003c-</c>, so that only the report writes <c>&lt;- failed</c>. Ordinary text has no change. A
     /// <c>ToString()</c> that throws gives <c>&lt;ToString() threw TypeName&gt;</c>.
     /// </summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal static class CommandText
     {
         public static string Of(object? command)
@@ -109,6 +111,7 @@ namespace GalaxyCheck.Stateful
     }
 
     /// <summary>Generators of command sequences for stateful tests.</summary>
+    [global::Verifiable.Contracts.Unverifiable]
     public static class StatefulGen
     {
         /// <summary>Generates sequences of commands. Each next command comes from the model after the commands before it.</summary>
@@ -123,6 +126,7 @@ namespace GalaxyCheck.Stateful
     }
 
     /// <summary>Properties of stateful systems.</summary>
+    [global::Verifiable.Contracts.Unverifiable]
     public static class StatefulProperty
     {
         /// <summary>Creates a property that runs each command sequence on a new system and checks each postcondition against the model.</summary>
@@ -147,6 +151,7 @@ namespace GalaxyCheck.Stateful
     /// and a command whose precondition is false there is never kept. The shrinker replays edited choices through
     /// this generator, so each shrunk sequence holds each precondition too (I6, StatefulRun.X1).
     /// </summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed record CommandsGen<TSystem, TModel>(
         Func<TModel> NewModel,
         Func<TModel, IGen<Command<TSystem, TModel>>> NextCommand) : BaseGen<IReadOnlyList<Command<TSystem, TModel>>>
@@ -215,6 +220,7 @@ namespace GalaxyCheck.Stateful
     }
 
     /// <summary>A generated sequence of commands. It has no C# expression, and its text lists the commands.</summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed class CommandSequence<TSystem, TModel> : IReadOnlyList<Command<TSystem, TModel>>
     {
         private readonly List<Command<TSystem, TModel>> _commands;
@@ -236,6 +242,7 @@ namespace GalaxyCheck.Stateful
     }
 
     /// <summary>One run of a sequence against a new system and a new model (the machine StatefulRun).</summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal static class StatefulRun
     {
         public static bool Run<TSystem, TModel>(
@@ -322,6 +329,7 @@ namespace GalaxyCheck.Stateful
     }
 
     /// <summary>The failure of a stateful run. Its message lists the commands and marks the command that failed.</summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed class StatefulCommandFailedException : Exception
     {
         public StatefulCommandFailedException(string reason, IEnumerable commands, int failedIndex, Exception? inner)

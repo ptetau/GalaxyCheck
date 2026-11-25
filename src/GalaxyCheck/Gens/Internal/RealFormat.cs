@@ -8,6 +8,7 @@ namespace GalaxyCheck.Gens.Internal
     /// a power of the radix. Each value is built only with exact operations, so that a seed gives the same values on
     /// each runtime. A new real number type needs only a new format.
     /// </summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal abstract class RealFormat<T>
         where T : struct, INumber<T>
     {
@@ -53,6 +54,7 @@ namespace GalaxyCheck.Gens.Internal
     /// The format of a binary floating-point type: <see cref="Half"/>, <see cref="float"/>, <see cref="double"/>, and
     /// on .NET 11 BFloat16.
     /// </summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed class BinaryRealFormat<T> : RealFormat<T>
         where T : struct, IBinaryFloatingPointIeee754<T>, IMinMaxValue<T>
     {
@@ -125,6 +127,7 @@ namespace GalaxyCheck.Gens.Internal
     /// <summary>
     /// The format of <see cref="decimal"/>. Its special values are zero, the minimum, and the maximum.
     /// </summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed class DecimalRealFormat : RealFormat<decimal>
     {
         public static readonly DecimalRealFormat Instance = new();

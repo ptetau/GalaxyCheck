@@ -4,6 +4,7 @@ namespace GalaxyCheck.Internal
 {
     internal interface IEither<out TLeft, out TRight> { }
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal abstract class Either<TLeft, TRight> : IEither<TLeft, TRight>
     {
         public static implicit operator Either<TLeft, TRight>(TLeft left)
@@ -17,6 +18,7 @@ namespace GalaxyCheck.Internal
         }
     }
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed class Left<TLeft, TRight> : Either<TLeft, TRight>
     {
         public Left(in TLeft left)
@@ -30,6 +32,7 @@ namespace GalaxyCheck.Internal
         public static implicit operator TLeft(Left<TLeft, TRight> left) => left.Value;
     }
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal class Right<TLeft, TRight> : Either<TLeft, TRight>
     {
         public Right(in TRight right)
@@ -44,6 +47,7 @@ namespace GalaxyCheck.Internal
 
     }
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal static class EitherExtension
     {
         public static bool IsLeft<TLeft, TRight>(this Either<TLeft, TRight> either, out TLeft left)

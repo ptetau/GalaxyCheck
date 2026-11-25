@@ -10,6 +10,7 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers
 {
     [RequiresUnreferencedCode(ReflectionMessages.Path)]
     [RequiresDynamicCode(ReflectionMessages.Path)]
+    [global::Verifiable.Contracts.Unverifiable]
     internal static class ReflectedGenBuilder
     {
         public static IGen Build(

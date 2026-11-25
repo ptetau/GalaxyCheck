@@ -8,6 +8,7 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
 {
     [RequiresUnreferencedCode(ReflectionMessages.Path)]
     [RequiresDynamicCode(ReflectionMessages.Path)]
+    [global::Verifiable.Contracts.Unverifiable]
     internal class RegistryReflectedGenHandler : IReflectedGenHandler
     {
         private readonly IReadOnlyDictionary<Type, Func<IGen>> _registeredGensByType;

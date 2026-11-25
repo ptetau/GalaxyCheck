@@ -1,9 +1,11 @@
-﻿using System;
+﻿using Verifiable.Contracts;
+using System;
 using GalaxyCheck.Gens.Parameters;
 
 namespace GalaxyCheck
 {
     /// <summary>The exceptions that GalaxyCheck throws.</summary>
+    [Unverifiable]
     public static class Exceptions
     {
         /// <summary>Thrown when a generator cannot generate, for example when its options conflict. The last line of the message starts with <c>Fix: </c>.</summary>

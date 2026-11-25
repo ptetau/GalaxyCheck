@@ -1,3 +1,4 @@
+using Verifiable.Contracts;
 using GalaxyCheck.Gens.Internal;
 using GalaxyCheck.Gens.Parameters;
 using GalaxyCheck.Runners;
@@ -51,20 +52,28 @@ namespace GalaxyCheck.Runners.Sample
     /// <param name="Value">The sampled value.</param>
     /// <param name="Discards">The count of discarded values.</param>
     /// <param name="RandomnessConsumption">The count of random choices that the generator made.</param>
+    [Verifiable]
     public record SampleOneWithMetricsResult<T>(
         T Value,
         int Discards,
-        int RandomnessConsumption);
+        int RandomnessConsumption)
+    {
+        /// <summary>The verified invariant that sample discard and randomness counts cannot be negative.</summary>
+        [Invariant("Sample discard and randomness counts cannot be negative.")]
+        public bool HasValidCounts() => Discards >= 0 && RandomnessConsumption >= 0;
+    }
 
     /// <summary>Sampled values, with metrics.</summary>
     /// <param name="Values">The sampled values.</param>
     /// <param name="Discards">The count of discarded values.</param>
     /// <param name="RandomnessConsumption">The count of random choices that the generator made.</param>
+    [Unverifiable]
     public record SampleWithMetricsResult<T>(
         List<T> Values,
         int Discards,
         int RandomnessConsumption);
 
+    [Unverifiable]
     internal static class SampleHelpers
     {
         internal static SampleWithMetricsResult<T> Run<T>(

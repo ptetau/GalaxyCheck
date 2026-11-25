@@ -16,6 +16,7 @@ namespace GalaxyCheck.Gens
     using GalaxyCheck.Gens.Parameters;
     using System;
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed record GuidGen : BaseGen<Guid>
     {
         public override Guid Generate(GenSource source)

@@ -131,6 +131,7 @@ namespace GalaxyCheck.Gens
     /// A generator of an integer type. A type of at most 64 bits uses the choices of <see cref="IntCore"/>, and a
     /// wider type uses the choices of <see cref="WideIntCore"/>.
     /// </summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed record IntegerGen<T>(
         T DefaultMin,
         T DefaultMax,
@@ -216,6 +217,7 @@ namespace GalaxyCheck.Gens
             : T.CreateTruncating(unchecked((ulong)value ^ SignBit));
     }
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal static class IntegerGenExtensions
     {
         public static IIntGen<T> Between<T>(IIntGen<T> gen, T x, T y)

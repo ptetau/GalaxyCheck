@@ -92,6 +92,7 @@ namespace GalaxyCheck
 namespace GalaxyCheck.Runners
 {
     /// <summary>Thrown by Assert when a property fails. The message holds the counterexample, the replay string, and a JSON block for tools.</summary>
+    [global::Verifiable.Contracts.Unverifiable]
     public class PropertyFailedException : Exception
     {
         private readonly Counterexample<object?>? _counterexample;

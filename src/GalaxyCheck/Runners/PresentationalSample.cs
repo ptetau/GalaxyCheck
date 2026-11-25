@@ -37,6 +37,7 @@ namespace GalaxyCheck
 
 namespace GalaxyCheck.Runners.Sample
 {
+    [global::Verifiable.Contracts.Unverifiable]
     internal static class PresentationalSampleHelpers
     {
         internal static SampleWithMetricsResult<IReadOnlyList<object?>> RunPresentationalValueSample(

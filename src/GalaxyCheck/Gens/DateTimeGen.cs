@@ -54,6 +54,7 @@ namespace GalaxyCheck.Gens
         IDateTimeGen Until(DateTime dateTime);
     }
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal record DateTimeGen(
         DateTime? FromDateTime = null,
         DateTime? UntilDateTime = null) : Internal.BaseGen<DateTime>, IDateTimeGen

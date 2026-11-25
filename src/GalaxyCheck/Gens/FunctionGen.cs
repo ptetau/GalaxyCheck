@@ -94,6 +94,7 @@ namespace GalaxyCheck.Gens
 
     internal delegate TResult VariadicFunc<out TResult>(params object?[] args);
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal record VariadicFunctionGen<TResult> : GenProvider<VariadicFunc<TResult>>
     {
         private readonly IGen<TResult> _returnGen;

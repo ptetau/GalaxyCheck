@@ -4,6 +4,7 @@ namespace GalaxyCheck.Gens.Injection.Int32
 {
     /// <summary>Generates an int parameter at or below a maximum.</summary>
     [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false)]
+    [global::Verifiable.Contracts.Unverifiable]
     public class LessThanEqualAttribute : GenAttribute
     {
         /// <summary>The inclusive maximum.</summary>

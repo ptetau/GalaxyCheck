@@ -43,6 +43,7 @@ namespace GalaxyCheck.Gens
     /// Builds one generator per depth. The generator of depth d chooses a leaf (choice 0) or a wrap of the generator
     /// of depth d - 1 (choice 1), so the depth never passes the limit and a failing value shrinks towards a leaf.
     /// </summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed record RecursiveGen<T>(IGen<T> LeafGen, Func<IGen<T>, IGen<T>> Wrap, int MaxDepth) : GenProvider<T>
     {
         public const int MaxDepthLimit = 100;

@@ -42,6 +42,7 @@ namespace GalaxyCheck.Gens.Internal
     using System;
     using System.Collections.Generic;
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed record DictionaryGen<TKey, TValue>(
         IGen<TKey> KeyGen,
         IGen<TValue> ValueGen,

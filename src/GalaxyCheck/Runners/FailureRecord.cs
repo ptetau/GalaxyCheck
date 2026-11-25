@@ -13,6 +13,7 @@ namespace GalaxyCheck.Runners
     /// <c>&lt;galaxycheck-failure&gt;</c> and <c>&lt;/galaxycheck-failure&gt;</c>. JSON escapes each line break of a
     /// value, so a value cannot end the block.
     /// </summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal static class FailureRecord
     {
         public const string StartLine = "<galaxycheck-failure>";

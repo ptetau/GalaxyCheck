@@ -4,6 +4,7 @@ namespace GalaxyCheck.Gens.Injection.Int32
 {
     /// <summary>Generates an int parameter between two bounds, both inclusive.</summary>
     [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false)]
+    [global::Verifiable.Contracts.Unverifiable]
     public class BetweenAttribute : GenAttribute
     {
         /// <summary>The first bound.</summary>

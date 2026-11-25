@@ -76,6 +76,7 @@ namespace GalaxyCheck.Gens
     using GalaxyCheck.Gens.Internal;
     using GalaxyCheck.Gens.Parameters;
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal record Int64Gen(
         long? Min = null,
         long? Max = null,

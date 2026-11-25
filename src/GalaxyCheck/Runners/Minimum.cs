@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Verifiable.Contracts;
+using System;
 
 namespace GalaxyCheck
 {
@@ -55,7 +56,13 @@ namespace GalaxyCheck.Runners
     /// <summary>The result of Minimum: the shrunk value and the count of shrinks.</summary>
     /// <param name="Value">The shrunk value.</param>
     /// <param name="Shrinks">The count of shrinks.</param>
+    [Verifiable]
     public record MinimumWithMetrics<T>(
         T Value,
-        int Shrinks);
+        int Shrinks)
+    {
+        /// <summary>The verified invariant that shrink count cannot be negative.</summary>
+        [Invariant("Shrink count cannot be negative.")]
+        public bool HasValidShrinks() => Shrinks >= 0;
+    }
 }

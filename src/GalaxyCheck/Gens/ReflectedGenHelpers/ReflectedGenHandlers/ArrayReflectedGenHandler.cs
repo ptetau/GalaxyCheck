@@ -8,6 +8,7 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
 {
     [RequiresUnreferencedCode(ReflectionMessages.Path)]
     [RequiresDynamicCode(ReflectionMessages.Path)]
+    [global::Verifiable.Contracts.Unverifiable]
     internal class ArrayReflectedGenHandler : IReflectedGenHandler, IEmptyCollectionGenHandler
     {
         public bool CanHandleGen(Type type, ReflectedGenHandlerContext context) => type.IsArray;

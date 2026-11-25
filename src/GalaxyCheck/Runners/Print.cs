@@ -78,6 +78,7 @@ namespace GalaxyCheck
 
 namespace GalaxyCheck.Runners.Print
 {
+    [global::Verifiable.Contracts.Unverifiable]
     internal static class PrintHelpers
     {
         internal static void Print(

@@ -1,8 +1,10 @@
-﻿using System;
+﻿using Verifiable.Contracts;
+using System;
 
 namespace GalaxyCheck
 {
     /// <summary>The entry point of the generators, for example <c>Gen.Int32()</c> or <c>Gen.Create&lt;T&gt;()</c>.</summary>
+    [Unverifiable]
     public static partial class Gen
     {
         /// <summary>

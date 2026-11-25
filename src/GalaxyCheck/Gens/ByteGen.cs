@@ -77,6 +77,7 @@ namespace GalaxyCheck.Gens
     using GalaxyCheck.Gens.Internal;
     using GalaxyCheck.Gens.Parameters;
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal record ByteGen(
         byte? Min = null,
         byte? Max = null,

@@ -9,6 +9,7 @@ namespace GalaxyCheck.Runners
     /// Runs the test function of one test case under a time limit. The function runs on its own thread, so that a
     /// function that never returns cannot hold the run. The runner leaves such a thread behind: it does not abort it.
     /// </summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal static class Timeouts
     {
         /// <summary>The time that a function gets to end after its token is cancelled.</summary>

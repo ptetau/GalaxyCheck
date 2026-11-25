@@ -17,6 +17,7 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
     /// </summary>
     [RequiresUnreferencedCode(ReflectionMessages.Path)]
     [RequiresDynamicCode(ReflectionMessages.Path)]
+    [global::Verifiable.Contracts.Unverifiable]
     internal class ImplementationReflectedGenHandler : IReflectedGenHandler
     {
         private readonly ImmutableDictionary<Type, ImmutableArray<Type>> _candidateTypesByType;
@@ -104,6 +105,7 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
 
     [RequiresUnreferencedCode(ReflectionMessages.Path)]
     [RequiresDynamicCode(ReflectionMessages.Path)]
+    [global::Verifiable.Contracts.Unverifiable]
     internal static class OneOf
     {
         /// <summary>Makes a pick generator that is typed to the given type.</summary>
@@ -112,6 +114,7 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
     }
 
     /// <summary>Picks one of the generators with equal chances. The pick shrinks toward the first generator.</summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed record OneOfGen<T>(IGenAdvanced[] Gens) : BaseGen<T>
     {
         public override T Generate(GenSource source)

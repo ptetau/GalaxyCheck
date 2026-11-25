@@ -13,6 +13,7 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
     /// </summary>
     [RequiresUnreferencedCode(ReflectionMessages.Path)]
     [RequiresDynamicCode(ReflectionMessages.Path)]
+    [global::Verifiable.Contracts.Unverifiable]
     internal class DictionaryReflectedGenHandler : IReflectedGenHandler, IEmptyCollectionGenHandler
     {
         private static readonly IReadOnlyDictionary<Type, string> GenMethodByGenericTypeDefinition =

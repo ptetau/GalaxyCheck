@@ -2,6 +2,7 @@ using System.Collections.Generic;
 
 namespace GalaxyCheck.Internal
 {
+    [global::Verifiable.Contracts.Unverifiable]
     internal static class EnumerableExtensions
     {
         public static void Deconstruct<T>(this IEnumerable<T> source, out T? head, out IEnumerable<T> tail)

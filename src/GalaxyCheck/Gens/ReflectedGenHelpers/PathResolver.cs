@@ -6,6 +6,7 @@ using System.Linq.Expressions;
 
 namespace GalaxyCheck.Gens.ReflectedGenHelpers
 {
+    [global::Verifiable.Contracts.Unverifiable]
     internal class PathResolver
     {
         public static Either<(string path, string expression), string> FromExpression<T, TMember>(

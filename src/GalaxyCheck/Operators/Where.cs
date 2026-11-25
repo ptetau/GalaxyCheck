@@ -20,6 +20,7 @@ namespace GalaxyCheck
 
 namespace GalaxyCheck.Gens.Internal
 {
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed record WhereGen<T>(IGen<T> Source, Func<T, bool> Predicate) : BaseGen<T>, GalaxyCheck.Properties.IFiniteGen
     {
         /// <summary>

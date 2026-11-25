@@ -10,6 +10,7 @@ namespace GalaxyCheck.Gens.Parameters
     /// generator and records it. In replay mode, the source reads each choice from a recorded sequence, so that the
     /// same generator produces the same value. Shrinking works on the recorded sequence.
     /// </summary>
+    [global::Verifiable.Contracts.Unverifiable]
     public sealed class GenSource
     {
         private const ulong Gamma = 0x9E3779B97F4A7C15UL;

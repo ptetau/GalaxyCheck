@@ -1,3 +1,4 @@
+using Verifiable.Contracts;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -7,6 +8,7 @@ namespace GalaxyCheck.Properties
     /// <summary>
     /// Thrown by <c>Property.Precondition(false)</c>. The runner discards the test case.
     /// </summary>
+    [Unverifiable]
     internal sealed class PreconditionFailedException : Exception
     {
         public static readonly PreconditionFailedException Instance = new PreconditionFailedException();
@@ -19,6 +21,7 @@ namespace GalaxyCheck.Properties
     /// <summary>
     /// The exception of a test case that ran over the time limit.
     /// </summary>
+    [Unverifiable]
     internal sealed class TestTimeoutException : TimeoutException
     {
         public TestTimeoutException(long milliseconds) : base($"Timed out after {milliseconds} ms")
@@ -29,6 +32,7 @@ namespace GalaxyCheck.Properties
     /// <summary>
     /// The token of the test case that runs now. The runner sets it on the thread that starts the test function.
     /// </summary>
+    [Unverifiable]
     internal static class TestContext
     {
         [ThreadStatic]
@@ -52,19 +56,44 @@ namespace GalaxyCheck.Properties
         long? Count(long limit);
 
         /// <summary>Appends the choices that make the value with the given index.</summary>
+        [Unverifiable]
         void WriteChoices(long index, List<ulong> choices);
     }
 
+    [Verifiable]
+    internal static class FiniteMath
+    {
+        public static bool IsWithinBounds(long min, long max, long origin) =>
+            min <= max && origin >= min && origin <= max;
+
+        public static long? CountBoundedInt(long min, long max, long origin, long limit)
+        {
+            Spec.Requires(limit > 0, "Exhaustive limit must be positive.");
+            Spec.Ensures<long?>(r => r == null || (r.Value >= 1 && r.Value <= limit), "Bounded integer count is either null (exceeds limit) or in [1, limit].");
+
+            if (min > max || origin < min || origin > max)
+            {
+                return null;
+            }
+
+            // Guard signed overflow before subtraction: if min < 0 and max >= 0 and max - min could exceed long.MaxValue.
+            if (min < 0 && max >= 0 && max > (long.MaxValue + min))
+            {
+                return null;
+            }
+
+            var span = max - min;
+            return span < limit ? span + 1 : null;
+        }
+    }
+
+    [Unverifiable]
     internal static class Finite
     {
         public static long? Of(IGen gen, long limit) => gen.Advanced is IFiniteGen finite ? finite.Count(limit) : null;
 
-        public static long? CountInt(long min, long max, long origin, long limit)
-        {
-            if (min > max || origin < min || origin > max) return null;
-            var span = unchecked((ulong)max - (ulong)min);
-            return span < (ulong)limit ? (long)span + 1 : null;
-        }
+        public static long? CountInt(long min, long max, long origin, long limit) =>
+            FiniteMath.CountBoundedInt(min, max, origin, limit);
 
         public static void WriteInt(long min, long max, long origin, long index, List<ulong> choices)
         {
@@ -118,6 +147,7 @@ namespace GalaxyCheck.Properties
     /// The count and the choices of a bind (SelectMany) of a small finite generator. The value of the source picks the
     /// generator that follows, so the walk generates each source value from its choices.
     /// </summary>
+    [Unverifiable]
     internal static class FiniteBind
     {
         private const long SourceLimit = 1000;
@@ -215,16 +245,43 @@ namespace GalaxyCheck.Properties
     /// <summary>
     /// The options of one check that the runner reads. The default value switches each feature off.
     /// </summary>
+    [Verifiable]
+    internal static class RunTimeoutMath
+    {
+        public static Result<long, bool> ResolveMilliseconds(bool hasTimeout, long totalMilliseconds)
+        {
+            Spec.Ensures<Result<long, bool>>(
+                r => !hasTimeout
+                    ? (r.IsSuccess && r.Value == 0)
+                    : (totalMilliseconds <= 0 ? !r.IsSuccess : (r.IsSuccess && r.Value == totalMilliseconds && r.Value >= 1)),
+                "Unset timeout yields 0ms; non-positive timeout fails; positive timeout preserves milliseconds >= 1.");
+
+            if (!hasTimeout)
+            {
+                return Result<long, bool>.Ok(0);
+            }
+
+            if (totalMilliseconds <= 0)
+            {
+                return Result<long, bool>.Fail(false);
+            }
+
+            return Result<long, bool>.Ok(totalMilliseconds);
+        }
+    }
+
+    [Unverifiable]
     internal readonly struct RunOptions
     {
         public RunOptions(TimeSpan? timeout, bool exhaustive, HealthCheck[]? suppressed)
         {
+            var resolved = RunTimeoutMath.ResolveMilliseconds(timeout != null, timeout == null ? 0 : (long)timeout.Value.TotalMilliseconds);
             if (timeout != null && timeout.Value <= TimeSpan.Zero)
             {
                 throw new Exceptions.GenErrorException("Error: 'timeout' must be greater than zero.", null);
             }
 
-            TimeoutMilliseconds = timeout == null ? 0 : Math.Max(1L, (long)timeout.Value.TotalMilliseconds);
+            TimeoutMilliseconds = timeout == null ? 0 : Math.Max(1L, resolved.IsSuccess ? resolved.Value : 1L);
             Exhaustive = exhaustive;
             HealthChecks = true;
 

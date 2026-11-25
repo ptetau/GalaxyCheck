@@ -34,6 +34,7 @@ namespace GalaxyCheck.Gens
     /// Picks an element. The elements are uniform by default; the characters of the char generator keep the bias of the
     /// string generator, so that a string is like a list of its characters.
     /// </summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed record ElementGen<T>(List<T> Elements, Gen.Bias Bias = Gen.Bias.None) : BaseGen<T>, GalaxyCheck.Properties.IFiniteGen
     {
         public long? Count(long limit) => Elements.Count <= limit ? Elements.Count : null;

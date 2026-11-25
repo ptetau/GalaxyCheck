@@ -2,6 +2,7 @@
 
 namespace GalaxyCheck.Gens.ReflectedGenHelpers
 {
+    [global::Verifiable.Contracts.Unverifiable]
     internal static class ReflectedGenHandlerExtensions
     {
         public static IGen CreateGen(

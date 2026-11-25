@@ -106,6 +106,7 @@ namespace GalaxyCheck.Gens
         IStringGen WithLengthBias(Gen.Bias lengthBias);
     }
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal record StringGen : BaseGen<string>, IStringGen
     {
         private abstract record StringGenCharConfig

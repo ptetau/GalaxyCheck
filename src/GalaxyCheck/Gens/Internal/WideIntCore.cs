@@ -8,6 +8,7 @@ namespace GalaxyCheck.Gens.Internal
     /// (above or below the origin) and a distance from the origin. The distance is one choice for each 64 bits, the
     /// highest part first, so that the smallest choices are the values nearest to the origin.
     /// </summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal static class WideIntCore
     {
         private static readonly BigInteger WordMask = ulong.MaxValue;

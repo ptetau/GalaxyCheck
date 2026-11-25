@@ -5,6 +5,7 @@ namespace GalaxyCheck
 
     public static partial class Gen
     {
+        [global::Verifiable.Contracts.Unverifiable]
         public static partial class Advanced
         {
             /// <summary>
@@ -36,6 +37,7 @@ namespace GalaxyCheck.Gens
     using GalaxyCheck.Gens.Internal;
     using GalaxyCheck.Gens.Parameters;
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal record ErrorGen<T> : BaseGen<T>, IGen<T>
     {
         private readonly string _message;

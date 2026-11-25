@@ -15,6 +15,7 @@ namespace GalaxyCheck.Runners
     /// progress hands back to the cheap passes. A span is the choices of one part of a value, for example an element
     /// of a collection, an attempt of a filter, or a branch of a choice.
     /// </remarks>
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed class Shrinker
     {
         private const int MaxCandidates = 20_000;

@@ -9,6 +9,7 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
 {
     [RequiresUnreferencedCode(ReflectionMessages.Path)]
     [RequiresDynamicCode(ReflectionMessages.Path)]
+    [global::Verifiable.Contracts.Unverifiable]
     internal class CompositeReflectedGenHandler : IReflectedGenHandler
     {
         private readonly IReadOnlyList<IReflectedGenHandler> _genHandlersByPriority;

@@ -39,6 +39,7 @@ namespace GalaxyCheck.Gens
 
     [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode(GalaxyCheck.Gens.Generated.ReflectionMessages.Path)]
     [System.Diagnostics.CodeAnalysis.RequiresDynamicCode(GalaxyCheck.Gens.Generated.ReflectionMessages.Path)]
+    [global::Verifiable.Contracts.Unverifiable]
     internal record ParametersGen : GenProvider<object[]>, IGen<object[]>
     {
         private readonly MethodInfo _methodInfo;

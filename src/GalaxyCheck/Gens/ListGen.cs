@@ -1,3 +1,4 @@
+using Verifiable.Contracts;
 namespace GalaxyCheck
 {
     using GalaxyCheck.Gens;
@@ -107,6 +108,7 @@ namespace GalaxyCheck.Gens
         IListGen<T> DisableCountLimitUnsafe();
     }
 
+    [Unverifiable]
     internal record ListGen<T>(
         IGen<T> ElementGen,
         RangeIntention Count,
@@ -133,9 +135,87 @@ namespace GalaxyCheck.Gens
         }
     }
 
-    internal static class CountRange
+    [Verifiable]
+    internal readonly record struct CountBounds(int MinCount, int MaxCount)
+    {
+        [Invariant("Collection count bounds are non-negative and MinCount <= MaxCount.")]
+        public bool IsValid() => MinCount >= 0 && MaxCount >= MinCount;
+    }
+
+    internal enum CountRangeErrorKind : byte
+    {
+        NegativeExactCount,
+        NegativeMinCount,
+        NegativeMaxCount,
+        MinGreaterThanMax,
+        LimitExceeded,
+    }
+
+    [Verifiable]
+    internal static class CountRangeResolver
     {
         public const int CountLimit = 1000;
+
+        public static Result<CountBounds, CountRangeErrorKind> TryResolve(RangeIntention count, bool enableCountLimit)
+        {
+            Spec.Ensures<Result<CountBounds, CountRangeErrorKind>>(
+                r => !r.IsSuccess || (r.Value.MinCount >= 0 && r.Value.MaxCount >= r.Value.MinCount && (!enableCountLimit || r.Value.MaxCount <= CountLimit)),
+                "Resolved collection count bounds are non-negative, ordered, and respect CountLimit when enabled.");
+
+            int minCount;
+            int maxCount;
+            if (count.Kind == RangeIntentionKind.Unspecified)
+            {
+                minCount = 0;
+                maxCount = 20;
+            }
+            else if (count.Kind == RangeIntentionKind.Exact)
+            {
+                if (count.ExactValue < 0)
+                {
+                    return Result<CountBounds, CountRangeErrorKind>.Fail(CountRangeErrorKind.NegativeExactCount);
+                }
+
+                minCount = count.ExactValue;
+                maxCount = count.ExactValue;
+            }
+            else
+            {
+                var resolvedMin = count.Minimum ?? 0;
+                var resolvedMax = count.Maximum ?? (resolvedMin > int.MaxValue - 20 ? int.MaxValue : resolvedMin + 20);
+
+                if (resolvedMin < 0)
+                {
+                    return Result<CountBounds, CountRangeErrorKind>.Fail(CountRangeErrorKind.NegativeMinCount);
+                }
+
+                if (resolvedMax < 0)
+                {
+                    return Result<CountBounds, CountRangeErrorKind>.Fail(CountRangeErrorKind.NegativeMaxCount);
+                }
+
+                if (resolvedMin > resolvedMax)
+                {
+                    return Result<CountBounds, CountRangeErrorKind>.Fail(CountRangeErrorKind.MinGreaterThanMax);
+                }
+
+                minCount = resolvedMin;
+                maxCount = resolvedMax;
+            }
+
+            if (enableCountLimit && (minCount > CountLimit || maxCount > CountLimit))
+            {
+                return Result<CountBounds, CountRangeErrorKind>.Fail(CountRangeErrorKind.LimitExceeded);
+            }
+
+            return Result<CountBounds, CountRangeErrorKind>.Ok(new CountBounds(minCount, maxCount));
+        }
+    }
+
+    [Unverifiable]
+    internal static class CountRange
+    {
+        public const int CountLimit = CountRangeResolver.CountLimit;
 
         /// <summary>The error of a list over the count limit, with the option that lifts the limit.</summary>
         public static readonly string ListLimitError =
@@ -150,34 +230,24 @@ namespace GalaxyCheck.Gens
         /// <param name="limitError">The error when a count is over the limit, for the kind of collection.</param>
         public static (int minCount, int maxCount) Resolve(RangeIntention count, bool enableCountLimit, string? limitError = null)
         {
-            var (minCount, maxCount) = count.Match(
-                onUnspecified: () => (0, 20),
-                onExact: exact =>
-                {
-                    if (exact < 0) throw new GenErrorSignal("'count' cannot be negative");
-                    return (exact, exact);
-                },
-                onBounded: (min, max) =>
-                {
-                    var resolvedMin = min ?? 0;
-                    var resolvedMax = max ?? (resolvedMin > int.MaxValue - 20 ? int.MaxValue : resolvedMin + 20);
-
-                    if (resolvedMin < 0) throw new GenErrorSignal("'minCount' cannot be negative");
-                    if (resolvedMax < 0) throw new GenErrorSignal("'maxCount' cannot be negative");
-                    if (resolvedMin > resolvedMax) throw new GenErrorSignal("'minCount' cannot be greater than 'maxCount'");
-
-                    return (resolvedMin, resolvedMax);
-                });
-
-            if (enableCountLimit && (minCount > CountLimit || maxCount > CountLimit))
+            var resolved = CountRangeResolver.TryResolve(count, enableCountLimit);
+            if (resolved.IsSuccess)
             {
-                throw new GenErrorSignal(limitError ?? ListLimitError);
+                return (resolved.Value.MinCount, resolved.Value.MaxCount);
             }
 
-            return (minCount, maxCount);
+            throw resolved.Error switch
+            {
+                CountRangeErrorKind.NegativeExactCount => new GenErrorSignal("'count' cannot be negative"),
+                CountRangeErrorKind.NegativeMinCount => new GenErrorSignal("'minCount' cannot be negative"),
+                CountRangeErrorKind.NegativeMaxCount => new GenErrorSignal("'maxCount' cannot be negative"),
+                CountRangeErrorKind.MinGreaterThanMax => new GenErrorSignal("'minCount' cannot be greater than 'maxCount'"),
+                _ => new GenErrorSignal(limitError ?? ListLimitError),
+            };
         }
     }
 
+    [Unverifiable]
     internal static class Collections
     {
         /// <summary>

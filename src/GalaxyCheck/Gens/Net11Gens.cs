@@ -40,6 +40,7 @@ namespace GalaxyCheck.Gens.Internal
 {
     using System.Numerics;
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal static class DecimalIeeeRealFormats
     {
         public static readonly DecimalIeeeRealFormat<Decimal32> Decimal32 = new(9_999_999UL, -101, 90, -7);
@@ -55,6 +56,7 @@ namespace GalaxyCheck.Gens.Internal
     /// The format of an IEEE decimal floating-point type. A value is a mantissa times a power of ten, built with the
     /// exact <c>ScaleB</c>.
     /// </summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed class DecimalIeeeRealFormat<T> : RealFormat<T>
         where T : struct, IDecimalFloatingPointIeee754<T>, IMinMaxValue<T>
     {

@@ -21,6 +21,7 @@ namespace GalaxyCheck
 
 namespace GalaxyCheck.Gens.Internal
 {
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed record SelectGen<T, TResult>(IGen<T> Source, Func<T, TResult> Selector) : BaseGen<TResult>, GalaxyCheck.Properties.IFiniteGen
     {
         public long? Count(long limit) => GalaxyCheck.Properties.Finite.Of(Source, limit);

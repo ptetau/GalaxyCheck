@@ -1,3 +1,4 @@
+using Verifiable.Contracts;
 namespace GalaxyCheck.Gens
 {
     /// <summary>A generator of values in an inclusive range.</summary>
@@ -43,6 +44,36 @@ namespace GalaxyCheck.Gens.Internal
     using GalaxyCheck.Gens.Parameters;
     using System;
 
+    [Verifiable]
+    internal readonly record struct TimeBounds(long Min, long Max, long Origin)
+    {
+        [Invariant("Time bounds maintain Min <= Origin <= Max.")]
+        public bool IsValid() => Min <= Origin && Origin <= Max;
+    }
+
+    [Verifiable]
+    internal readonly record struct TimeBoundsError(long Min, long Max);
+
+    [Verifiable]
+    internal static class TimeBoundsResolver
+    {
+        public static Result<TimeBounds, TimeBoundsError> Resolve(long min, long max, long defaultOrigin)
+        {
+            Spec.Ensures<Result<TimeBounds, TimeBoundsError>>(
+                r => min <= max ? (r.IsSuccess && r.Value.Min == min && r.Value.Max == max && r.Value.Origin >= min && r.Value.Origin <= max) : !r.IsSuccess,
+                "Resolved time bounds guarantee Min <= Origin <= Max when min <= max and fail otherwise.");
+
+            if (min > max)
+            {
+                return Result<TimeBounds, TimeBoundsError>.Fail(new TimeBoundsError(min, max));
+            }
+
+            var origin = defaultOrigin < min ? min : (defaultOrigin > max ? max : defaultOrigin);
+            return Result<TimeBounds, TimeBoundsError>.Ok(new TimeBounds(min, max, origin));
+        }
+    }
+
+    [Unverifiable]
     internal static class TimeCore
     {
         /// <summary>
@@ -51,18 +82,19 @@ namespace GalaxyCheck.Gens.Internal
         /// </summary>
         public static long Generate(GenSource source, long min, long max, long defaultOrigin)
         {
-            if (min > max)
+            var resolved = TimeBoundsResolver.Resolve(min, max, defaultOrigin);
+            if (!resolved.IsSuccess)
             {
                 throw new GenErrorSignal(
                     "'min' cannot be greater than 'max'" + Environment.NewLine +
                     "Fix: give a .From(...) bound that is not after the .Until(...) bound, or call .Within(x, y), which takes its two bounds in either order.");
             }
 
-            var origin = Math.Clamp(defaultOrigin, min, max);
-            return IntCore.Int64(source, min, max, origin, Gen.Bias.WithSize, boundsAreExtremes: true);
+            return IntCore.Int64(source, resolved.Value.Min, resolved.Value.Max, resolved.Value.Origin, Gen.Bias.WithSize, boundsAreExtremes: true);
         }
     }
 
+    [Unverifiable]
     internal sealed record TimeSpanGen(TimeSpan? Min = null, TimeSpan? Max = null) : BaseGen<TimeSpan>, IRangeGen<TimeSpan>
     {
         public IRangeGen<TimeSpan> From(TimeSpan min) => this with { Min = min };
@@ -80,6 +112,7 @@ namespace GalaxyCheck.Gens.Internal
             0));
     }
 
+    [Unverifiable]
     internal sealed record DateOnlyGen(DateOnly? Min = null, DateOnly? Max = null) : BaseGen<DateOnly>, IRangeGen<DateOnly>
     {
         private static readonly long OriginDays = new DateOnly(2000, 1, 1).DayNumber;
@@ -99,6 +132,7 @@ namespace GalaxyCheck.Gens.Internal
             OriginDays));
     }
 
+    [Unverifiable]
     internal sealed record TimeOnlyGen(TimeOnly? Min = null, TimeOnly? Max = null) : BaseGen<TimeOnly>, IRangeGen<TimeOnly>
     {
         public IRangeGen<TimeOnly> From(TimeOnly min) => this with { Min = min };
@@ -120,6 +154,7 @@ namespace GalaxyCheck.Gens.Internal
     /// Generates the UTC ticks, then the offset in minutes. The offset range keeps the local time in the range of the
     /// type.
     /// </summary>
+    [Unverifiable]
     internal sealed record DateTimeOffsetGen(DateTimeOffset? Min = null, DateTimeOffset? Max = null)
         : BaseGen<DateTimeOffset>, IRangeGen<DateTimeOffset>
     {

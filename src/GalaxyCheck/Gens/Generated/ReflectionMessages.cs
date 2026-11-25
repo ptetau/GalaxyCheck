@@ -1,6 +1,7 @@
 namespace GalaxyCheck.Gens.Generated
 {
     /// <summary>The messages of the trim and AOT annotations of the reflection path.</summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal static class ReflectionMessages
     {
         public const string Path =

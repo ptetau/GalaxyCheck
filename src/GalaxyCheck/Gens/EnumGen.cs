@@ -29,6 +29,7 @@ namespace GalaxyCheck.Gens.Enum
 {
     using System.Linq;
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal static class EnumGenHelpers
     {
         public static IGen<T> GenFlagsEnum<T>()
@@ -63,6 +64,7 @@ namespace GalaxyCheck.Gens.Enum
     /// The generator of a flags enum: a non-empty set of its values, combined with "or". It is finite: its values are
     /// the different combinations, and the choices of each are the choices of the first set that makes it.
     /// </summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed record FlagsEnumGen<T>(IGen<T> Source, int[] Values) : BaseGen<T>, GalaxyCheck.Properties.IFiniteGen
     {
         private const int MaxValues = 16;

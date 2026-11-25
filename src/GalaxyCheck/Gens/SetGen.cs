@@ -91,6 +91,7 @@ namespace GalaxyCheck.Gens
         ISetGen<T> WithCountBias(Gen.Bias bias);
     }
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal record SetGen<T>(
         IGen<T> ElementGen,
         RangeIntention Count) : BaseGen<IReadOnlySet<T>>, ISetGen<T>

@@ -1,8 +1,10 @@
-﻿using GalaxyCheck.Properties;
+﻿using Verifiable.Contracts;
+using GalaxyCheck.Properties;
 using System.Collections.Generic;
 
 namespace GalaxyCheck
 {
+    [Unverifiable]
     public partial class Property : Property<object>
     {
         /// <summary>Creates a property from a generator of test cases.</summary>
@@ -25,6 +27,7 @@ namespace GalaxyCheck
     }
 
     /// <summary>A property over generated values of <typeparamref name="T"/>.</summary>
+    [Unverifiable]
     public class Property<T> : IGen<Property.Test<T>>
     {
         private readonly IGen<Property.Test<T>> _gen;
@@ -57,6 +60,7 @@ namespace GalaxyCheck
     }
 
     /// <summary>An async property with a boxed input.</summary>
+    [Unverifiable]
     public class AsyncProperty : AsyncProperty<object>
     {
         /// <summary>Creates an async property from a generator of test cases.</summary>
@@ -79,6 +83,7 @@ namespace GalaxyCheck
     }
 
     /// <summary>An async property over generated values of <typeparamref name="T"/>.</summary>
+    [Unverifiable]
     public class AsyncProperty<T> : IGen<Property.AsyncTest<T>>
     {
         private readonly IGen<Property.AsyncTest<T>> _gen;

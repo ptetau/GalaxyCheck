@@ -1,3 +1,5 @@
+using Verifiable.Contracts;
+
 namespace GalaxyCheck.Gens.Internal
 {
     /// <summary>
@@ -7,6 +9,7 @@ namespace GalaxyCheck.Gens.Internal
     /// good size comes from the earlier retries of the same run, so a filter that passes at few sizes finds them again
     /// at once. A search with no good size only sweeps.
     /// </summary>
+    [Verifiable]
     internal static class SizeSearch
     {
         public const int NoGoodSize = -1;
@@ -20,6 +23,11 @@ namespace GalaxyCheck.Gens.Internal
         /// <summary>The size of a retry. The first retry has the number 1.</summary>
         public static int Next(int baseSize, int retry, int goodSize)
         {
+            Spec.Requires(
+                baseSize >= 0 && baseSize <= 100 && retry >= 1 && (goodSize == NoGoodSize || (goodSize >= 0 && goodSize <= 100)),
+                "Base size and learned good size stay in 0..100 (or NoGoodSize) and retry is positive.");
+            Spec.Ensures<int>(r => r >= 0 && r <= 100, "Every retry size stays within [0, 100].");
+
             if (goodSize == NoGoodSize)
             {
                 return Sweep(baseSize, retry);
@@ -41,9 +49,21 @@ namespace GalaxyCheck.Gens.Internal
         /// The good size after a value passed at a retry size. The good size moves a quarter of the way to that
         /// size, so that it settles in the middle of the sizes where values pass.
         /// </summary>
-        public static int Learn(int goodSize, int size) =>
-            goodSize == NoGoodSize ? size : (3 * goodSize + size + 2) / 4;
+        public static int Learn(int goodSize, int size)
+        {
+            Spec.Requires(
+                size >= 0 && size <= 100 && (goodSize == NoGoodSize || (goodSize >= 0 && goodSize <= 100)),
+                "Observed retry size is within 0..100 and goodSize is either NoGoodSize or within 0..100.");
+            Spec.Ensures<int>(r => r >= 0 && r <= 100, "Learned good size remains within [0, 100].");
 
-        private static int Sweep(int baseSize, int step) => (int)((baseSize + (long)step * SweepStep) % 101);
+            return goodSize == NoGoodSize ? size : (3 * goodSize + size + 2) / 4;
+        }
+
+        private static int Sweep(int baseSize, int step)
+        {
+            Spec.Requires(baseSize >= 0 && baseSize <= 100 && step >= 1, "Sweep base size is within 0..100 and step is positive.");
+            Spec.Ensures<int>(r => r >= 0 && r <= 100, "Sweep modulo 101 stays within [0, 100].");
+            return (int)((baseSize + (long)step * SweepStep) % 101);
+        }
     }
 }

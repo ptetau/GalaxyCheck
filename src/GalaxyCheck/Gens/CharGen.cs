@@ -29,6 +29,7 @@ namespace GalaxyCheck.Gens
     using System.Collections.Generic;
     using System.Linq;
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal record CharGen : GenProvider<char>, IGen<char>
     {
         private readonly Gen.CharType _charType;

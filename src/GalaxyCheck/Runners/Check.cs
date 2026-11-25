@@ -1,4 +1,5 @@
-﻿using GalaxyCheck.Gens.Internal;
+﻿using Verifiable.Contracts;
+using GalaxyCheck.Gens.Internal;
 using GalaxyCheck.Gens.Parameters;
 using GalaxyCheck.Properties;
 using GalaxyCheck.Runners;
@@ -55,6 +56,7 @@ namespace GalaxyCheck.Runners
     /// <summary>
     /// The result of one test case.
     /// </summary>
+    [Unverifiable]
     internal struct TestCaseOutcome<T>
     {
         public bool Failed;
@@ -72,6 +74,25 @@ namespace GalaxyCheck.Runners
         public long GenerationMs;
     }
 
+    [Verifiable]
+    internal static class SizeSchedule
+    {
+        public static int SizeOf(int iteration, int iterations, int? size)
+        {
+            Spec.Requires(iteration >= 0 && iterations >= 1 && (size == null || (size.Value >= 0 && size.Value <= 100)),
+                "Iteration is non-negative, iterations is positive, and optional size is in [0, 100].");
+            Spec.Ensures<int>(r => r >= 0 && r <= 100, "Scheduled iteration size stays within [0, 100].");
+
+            if (size != null) return size.Value;
+            if (iterations >= 100) return iteration % 100;
+
+            var samples = iterations < 101 ? iterations : 101;
+            if (iteration >= samples - 1) return 100;
+            return iteration * 100 / (samples - 1);
+        }
+    }
+
+    [Unverifiable]
     internal static class CheckRunner
     {
         public const int DefaultIterations = 100;
@@ -81,16 +102,8 @@ namespace GalaxyCheck.Runners
         /// The size of each iteration. With 100 or more iterations, the size grows by one each iteration and wraps
         /// at 100. With fewer iterations, the sizes spread from 0 to 100.
         /// </summary>
-        public static int SizeOf(int iteration, int iterations, int? size)
-        {
-            if (size != null) return size.Value;
-            if (iterations >= 100) return iteration % 100;
-
-            var samples = Math.Min(iterations, 101);
-            if (iteration >= samples - 1) return 100;
-            return iteration * 100 / (samples - 1);
-        }
-
+        public static int SizeOf(int iteration, int iterations, int? size) =>
+            SizeSchedule.SizeOf(iteration, iterations, size);
         /// <summary>The seed option, else the seed of the environment (<see cref="AgentMode"/>), else a random seed.</summary>
         public static int CreateSeed(int? seed) => seed ?? AgentMode.DefaultSeed ?? Random.Shared.Next();
 
@@ -381,6 +394,7 @@ namespace GalaxyCheck.Runners
     /// <summary>
     /// The state of one check: the iterations, the first counterexample, and its shrinking.
     /// </summary>
+    [Unverifiable]
     internal sealed class CheckRun<T>
     {
         private const long SlowGeneratorMs = 1000;
@@ -829,6 +843,7 @@ namespace GalaxyCheck.Runners
         }
     }
 
+    [Unverifiable]
     internal static class PercentFormat
     {
         public static string Format(double percent) =>

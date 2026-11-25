@@ -17,6 +17,11 @@
 
   <ItemGroup>
     <PackageReference Include="System.Linq.Async" Version="7.0.1" />
+    <PackageReference Include="Verifiable.Contracts" Version="0.1.0" />
+    <PackageReference Include="Verifiable.Generators" Version="0.1.0" PrivateAssets="all" />
+    <PackageReference Include="Verifiable.Analyzers" Version="0.1.0" PrivateAssets="all" />
+    <PackageReference Include="Verifiable.CodeFixes" Version="0.1.0" PrivateAssets="all" />
+    <PackageReference Include="Verifiable.Z3" Version="0.1.0" PrivateAssets="all" />
   </ItemGroup>
 
   <!-- The agent reference file (R65), at the root of the package. -->

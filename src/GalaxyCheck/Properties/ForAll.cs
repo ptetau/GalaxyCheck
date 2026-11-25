@@ -92,11 +92,13 @@ namespace GalaxyCheck.Properties
         /// <see cref="PreconditionFailedException"/>, and the runner discards the test case. When trackTime is set,
         /// generatedAt is the tick count after the generation.
         /// </summary>
+        [global::Verifiable.Contracts.Unverifiable]
         T Run(GenSource source, bool trackTime, out long generatedAt, out bool failed, out Exception? exception);
 
         IReadOnlyList<object?> Present(object? input);
     }
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed record ForAllGen<T>(
         IGen<T> Input,
         Func<T, bool> Func,

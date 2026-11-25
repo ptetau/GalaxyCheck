@@ -1,5 +1,7 @@
-﻿namespace GalaxyCheck
+﻿using Verifiable.Contracts;
+namespace GalaxyCheck
 {
+    [Unverifiable]
     public static partial class Extensions
     {
         /// <summary>Returns the generator of the advanced operations.</summary>

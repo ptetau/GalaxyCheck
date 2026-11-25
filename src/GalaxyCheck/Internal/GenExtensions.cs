@@ -3,6 +3,7 @@ using System.Linq;
 
 namespace GalaxyCheck.Internal
 {
+    [global::Verifiable.Contracts.Unverifiable]
     internal static class GenExtensions
     {
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode(GalaxyCheck.Gens.Generated.ReflectionMessages.Path)]

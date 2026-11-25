@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 
 namespace GalaxyCheck.Internal
 {
+    [global::Verifiable.Contracts.Unverifiable]
     internal static class TypeExtensions
     {
         public static bool IsAnonymousType(this Type type)

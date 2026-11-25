@@ -13,6 +13,7 @@ namespace GalaxyCheck
     /// <summary>Formats a value as a C# expression.</summary>
     [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2070", Justification = "It reads the public members of a value to show it in a failure report. A member that trimming removed is not shown, and a value with no usable constructor gets no expression.")]
     [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "It reads the public members of a value to show it in a failure report. A member that trimming removed is not shown, and a value with no usable constructor gets no expression.")]
+    [global::Verifiable.Contracts.Unverifiable]
     public static class CSharpExpression
     {
         private const int DepthLimit = 8;

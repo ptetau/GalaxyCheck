@@ -105,6 +105,7 @@ namespace GalaxyCheck
         /// <summary>The handlers of each return type. They read the parameters of a method by reflection.</summary>
         [RequiresUnreferencedCode(GalaxyCheck.Gens.Generated.ReflectionMessages.Path)]
         [RequiresDynamicCode(GalaxyCheck.Gens.Generated.ReflectionMessages.Path)]
+        [global::Verifiable.Contracts.Unverifiable]
         private static class ReflectedHandlers
         {
             internal readonly static ImmutableDictionary<Type, ReflectedPropertyHandler> MethodPropertyHandlers =

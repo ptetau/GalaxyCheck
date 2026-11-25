@@ -11,6 +11,7 @@ namespace GalaxyCheck
         /// common given names and surnames, the companies are fictional, and the phone numbers are in the 555-01xx
         /// range, which is reserved for fiction.
         /// </summary>
+        [global::Verifiable.Contracts.Unverifiable]
         public static class Realistic
         {
             /// <summary>The list of first names.</summary>
@@ -58,6 +59,7 @@ namespace GalaxyCheck
 namespace GalaxyCheck.Gens
 {
     /// <summary>The fixed English lists of the realistic generators.</summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal static class RealisticData
     {
         public static readonly string[] FirstNames =

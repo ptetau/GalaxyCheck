@@ -2,6 +2,7 @@
 
 namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
 {
+    [global::Verifiable.Contracts.Unverifiable]
     internal static class TypeReflectionExtensions
     {
         public static bool IsNullableStruct(this Type type)

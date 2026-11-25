@@ -72,6 +72,7 @@ namespace GalaxyCheck.Gens
         IGenFactory RegisterType(Type type, IGen gen);
 
         /// <summary>Sets the concrete types that the factory generates for an interface or an abstract class.</summary>
+        [global::Verifiable.Contracts.Unverifiable]
         IGenFactory RegisterImplementations<T>(params Type[] candidateTypes) => throw new System.NotImplementedException("not implemented");
 
         /// <summary>
@@ -110,6 +111,7 @@ namespace GalaxyCheck.Gens
         IReflectedGen<T> Create<T>(NullabilityInfo? nullabilityInfo = null) where T : notnull;
     }
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal class GenFactory : IGenFactory
     {
         private static readonly IReadOnlyDictionary<Type, Func<IGen>> DefaultRegisteredGensByType =
@@ -207,8 +209,10 @@ namespace GalaxyCheck.Gens
             new GenFactory(_registeredGensByType.SetItem(type, () => genFunc(this)), _candidateTypesByType);
     }
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal record ReflectedGenMemberOverride(string Path, IGen Gen);
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal record ReflectedGen<T>(
         IReadOnlyDictionary<Type, Func<IGen>> RegisteredGensByType,
         ImmutableDictionary<Type, ImmutableArray<Type>> CandidateTypesByType,

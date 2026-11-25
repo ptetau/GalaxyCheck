@@ -18,6 +18,7 @@ namespace GalaxyCheck.Gens
     using GalaxyCheck.Gens.Internal;
     using GalaxyCheck.Gens.Parameters;
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed record ConstantGen<T>(T Value) : BaseGen<T>
     {
         public override T Generate(GenSource source) => Value;

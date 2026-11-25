@@ -12,6 +12,7 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers
     /// </summary>
     [RequiresUnreferencedCode(ReflectionMessages.Path)]
     [RequiresDynamicCode(ReflectionMessages.Path)]
+    [global::Verifiable.Contracts.Unverifiable]
     internal class UnionReflectedGenHandler : IReflectedGenHandler
     {
         public bool CanHandleGen(Type type, ReflectedGenHandlerContext context) =>

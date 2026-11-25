@@ -23,6 +23,7 @@ namespace GalaxyCheck
 
 namespace GalaxyCheck.Gens.Internal
 {
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed record SetRngWaypointGen<T>(IGenAdvanced<T> Source) : BaseGen<T>, GalaxyCheck.Properties.IFiniteGen
     {
         public long? Count(long limit) => (Source as GalaxyCheck.Properties.IFiniteGen)?.Count(limit);
@@ -44,6 +45,7 @@ namespace GalaxyCheck.Gens.Internal
         }
     }
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed record ReferenceRngWaypointGen<T>(IGenAdvanced<T> Source, int Influence) : BaseGen<T>, GalaxyCheck.Properties.IFiniteGen
     {
         public long? Count(long limit) => (Source as GalaxyCheck.Properties.IFiniteGen)?.Count(limit);

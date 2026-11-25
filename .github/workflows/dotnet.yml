@@ -16,6 +16,7 @@ env:
   NUGET_TOKEN: ${{ secrets.NUGET_API_KEY }}
   DOTNET_CLI_TELEMETRY_OPTOUT: true
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  VERIFIABLE_AGENT: "1"
   PACKABLE_PROJECTS: GalaxyCheck GalaxyCheck.Xunit GalaxyCheck.Xunit.CodeAnalysis GalaxyCheck.Xunit.V3 GalaxyCheck.TUnit GalaxyCheck.NUnit GalaxyCheck.MSTest GalaxyCheck.SourceGeneration
 
 jobs:
@@ -35,6 +36,13 @@ jobs:
           dotnet-version: |
             10.0.x
             11.0.x
+      - name: Install Z3 (Unix)
+        if: runner.os != 'Windows'
+        run: bash scripts/install-z3.sh
+      - name: Install Z3 (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File scripts/install-z3.ps1
       - name: Restore dependencies
         run: dotnet restore GalaxyCheck.sln
       - name: Build
@@ -55,6 +63,8 @@ jobs:
           dotnet-version: |
             10.0.x
             11.0.x
+      - name: Install Z3
+        run: bash scripts/install-z3.sh
       - name: Test
         run: dotnet test src/GalaxyCheck.Tests.Slice
 
@@ -69,6 +79,8 @@ jobs:
           dotnet-version: |
             10.0.x
             11.0.x
+      - name: Install Z3
+        run: bash scripts/install-z3.sh
       - name: Banking
         working-directory: examples/Banking
         run: dotnet test Banking.Tests
@@ -91,6 +103,8 @@ jobs:
           dotnet-version: |
             10.0.x
             11.0.x
+      - name: Install Z3
+        run: bash scripts/install-z3.sh
       - name: Restore
         run: |
           for project in $PACKABLE_PROJECTS; do
@@ -158,6 +172,8 @@ jobs:
           dotnet-version: |
             10.0.x
             11.0.x
+      - name: Install Z3
+        run: bash scripts/install-z3.sh
       - name: Restore
         run: |
           for project in $PACKABLE_PROJECTS; do

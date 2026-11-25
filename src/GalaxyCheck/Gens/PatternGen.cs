@@ -40,6 +40,7 @@ namespace GalaxyCheck.Gens
     /// choices of the source, so a failing value shrinks to fewer repeats, earlier alternatives, and earlier
     /// characters of each class.
     /// </summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed record PatternGen(PatternNode Node) : BaseGen<string>
     {
         public override string Generate(GenSource source)
@@ -50,6 +51,7 @@ namespace GalaxyCheck.Gens
         }
     }
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal abstract class PatternNode
     {
         public abstract void Append(GenSource source, StringBuilder builder);
@@ -63,6 +65,7 @@ namespace GalaxyCheck.Gens
         public const long LengthCap = PatternParser.MaxStringLength + 1;
     }
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed class PatternEmpty : PatternNode
     {
         public static readonly PatternEmpty Instance = new PatternEmpty();
@@ -74,6 +77,7 @@ namespace GalaxyCheck.Gens
         public override long MaxLength => 0;
     }
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed class PatternLiteral : PatternNode
     {
         private readonly char _char;
@@ -92,6 +96,7 @@ namespace GalaxyCheck.Gens
     /// Picks a character of a set of ranges. The index of a character counts through the ranges in order, so that a
     /// class keeps its ranges and not an array of each character.
     /// </summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed class PatternCharClass : PatternNode
     {
         private readonly int[] _lows;
@@ -128,6 +133,7 @@ namespace GalaxyCheck.Gens
         public override long MaxLength => 1;
     }
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed class PatternSequence : PatternNode
     {
         private readonly PatternNode[] _nodes;
@@ -160,6 +166,7 @@ namespace GalaxyCheck.Gens
         }
     }
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed class PatternAlternation : PatternNode
     {
         private readonly PatternNode[] _alternatives;
@@ -191,6 +198,7 @@ namespace GalaxyCheck.Gens
     /// Repeats a node. Before each repeat above the minimum, a choice of 1 means "one more" and 0 means "stop", so
     /// that the shrinker removes a repeat by deleting its span, as for a list.
     /// </summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed class PatternRepeat : PatternNode
     {
         private readonly PatternNode _node;
@@ -261,6 +269,7 @@ namespace GalaxyCheck.Gens
     /// Parses the common constructs of a regular expression. A construct with no support gives an error that names
     /// it.
     /// </summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed class PatternParser
     {
         /// <summary>The number of extra repeats that an unbounded quantifier (*, +, {n,}) allows.</summary>
@@ -870,6 +879,7 @@ namespace GalaxyCheck.Gens
     }
 
     /// <summary>An anchor at an end of the pattern. It makes no character.</summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed class PatternAnchor : PatternNode
     {
         public static readonly PatternAnchor Instance = new PatternAnchor();

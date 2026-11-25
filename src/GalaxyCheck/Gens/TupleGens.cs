@@ -264,6 +264,7 @@ namespace GalaxyCheck.Gens.Internal
     /// <summary>
     /// A generator of a tuple-like value. It is finite when each part is finite, and then it counts like a product.
     /// </summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed record FiniteFunctionGen<T>(IGen[] Inputs, System.Func<GenSource, T> Func) : BaseGen<T>, IFiniteGen
     {
         public override T Generate(GenSource source) => Func(source);

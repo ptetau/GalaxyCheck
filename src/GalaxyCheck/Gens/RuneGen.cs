@@ -21,6 +21,7 @@ namespace GalaxyCheck.Gens
     /// <summary>
     /// Generates an index into the scalar values without the surrogates, so that each index is a valid rune.
     /// </summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed record RuneGen : BaseGen<Rune>
     {
         private const int SurrogateStart = 0xD800;

@@ -1,3 +1,4 @@
+using Verifiable.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -6,3 +7,4 @@ using System.Runtime.InteropServices;
 [assembly: InternalsVisibleTo("GalaxyCheck.Tests")]
 [assembly: InternalsVisibleTo("GalaxyCheck.Tests.V3")]
 [assembly: InternalsVisibleTo("GalaxyCheck.Benchmarks")]
+[assembly: Verifiable]

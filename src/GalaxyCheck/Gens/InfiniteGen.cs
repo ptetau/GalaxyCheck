@@ -43,6 +43,7 @@ namespace GalaxyCheck.Gens
     using System.Collections;
     using System.Collections.Generic;
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal record InfiniteGen<T> : BaseGen<IEnumerable<T>>, IGen<IEnumerable<T>>
     {
         private readonly IGen<T> _elementGen;

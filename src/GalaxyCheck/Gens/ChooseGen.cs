@@ -62,6 +62,7 @@ namespace GalaxyCheck.Gens
         IChooseGen<T> WithChoice(IGen<T> gen, int weight);
     }
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal record ChooseGen<T>(ImmutableList<ChooseGen<T>.Choice> Choices) : GenProvider<T>, IChooseGen<T>
     {
         public record Choice(IGen<T> Gen, int Weight);
@@ -107,6 +108,7 @@ namespace GalaxyCheck.Gens
     /// Picks one generator by weight. The choice is the index of the generator, so a value shrinks towards the
     /// value of the first generator.
     /// </summary>
+    [global::Verifiable.Contracts.Unverifiable]
     internal sealed record WeightedChoiceGen<T>(IGenAdvanced<T>[] Gens, int[] Weights) : BaseGen<T>
     {
         private readonly long _totalWeight = Weights.Sum(w => (long)w);

@@ -9,6 +9,7 @@ using GalaxyCheck.Gens.ReflectedGenHelpers.ReflectedGenHandlers;
 
 namespace GalaxyCheck.Gens.ReflectedGenHelpers
 {
+    [global::Verifiable.Contracts.Unverifiable]
     internal record ReflectedGenHandlerContext(
         ImmutableList<string> Members,
         ImmutableStack<Type> TypeHistory,
@@ -103,6 +104,7 @@ namespace GalaxyCheck.Gens.ReflectedGenHelpers
             nullabilityInfo is { ReadState: NullabilityState.Nullable, WriteState: NullabilityState.Nullable };
     }
 
+    [global::Verifiable.Contracts.Unverifiable]
     internal static class ReflectedGenHandlerContextExtensions
     {
         public static int CalculateStableSeed(this ReflectedGenHandlerContext context) => StableSeed(context.MemberPath);

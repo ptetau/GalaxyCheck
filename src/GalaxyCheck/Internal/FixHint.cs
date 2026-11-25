@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+using Verifiable.Contracts;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +11,33 @@ namespace GalaxyCheck.Internal
     /// The last line of a generator error: a line that starts with <c>Fix: </c> and gives the corrected call or the
     /// option to change.
     /// </summary>
+    [Verifiable]
+    internal static class FixHintFormatter
+    {
+        public const string Prefix = "Fix: ";
+        public const string GenericFix = "change the generator call or the option that the message names.";
+
+        public static string BuildMinAboveMaxMessage(string prefix, string newLine, bool isHalf)
+        {
+            Spec.Requires(prefix is { Length: > 0 } && newLine is { Length: > 0 }, "Prefix and newline must be non-empty.");
+            return isHalf
+                ? newLine + prefix + "give a minimum that is not above the maximum, for example .GreaterThanEqual((Half)4).LessThanEqual((Half)5), or swap the two bounds."
+                : newLine + prefix + "give a minimum that is not above the maximum, for example .GreaterThanEqual(4).LessThanEqual(5), or swap the two bounds.";
+        }
+
+        public static string AppendFix(string message, string fixText, string newLine)
+        {
+            Spec.Requires(fixText is { Length: > 0 } && newLine is { Length: > 0 }, "Fix text and newline must be non-empty.");
+            if (message is not { Length: > 0 })
+            {
+                return Prefix + GenericFix;
+            }
+
+            return message + newLine + Prefix + fixText;
+        }
+    }
+
+    [Unverifiable]
     internal static class FixHint
     {
         public const string Prefix = "Fix: ";
@@ -17,12 +46,10 @@ namespace GalaxyCheck.Internal
         /// The fix line of a numeric generator whose minimum is above its maximum. Each numeric generator has
         /// GreaterThanEqual and LessThanEqual.
         /// </summary>
-        public static readonly string NumericMinAboveMax = Environment.NewLine + Prefix +
-            "give a minimum that is not above the maximum, for example .GreaterThanEqual(4).LessThanEqual(5), or swap the two bounds.";
+        public static readonly string NumericMinAboveMax = FixHintFormatter.BuildMinAboveMaxMessage(Prefix, Environment.NewLine, isHalf: false);
 
         /// <summary>The fix line of Gen.Half() whose minimum is above its maximum. An int converts to Half only with a cast.</summary>
-        public static readonly string HalfMinAboveMax = Environment.NewLine + Prefix +
-            "give a minimum that is not above the maximum, for example .GreaterThanEqual((Half)4).LessThanEqual((Half)5), or swap the two bounds.";
+        public static readonly string HalfMinAboveMax = FixHintFormatter.BuildMinAboveMaxMessage(Prefix, Environment.NewLine, isHalf: true);
 
         // A rule names only a method that each generator with the error has. A generator whose error needs a method of
         // its own type writes its fix line where it throws, and the rule here stays general.
@@ -176,15 +203,26 @@ namespace GalaxyCheck.Internal
                 : $"{name}<{string.Join(", ", ownArguments.Select(TypeName))}>";
         }
 
-        private static readonly Dictionary<Type, string> Keywords = new()
+        private static readonly ImmutableDictionary<Type, string> Keywords = ImmutableDictionary.CreateRange(new KeyValuePair<Type, string>[]
         {
-            [typeof(bool)] = "bool", [typeof(byte)] = "byte", [typeof(sbyte)] = "sbyte", [typeof(char)] = "char",
-            [typeof(short)] = "short", [typeof(ushort)] = "ushort", [typeof(int)] = "int", [typeof(uint)] = "uint",
-            [typeof(long)] = "long", [typeof(ulong)] = "ulong", [typeof(float)] = "float", [typeof(double)] = "double",
-            [typeof(decimal)] = "decimal", [typeof(string)] = "string", [typeof(object)] = "object",
-            [typeof(nint)] = "nint", [typeof(nuint)] = "nuint",
-        };
-
+            new(typeof(bool), "bool"),
+            new(typeof(byte), "byte"),
+            new(typeof(sbyte), "sbyte"),
+            new(typeof(char), "char"),
+            new(typeof(short), "short"),
+            new(typeof(ushort), "ushort"),
+            new(typeof(int), "int"),
+            new(typeof(uint), "uint"),
+            new(typeof(long), "long"),
+            new(typeof(ulong), "ulong"),
+            new(typeof(float), "float"),
+            new(typeof(double), "double"),
+            new(typeof(decimal), "decimal"),
+            new(typeof(string), "string"),
+            new(typeof(object), "object"),
+            new(typeof(nint), "nint"),
+            new(typeof(nuint), "nuint"),
+        });
         /// <summary>The name of a type with no namespace, for a C# example.</summary>
         private static string ShortName(string fullName)
         {

@@ -1,3 +1,4 @@
+using Verifiable.Contracts;
 using GalaxyCheck.Properties;
 using System;
 using System.Threading;
@@ -19,6 +20,7 @@ namespace GalaxyCheck
     }
 
     /// <summary>Thrown by a check or an assert when a health check trips.</summary>
+    [Unverifiable]
     public class HealthCheckException : Exception
     {
         /// <summary>The check that tripped.</summary>
@@ -65,10 +67,19 @@ namespace GalaxyCheck
 
 namespace GalaxyCheck.Runners
 {
+    [Verifiable]
     internal static class HealthMessages
     {
-        public static HealthCheckException Exception(HealthCheck check, string problem) => new HealthCheckException(
-            check,
-            $"Health check {check} failed: {problem} To switch this check off, pass suppressHealthChecks: new[] {{ HealthCheck.{check} }}.");
+        [Unverifiable]
+        public static HealthCheckException Exception(HealthCheck check, string problem)
+        {
+            return new HealthCheckException(check, FormatMessage(check, problem is { Length: > 0 } ? problem : check.ToString()));
+        }
+
+        public static string FormatMessage(HealthCheck check, string problem)
+        {
+            Spec.Requires(problem is { Length: > 0 }, "Problem description must not be empty.");
+            return $"Health check {check} failed: {problem} To switch this check off, pass suppressHealthChecks: new[] {{ HealthCheck.{check} }}.";
+        }
     }
 }
